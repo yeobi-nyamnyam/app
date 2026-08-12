@@ -1,23 +1,9 @@
 -- 여비냠냠 초기 스키마
--- docs/schema-design.md, erd.mermaid 참고 (세션 1 확정본)
--- 모든 테이블: id uuid default gen_random_uuid(), created_at, updated_at 포함
--- users(프로필)은 auth.users와 연동 (id가 auth.users.id를 참조, RLS는 auth.uid() 기준)
-
-create extension if not exists pgcrypto;
+-- docs/schema-design.md 참고. 세션 1 논의 후 필요시 컬럼 조정.
+-- 적용: supabase db push --db-url [DB URL]  (STEP3 참고)
 
 -- =========================================
--- 0. updated_at 자동 갱신 트리거 함수
--- =========================================
-create function public.set_updated_at()
-returns trigger as $$
-begin
-  new.updated_at = now();
-  return new;
-end;
-$$ language plpgsql;
-
--- =========================================
--- 1. profiles (auth.users 확장 — 사용자 프로필)
+-- 1. profiles
 -- =========================================
 create table public.profiles (
   id uuid primary key references auth.users(id) on delete cascade,
@@ -27,10 +13,6 @@ create table public.profiles (
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
-
-create trigger set_updated_at
-  before update on public.profiles
-  for each row execute function public.set_updated_at();
 
 -- =========================================
 -- 2. trips
@@ -50,10 +32,6 @@ create table public.trips (
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
-
-create trigger set_updated_at
-  before update on public.trips
-  for each row execute function public.set_updated_at();
 
 -- =========================================
 -- 3. meal_slots
@@ -75,12 +53,8 @@ create table public.meal_slots (
   unique (trip_id, date, meal_type)
 );
 
-create trigger set_updated_at
-  before update on public.meal_slots
-  for each row execute function public.set_updated_at();
-
 -- =========================================
--- 4. restaurants (캐시 — 착한가격업소 + TourAPI 통합, F3 추천/지도용, 24시간 배치)
+-- 4. restaurants (캐시 테이블 — 착한가격업소 + TourAPI 통합, 24시간 배치)
 -- =========================================
 create table public.restaurants (
   id uuid primary key default gen_random_uuid(),
@@ -107,12 +81,9 @@ create table public.restaurants (
   unique (source, external_id)
 );
 
-create trigger set_updated_at
-  before update on public.restaurants
-  for each row execute function public.set_updated_at();
-
 -- =========================================
 -- 5. meal_logs
+-- store_latitude/longitude: F6-10 자동완성/restaurant_id 조인으로 채움, M2 지도용
 -- =========================================
 create table public.meal_logs (
   id uuid primary key default gen_random_uuid(),
@@ -134,12 +105,8 @@ create table public.meal_logs (
   updated_at timestamptz not null default now()
 );
 
-create trigger set_updated_at
-  before update on public.meal_logs
-  for each row execute function public.set_updated_at();
-
 -- =========================================
--- 6. budget_change_history (append only)
+-- 6. budget_change_history
 -- =========================================
 create table public.budget_change_history (
   id uuid primary key default gen_random_uuid(),
@@ -148,13 +115,8 @@ create table public.budget_change_history (
   amount_delta integer not null default 0,
   before_json jsonb,
   after_json jsonb,
-  created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now()
+  created_at timestamptz not null default now()
 );
-
-create trigger set_updated_at
-  before update on public.budget_change_history
-  for each row execute function public.set_updated_at();
 
 -- =========================================
 -- 7. chat_messages
@@ -172,10 +134,6 @@ create table public.chat_messages (
   updated_at timestamptz not null default now()
 );
 
-create trigger set_updated_at
-  before update on public.chat_messages
-  for each row execute function public.set_updated_at();
-
 -- =========================================
 -- 8. diaries
 -- =========================================
@@ -190,12 +148,8 @@ create table public.diaries (
   unique (trip_id, date)
 );
 
-create trigger set_updated_at
-  before update on public.diaries
-  for each row execute function public.set_updated_at();
-
 -- =========================================
--- 9. badges (마스터/시드 데이터)
+-- 9. badges (마스터)
 -- =========================================
 create table public.badges (
   id uuid primary key default gen_random_uuid(),
@@ -203,14 +157,8 @@ create table public.badges (
   category text not null,
   name text not null,
   description text,
-  bonus_points integer not null default 0,
-  created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now()
+  bonus_points integer not null default 0
 );
-
-create trigger set_updated_at
-  before update on public.badges
-  for each row execute function public.set_updated_at();
 
 -- =========================================
 -- 10. user_badges
@@ -221,17 +169,11 @@ create table public.user_badges (
   trip_id uuid not null references public.trips(id) on delete cascade,
   badge_id uuid not null references public.badges(id) on delete cascade,
   awarded_at timestamptz not null default now(),
-  created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now(),
   unique (user_id, trip_id, badge_id)
 );
 
-create trigger set_updated_at
-  before update on public.user_badges
-  for each row execute function public.set_updated_at();
-
 -- =========================================
--- 11. exp_ledger (append only)
+-- 11. exp_ledger
 -- =========================================
 create table public.exp_ledger (
   id uuid primary key default gen_random_uuid(),
@@ -239,28 +181,60 @@ create table public.exp_ledger (
   trip_id uuid references public.trips(id) on delete set null,
   event_type text not null,
   points integer not null,
-  created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now()
+  created_at timestamptz not null default now()
 );
 
-create trigger set_updated_at
-  before update on public.exp_ledger
-  for each row execute function public.set_updated_at();
-
 -- =========================================
--- 12. region_cache (정적 시드 데이터 — 지원 지역 화이트리스트)
+-- 12. region_cache
+-- 정적 시드 데이터(팀이 준비한 엑셀 등)를 배포 시 삽입하는 테이블.
+-- 운영 중 TourAPI 호출로 자동 갱신되지 않음. 지원 지역 화이트리스트 역할.
 -- =========================================
 create table public.region_cache (
   id uuid primary key default gen_random_uuid(),
   region_code text not null unique,
   region_name text not null,
-  tour_api_snapshot jsonb,
-  created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now()
+  tour_api_snapshot jsonb
 );
 
-create trigger set_updated_at
-  before update on public.region_cache
+-- =========================================
+-- updated_at 자동 갱신 트리거
+-- 컬럼만 있고 트리거가 없으면 INSERT 시점 값에 영원히 고정되는 버그가 생김.
+-- docs/schema-design.md "updated_at 자동 갱신 컨벤션" 참고.
+-- =========================================
+create or replace function public.set_updated_at()
+returns trigger as $$
+begin
+  new.updated_at = now();
+  return new;
+end;
+$$ language plpgsql;
+
+create trigger trg_profiles_updated_at
+  before update on public.profiles
+  for each row execute function public.set_updated_at();
+
+create trigger trg_trips_updated_at
+  before update on public.trips
+  for each row execute function public.set_updated_at();
+
+create trigger trg_meal_slots_updated_at
+  before update on public.meal_slots
+  for each row execute function public.set_updated_at();
+
+create trigger trg_restaurants_updated_at
+  before update on public.restaurants
+  for each row execute function public.set_updated_at();
+
+create trigger trg_meal_logs_updated_at
+  before update on public.meal_logs
+  for each row execute function public.set_updated_at();
+
+create trigger trg_diaries_updated_at
+  before update on public.diaries
+  for each row execute function public.set_updated_at();
+
+create trigger trg_chat_messages_updated_at
+  before update on public.chat_messages
   for each row execute function public.set_updated_at();
 
 -- =========================================
@@ -299,7 +273,7 @@ create policy "meal_logs_own" on public.meal_logs
     exists (select 1 from public.trips t where t.id = trip_id and t.user_id = auth.uid())
   );
 
--- budget_change_history: trip 소유자만 (읽기 위주, insert는 서버/함수 경유 권장)
+-- budget_change_history: trip 소유자만 (read 위주, insert는 서버/함수에서)
 create policy "budget_history_own" on public.budget_change_history
   for all using (
     exists (select 1 from public.trips t where t.id = trip_id and t.user_id = auth.uid())
@@ -331,6 +305,6 @@ create policy "exp_ledger_own" on public.exp_ledger
 create policy "region_cache_read_all" on public.region_cache
   for select using (true);
 
--- restaurants: 전체 조회 허용, 쓰기는 service role만 (F3-5 배치 캐싱 전용)
+-- restaurants: 전체 조회 허용, 쓰기는 service role만 (배치 캐싱 전용)
 create policy "restaurants_read_all" on public.restaurants
   for select using (true);
