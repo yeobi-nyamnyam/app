@@ -18,6 +18,14 @@ const config: ExpoConfig = {
     'expo-router',
     '@react-native-google-signin/google-signin',
     ['@react-native-seoul/kakao-login', { kakaoAppKey: process.env.KAKAO_NATIVE_APP_KEY ?? '' }],
+    [
+      'expo-build-properties',
+      {
+        android: {
+          extraMavenRepos: ['https://devrepo.kakao.com/nexus/content/groups/public/'],
+        },
+      },
+    ],
   ],
   extra: {
     supabaseUrl: process.env.SUPABASE_URL,
