@@ -1,0 +1,177 @@
+%% 여비냠냠 ERD (물리/상세) — schema-design.md 기준, 기능명세서 v4(0812) F3-5/F6-10 반영
+%% 렌더링: Mermaid Live Editor(mermaid.live), GitHub/Notion은 ```mermaid 코드블록 그대로 렌더링됨
+%% auth.users는 Supabase 내장 테이블이라 컬럼 최소만 표기
+%% 개념적(단순화) 버전은 erd-conceptual.mermaid 참고
+
+erDiagram
+    AUTH_USERS {
+        uuid id PK
+    }
+
+    PROFILES {
+        uuid id PK "FK -> auth.users(id)"
+        text nickname
+        text handle UK
+        text status "active | deleted"
+        timestamptz created_at
+        timestamptz updated_at
+    }
+
+    TRIPS {
+        uuid id PK
+        uuid user_id FK
+        text name
+        text region_code "region_cache 논리 참조"
+        date start_date
+        date end_date
+        integer total_budget
+        integer fixed_cost
+        numeric food_budget_ratio
+        integer floating_budget
+        text status "ongoing | completed"
+        timestamptz created_at
+        timestamptz updated_at
+    }
+
+    MEAL_SLOTS {
+        uuid id PK
+        uuid trip_id FK
+        date date
+        text meal_type "breakfast|lunch|dinner"
+        text weight_level "light|normal|hearty"
+        integer budget_amount
+        integer carried_over_amount
+        boolean is_recorded
+        boolean is_cascade_confirmed
+        integer recorded_amount
+        timestamptz confirmed_at
+        timestamptz created_at
+        timestamptz updated_at
+    }
+
+    MEAL_LOGS {
+        uuid id PK
+        uuid trip_id FK
+        uuid meal_slot_id FK "nullable, 끼니 소비만"
+        uuid restaurant_id FK "nullable, 추천에서 온 기록만"
+        text category "식비|교통|숙박|기념품|기타"
+        integer amount
+        text store_name
+        text store_address
+        numeric store_latitude "nullable, M2 지도용"
+        numeric store_longitude "nullable, M2 지도용"
+        boolean is_good_price
+        text memo
+        text source "home|recommend|chat|record"
+        text receipt_image_url
+        jsonb ocr_raw
+        timestamptz created_at
+        timestamptz updated_at
+    }
+
+    BUDGET_CHANGE_HISTORY {
+        uuid id PK
+        uuid trip_id FK
+        text event_type
+        integer amount_delta
+        jsonb before_json
+        jsonb after_json
+        timestamptz created_at
+    }
+
+    CHAT_MESSAGES {
+        uuid id PK
+        uuid trip_id FK
+        uuid user_id FK
+        text role "user|ai"
+        text content
+        text parsed_category
+        integer parsed_amount
+        text status "pending|confirmed|discarded"
+        timestamptz created_at
+    }
+
+    DIARIES {
+        uuid id PK
+        uuid trip_id FK
+        date date
+        text mode "manual|ai"
+        text content
+        timestamptz created_at
+        timestamptz updated_at
+    }
+
+    BADGES {
+        uuid id PK
+        text code UK "G1, G2 ..."
+        text category
+        text name
+        text description
+        integer bonus_points
+    }
+
+    USER_BADGES {
+        uuid id PK
+        uuid user_id FK
+        uuid trip_id FK
+        uuid badge_id FK
+        timestamptz awarded_at
+    }
+
+    EXP_LEDGER {
+        uuid id PK
+        uuid user_id FK
+        uuid trip_id FK "nullable"
+        text event_type
+        integer points
+        timestamptz created_at
+    }
+
+    REGION_CACHE {
+        uuid id PK
+        text region_code UK
+        text region_name
+        jsonb tour_api_snapshot
+    }
+
+    RESTAURANTS {
+        uuid id PK
+        text source "good_price|tour_api"
+        text external_id "tour_api: content_id / good_price: name+address 해시"
+        text name
+        text address
+        text region_sido
+        text region_sigungu
+        text category "소스 원본 텍스트 그대로, 매핑 없음"
+        text cls_system2 "tour_api 전용"
+        text cls_system3 "tour_api 전용, FD03만 사용"
+        text phone
+        numeric latitude
+        numeric longitude
+        text image_url "tour_api 전용"
+        jsonb price_menus
+        jsonb business_hours "tour_api 전용, 지연 로딩"
+        text overview "tour_api 전용, 지연 로딩"
+        timestamptz last_synced_at
+        timestamptz detail_synced_at
+        timestamptz created_at
+        timestamptz updated_at
+    }
+
+    %% 관계
+    AUTH_USERS ||--|| PROFILES : "1:1"
+    AUTH_USERS ||--o{ TRIPS : "1:N (owns)"
+    TRIPS ||--o{ MEAL_SLOTS : "1:N"
+    MEAL_SLOTS |o--o{ MEAL_LOGS : "0:N (nullable FK, 끼니 소비만)"
+    TRIPS ||--o{ MEAL_LOGS : "1:N"
+    TRIPS ||--o{ BUDGET_CHANGE_HISTORY : "1:N"
+    TRIPS ||--o{ CHAT_MESSAGES : "1:N"
+    AUTH_USERS ||--o{ CHAT_MESSAGES : "1:N"
+    TRIPS ||--o{ DIARIES : "1:N"
+    AUTH_USERS ||--o{ USER_BADGES : "1:N"
+    TRIPS ||--o{ USER_BADGES : "1:N"
+    BADGES ||--o{ USER_BADGES : "1:N"
+    AUTH_USERS ||--o{ EXP_LEDGER : "1:N"
+    TRIPS |o--o{ EXP_LEDGER : "0:N (nullable FK)"
+    REGION_CACHE |o..o{ TRIPS : "논리 참조 (실제 FK 아님, region_code 문자열 매칭)"
+    RESTAURANTS |o--o{ MEAL_LOGS : "0:N (nullable FK, 추천 경로만)"

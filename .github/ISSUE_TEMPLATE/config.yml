@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 기능명세서
+    url: https://github.com/yeobi-nyamnyam/app/blob/main/docs/schema-design.md
+    about: 기능 ID·우선순위는 기능명세서(v4) 기준으로 확인하세요.
+  - name: 담당자 배정표
+    url: https://github.com/yeobi-nyamnyam/app/blob/main/docs/team-assignment.md
+    about: 담당 영역이 헷갈리면 여기서 확인하세요.
