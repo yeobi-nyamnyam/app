@@ -22,6 +22,6 @@ export default tseslint.config(
     },
   },
   {
-    ignores: ["dist/**", ".expo/**"],
+    ignores: ["dist/**", ".expo/**", "metro.config.js"],
   },
 );
