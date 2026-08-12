@@ -40,7 +40,7 @@
   클라이언트 코드에 직접 넣기 금지 — 반드시 `apps/server` 경유
 - `.env` 커밋 금지
 - Claude / Claude Code는 PR을 스스로 머지하지 않음 — 항상 사람 승인 후 머지
-- `main`, `dev` 브랜치에 직접 push 금지
+- `main`, `develop` 브랜치에 직접 push 금지
 - CI(lint + type-check) 실패 상태로 PR 생성 금지
 
 ## 컴포넌트 작성 규칙
@@ -88,6 +88,7 @@
 2. 해당 이슈에 맞는 기능별 개발 진행 (`feature/이름-기능ID` 브랜치)
 3. 커밋
 4. PR 템플릿(`.github/PULL_REQUEST_TEMPLATE.md`) 기준으로 자동 PR 생성
+   - base 브랜치: `develop` (feature 브랜치 → `develop`)
    - 이슈 하나당 PR 하나 원칙
 5. 사람이 PR 리뷰
 6. 사람이 머지 (Claude는 머지하지 않음)
@@ -95,8 +96,11 @@
 ## 브랜치 규칙
 
 - `main`: 배포용
-- `dev`: 통합 브랜치
+- `develop`: 통합 브랜치 — **PR base 브랜치**
 - `feature/이름-기능ID`: 개인 작업 브랜치 (예: `feature/철수-F6-10`)
+
+PR은 항상 `feature/이름-기능ID` → `develop`으로 올립니다. `develop` → `main`은
+배포 시점에 별도로 머지합니다.
 
 ## 참고 문서
 
