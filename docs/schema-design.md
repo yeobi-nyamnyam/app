@@ -1,12 +1,64 @@
-# 여비냠냠 — Supabase 스키마 설계 (v1, 8/12 세션용)
+# 여비냠냠 — Supabase 스키마 설계 (v2, 기능명세서 v4(0812) 기준)
 
-기능명세서 v3(0805) 기준으로 설계. 세팅 가이드 STEP3의
-`[여기에 세션1에서 설계한 테이블들 적기]` 부분을 이 문서로 대체해서 진행하면 됩니다.
+기능명세서 v4(0812, `여비냠냠_기능명세서_v4_0812.xlsx`)의 모든 기능 ID(F0~F7, C0~C3,
+D0~D3, G0~G17, L0~L4, M0~M2)를 한 번씩 훑어 테이블/컬럼으로 반영했습니다. 세팅
+가이드 STEP3의 `[여기에 세션1에서 설계한 테이블들 적기]` 부분을 이 문서로 대체해서
+진행하면 됩니다.
 
 > 이 문서는 세션 중 화이트보드/논의로 언제든 바뀔 수 있음. 확정되면
 > `supabase/migrations/20260812000000_initial_schema.sql` 그대로 적용.
 
 ---
+
+## 기능 ID → 테이블/컬럼 대응표 (트레이서빌리티)
+
+| 기능 ID | 대분류 | 관련 테이블/컬럼 |
+|---|---|---|
+| F0, F0-1, F0-2, F0-5 | 회원 인증 | `auth.users`(Supabase 내장) — provider/providerId는 Supabase Auth가 자체 관리, 별도 컬럼 불필요 |
+| F0-3 | 회원 탈퇴 | `profiles.status` |
+| F0-4 | 닉네임/고유ID | `profiles.nickname`, `profiles.handle` |
+| F1, F1-2~F1-5 | 여행 생성 | `trips`(name, start_date, end_date, total_budget, fixed_cost, food_budget_ratio) |
+| F1-1 | 지역 입력 | `trips.region_code` ↔ `region_cache` |
+| F1-6 | 끼니별 가중치 기본값 | `meal_slots.weight_level` (여행 생성 트랜잭션에서 각 슬롯에 심음) |
+| F2 | 식비 예산 자동계산 | `trips.floating_budget` |
+| F2-1, F2-2 | 일별/끼니별 배분 | `meal_slots.budget_amount` |
+| F2-3 | 남은 끼니 재분배 | `meal_slots.is_recorded`/`budget_amount` 재계산, `budget_change_history`(`event_type='rebalance'`) |
+| F2-4, F2-5 | 가중치 적용/조건부 수정 | `meal_slots.weight_level`, `is_recorded` |
+| F4, F4-1, F4-2 | 예산 일괄 수정 | `trips`(total_budget/fixed_cost/floating_budget) 갱신 → F2-3 재분배 연쇄 실행, `budget_change_history`(`event_type='budget_edit'`) |
+| F3, F3-1, F3-2 | 추천 목록/지도/바텀시트 | `restaurants`, `region_cache` — 거리·남은금액은 조회 시점 계산(비저장) |
+| F3-3 | 추천 기준 실시간 산정 | `meal_slots`(가장 이른 미기록 행의 budget_amount+carried_over_amount) |
+| F3-4 | 추천불가 경고 | (스키마 없음, `restaurants` 조회 결과 0건 시 UI 분기) |
+| F3-5 | 착한가격업소 배치 캐싱 | `restaurants`(source='good_price') |
+| C0~C3 | 채팅 | `chat_messages`. C3(검색·필터)는 `meal_logs`(`source='chat'`)를 조회하는 것이지 `chat_messages` 자체를 검색하지 않음 |
+| F6, F6-1 | 소비 기록 폼/경로별 자동채움 | `meal_logs`(source: home/recommend/chat/record) |
+| F6-2, F6-3 | OCR 자동채움/실패수정 | `meal_logs.ocr_raw`, `receipt_image_url` |
+| F6-4 | 캐스케이드 확정 | `meal_slots.is_cascade_confirmed`/`recorded_amount`/`carried_over_amount` |
+| F6-5, F6-6 | 삭제·재계산 | `meal_slots` 롤백, `budget_change_history`(`event_type='log_deleted'`) |
+| F6-7 | 예산 변동 히스토리 | `budget_change_history` |
+| F6-8, F6-9 | 탭 전환/목록 조회 | (스키마 없음, UI 라우팅 + 기존 테이블 조회) |
+| F6-10 | 매장명 검색·자동완성 | `meal_logs.store_latitude`/`store_longitude` |
+| D0~D3 | 일기 | `diaries` |
+| F7 | 여행 자동 완료 | `trips.status` |
+| F7-1 | 완료 후 기록 제한 | 앱/RPC 계층에서 `trips.status='completed'` 검사 (DB 제약으로 강제하지 않음, `business-logic-notes.md` §4 참고) — `diaries`는 예외로 계속 쓰기 허용 |
+| G0~G17 | 배지 | `badges`, `user_badges` — 판정 데이터 소스는 `meal_logs`/`meal_slots`/`budget_change_history`/`trips` (상세는 `business-logic-notes.md` §6) |
+| L0~L4 | 캐릭터 성장/포인트 | `exp_ledger`, `badges.bonus_points` |
+| M0, M1 | 마이페이지 대시보드 | `meal_logs`/`meal_slots` 집계 쿼리 (저장 테이블 없음) |
+| M2 | 방문 매장 지도 | `meal_logs.store_latitude`/`store_longitude` |
+
+---
+
+---
+
+## `updated_at` 자동 갱신 컨벤션
+
+`updated_at` 컬럼이 있는 테이블은 전부 `before update` 트리거로 `now()`를 채웁니다
+(컬럼만 있고 트리거가 없으면 INSERT 시점 값에 영원히 고정되는 버그가 생기므로 필수).
+공통 트리거 함수 하나(`public.set_updated_at()`)를 만들어 아래 7개 테이블에 재사용:
+`profiles`, `trips`, `meal_slots`, `restaurants`, `meal_logs`, `diaries`, **`chat_messages`**
+(SQL 반영 시 `docs/api-server-boundaries.md`가 아니라 마이그레이션 파일에 직접 추가).
+
+`budget_change_history`, `exp_ledger`, `user_badges`, `region_cache`, `badges`는
+append-only(또는 정적 시드)라 `updated_at`이 원래 불필요 — 각 테이블 섹션에 이유 명시.
 
 ## 테이블 목록 & 관계 개요
 
@@ -121,16 +173,24 @@ Supabase `auth.users`를 확장하는 앱 프로필 (F0-4, F0-3)
 | created_at / updated_at | timestamptz | |
 
 ## 5. `budget_change_history`
-예산 변동 히스토리 (F6-7, 되돌리기 불가 — append only)
+예산 변동 히스토리 (F6-7, 되돌리기 불가 — append only, `updated_at` 불필요)
 
 > **`before_json` / `after_json`이 담는 내용:** 이벤트 전/후의 관련 예산 상태를
 > 통째로 저장하는 자유 형식 스냅샷입니다. `amount_delta` 하나만으로는 F6-7이 요구하는
 > "무엇이 얼마에서 얼마로 바뀌었는지" 조회 화면을 만들 수 없어서, `event_type`별로
 > 안에 담기는 키가 다르게 들어갑니다(고정 스키마 아님, 그래서 jsonb).
 > - `expense_input`(끼니 소비 기록): before `{budget_amount, carried_over_amount}` → after `{recorded_amount, carried_over_amount}` (F6-4 캐스케이드 이월 포함)
-> - `budget_edit`(F4 일괄 수정): before `{total_budget, fixed_cost, floating_budget}` → after `{...변경된 값}`
+> - `budget_edit`(F4 일괄 수정, `trips` 레벨 값 변경): before `{total_budget, fixed_cost, floating_budget}` → after `{...변경된 값}`
+> - `rebalance`(F2-3 재분배 실행, `meal_slots` 레벨 재계산): before/after에 영향받은 슬롯 목록과 각 `budget_amount` 변화 기록
 > - `receipt_applied`(F6-2 OCR 반영): before `{amount: null}` → after `{amount, store_name}`
 > - `log_deleted`(F6-6): before `{recorded_amount}` → after `{recorded_amount: null}` (재계산 후 상태)
+>
+> **`budget_edit`과 `rebalance`를 왜 분리하나:** F4로 예산을 바꾸면 ①`trips`의
+> 값 자체가 바뀌는 이벤트와 ②그 여파로 `meal_slots`가 재계산되는 이벤트가 함께
+> 일어납니다. 이걸 하나로 합치면 G9(재설계 마스터, F2-3 재분배 활용 횟수)와
+> L1(재조정완료 +5P, `event_type='rebalance'` 기준)이 F4 단순 금액 수정과
+> 실제 재분배 실행을 구분해서 셀 수 없게 됩니다. 그래서 F4 처리 시 두 이벤트를
+> **각각 별도 행으로 insert**합니다 (하나의 트랜잭션 안에서 순서대로).
 >
 > **`amount_delta`가 담는 내용:** 이벤트로 식비 예산(여유식비)이 얼마나 증가/감소했는지를
 > 원 단위 부호(+/-) 있는 숫자로 나타낸 값입니다. `before_json`/`after_json`이 상태
@@ -145,13 +205,17 @@ Supabase `auth.users`를 확장하는 앱 프로필 (F0-4, F0-3)
 |---|---|---|
 | id | uuid PK | |
 | trip_id | uuid FK → trips | |
-| event_type | text | expense_input / budget_edit / receipt_applied / log_deleted 등 |
+| event_type | text | expense_input / budget_edit / rebalance / receipt_applied / log_deleted 등 |
 | amount_delta | integer | |
 | before_json / after_json | jsonb | |
-| created_at / updated_at | timestamptz | append only라 updated_at은 사실상 created_at과 동일하게 유지됨. 모든 테이블 공통 규칙(id/created_at/updated_at)을 지키기 위해 포함 |
+| created_at | timestamptz | |
 
 ## 6. `chat_messages`
 AI 채팅 (C1, C2, C3)
+
+> **`updated_at`이 필요한 이유**: 이 테이블은 append-only가 아닙니다. C2에서
+> `status`가 `pending → confirmed/discarded`로 실제로 바뀌므로(사용자 확인 후
+> 확정), "언제 확정됐는지" 추적하려면 갱신 시각이 있어야 합니다.
 
 | 컬럼 | 타입 | 설명 |
 |---|---|---|
@@ -187,10 +251,9 @@ G0~G17 배지 정의
 | category | text | 예산준수형 / 소비패턴 등 |
 | name / description | text | |
 | bonus_points | integer | L4 배지-포인트 연동 |
-| created_at / updated_at | timestamptz | 모든 테이블 공통 규칙(id/created_at/updated_at)을 지키기 위해 포함. 마스터 데이터라 실질적으로는 시드 시점 값 유지 |
 
 ## 9. `user_badges`
-배지 획득 이력 (여행 완료 시 일괄 판정, 회수 없음)
+배지 획득 이력 (여행 완료 시 일괄 판정, 회수 없음 — append only, `awarded_at`이 `created_at` 역할을 겸함)
 
 | 컬럼 | 타입 | 설명 |
 |---|---|---|
@@ -199,11 +262,10 @@ G0~G17 배지 정의
 | trip_id | uuid FK → trips | |
 | badge_id | uuid FK → badges | |
 | awarded_at | timestamptz default now() | |
-| created_at / updated_at | timestamptz | 모든 테이블 공통 규칙(id/created_at/updated_at)을 지키기 위해 포함. `awarded_at`과 별개로 유지 (지급 시각은 `awarded_at`이 대표값) |
 | | | UNIQUE(user_id, trip_id, badge_id) |
 
 ## 10. `exp_ledger`
-포인트 원장 (L0~L2, append only)
+포인트 원장 (L0~L2, append only — 지급 후 회수/수정 없음, `updated_at` 불필요)
 
 | 컬럼 | 타입 | 설명 |
 |---|---|---|
@@ -212,7 +274,7 @@ G0~G17 배지 정의
 | trip_id | uuid FK → trips, nullable | |
 | event_type | text | trip_register / budget_set / meal_log / daily_close / good_price_use / new_try / rebalance / trip_complete / badge_earned 등 |
 | points | integer | |
-| created_at / updated_at | timestamptz | append only라 updated_at은 사실상 created_at과 동일하게 유지됨. 모든 테이블 공통 규칙(id/created_at/updated_at)을 지키기 위해 포함 |
+| created_at | timestamptz | |
 
 > 레벨/캐릭터 진화 단계(L2, L3)는 별도 테이블 없이 `SUM(points)`를 애플리케이션/뷰에서
 > 레벨 테이블에 매핑하는 방식을 제안합니다 (하드코딩된 구간표라 캐싱 불필요).
@@ -233,7 +295,6 @@ G0~G17 배지 정의
 | region_code | text UNIQUE | |
 | region_name | text | |
 | tour_api_snapshot | jsonb | 정적 데이터셋(엑셀 등)을 시드 스크립트로 변환해 넣은 값. 런타임 API 응답 아님 |
-| created_at / updated_at | timestamptz | 모든 테이블 공통 규칙(id/created_at/updated_at)을 지키기 위해 포함. 정적 시드 데이터라 실질적 갱신은 드묾 |
 
 ## 12. `restaurants`
 식당 캐시 — 착한가격업소 + TourAPI(contentTypeId=39) 통합 (F3, F3-1, F3-2, **F3-5**)
@@ -287,9 +348,9 @@ G0~G17 배지 정의
 ## 세션 1에서 논의가 필요한 점
 
 - [x] `meal_weight_*` — **해석 B(일자별 가중치) 확정**. `trips`에 두던 3컬럼은 제거하고, `meal_slots`에 `weight_level` 컬럼 1개를 추가해 날짜+끼니타입 단위로 관리. 값은 숫자(0.8/1.0/1.2)가 아니라 프리셋 종류(light/normal/hearty)만 저장, 숫자는 코드 상수로 관리
-- [x] `region_cache` 성격 — **정적 시드 데이터로 확정**. 팀이 준비한 엑셀 등 정적 데이터셋을 배포/세팅 시 한 번 시드로 삽입, 운영 중 TourAPI 호출로 갱신하지 않음. 지원하지 않는 지역 조회 시 API 폴백 없이 "조회할 수 없는 지역입니다" 에러 처리 (F1-1, F3 추천 화면에 반영 필요). (수정: 이후 "모든 테이블에 id/created_at/updated_at 포함" 규칙이 전체 테이블 공통 규칙으로 확정되면서 `updated_at`도 다시 포함시킴 — 정적 데이터라 실질 갱신은 드물지만 스키마 일관성 우선)
+- [x] `region_cache` 성격 — **정적 시드 데이터로 확정**. 팀이 준비한 엑셀 등 정적 데이터셋을 배포/세팅 시 한 번 시드로 삽입, 운영 중 TourAPI 호출로 갱신하지 않음. 지원하지 않는 지역 조회 시 API 폴백 없이 "조회할 수 없는 지역입니다" 에러 처리 (F1-1, F3 추천 화면에 반영 필요). `updated_at` 컬럼도 갱신 개념이 없어 제거
 - [x] AI 채팅(C1/C2) LLM 호출 — **서버(`apps/server`) 경유로 결정**. 서버가 현재 예산/끼니 상태를 프롬프트에 포함해 호출하고 파싱 결과를 검증 후 반환. 지연시간 체감을 줄이기 위해 서버→클라이언트 구간은 SSE로 스트리밍 릴레이 권장 (`docs/api-server-boundaries.md` 참고)
 - [x] `meal_logs.is_good_price` 추가, `restaurants` 캐시 테이블 신설 — 착한가격업소는 위치검색 파라미터가 없어 전량 페이지네이션 수집 후 주소 파싱+Geocoding으로 좌표 보강, TourAPI(FD 39)와 통합 캐싱. 24시간 배치, `category`는 매핑 없이 소스 원본 텍스트 그대로 저장 (§12 참고). FD04(주점)·FD05(카페/찻집) 포함
 - [x] **기능명세서 v4(0812) 반영** — F3-5(착한가격업소 배치 캐싱)는 위 `restaurants` 설계와 일치해 별도 스키마 변경 없이 공식 기능 ID만 인용 반영. F6-10(매장명 검색·자동완성)은 새 갭 발견 — `meal_logs`에 `store_latitude`/`store_longitude` 컬럼 추가 (§4 참고). M2(방문 매장 지도)가 좌표를 필요로 하는데 기존엔 `restaurant_id`가 없는 기록(채팅/수기/OCR)의 좌표를 확보할 방법이 없었음. F6-10으로 네이버 검색 API 결과에서 좌표를 받아 채우면 이 갭이 해소됨
-- [x] **모든 테이블 `id`/`created_at`/`updated_at` 통일** — 위 §5·§8·§9·§10·§11에 빠져 있던 `updated_at`(일부는 `created_at`도)을 전 테이블 공통 규칙에 맞춰 추가. `updated_at`은 UPDATE 시 자동 갱신되도록 `set_updated_at()` 트리거를 모든 테이블에 부착 (`supabase/migrations/20260812000000_initial_schema.sql` 참고)
-- [x] **`good_price_shops` 별도 테이블 검토 후 폐기** — 한때 F3-5 배치 캐싱 전용으로 메뉴 단위 flat 테이블(`good_price_shops`)을 추가 검토했으나, §12 `restaurants`(착한가격업소+TourAPI 통합 캐시)와 역할이 중복되어 제거. 착한가격업소+TourAPI 캐싱은 `restaurants` 테이블 하나로 통일
+- [x] **`updated_at` 트리거 반영 완료** — 컨벤션(공통 트리거 함수 + 7개 테이블)대로 `supabase/migrations/20260812000000_initial_schema.sql`에 `set_updated_at()` 함수와 테이블별 `trg_*_updated_at` 트리거 7개(profiles/trips/meal_slots/restaurants/meal_logs/diaries/chat_messages)를 추가. `chat_messages.updated_at` 컬럼도 반영됨
+- [x] **`business-logic-notes.md` 동기화 완료** — §2(F2-3)를 `budget_edit`(1번, `trips` 값 변경)과 `rebalance`(4번, 실제 재분배 실행)를 별도 행으로 insert하도록 갱신해 §7(L1 포인트 매핑)의 `rebalance` 이벤트와 일치시킴

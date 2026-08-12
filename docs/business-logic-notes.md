@@ -20,9 +20,16 @@ Postgres 함수(RPC)로 할지 Apollo mutation 여러 개를 클라이언트가 
 **트리거**: F4(예산 일괄 수정)로 `total_budget`/`fixed_cost`/`floating_budget` 변경
 
 **규칙**:
-1. `is_recorded=true`인 슬롯은 **소급 변경하지 않음** (그대로 유지)
-2. `is_recorded=false`인 슬롯만 대상으로, 변경된 `floating_budget`에서 이미 확정된 슬롯들의 `budget_amount` 합을 뺀 나머지를 남은 슬롯 수·가중치(`weight_level`)로 재배분
-3. `budget_change_history`에 `event_type='budget_edit'` 로그 추가
+1. `trips` 값이 바뀌는 즉시 `budget_change_history`에 `event_type='budget_edit'` 로그 추가 (before/after는 `trips`의 관련 필드 스냅샷)
+2. `is_recorded=true`인 슬롯은 **소급 변경하지 않음** (그대로 유지)
+3. `is_recorded=false`인 슬롯만 대상으로, 변경된 `floating_budget`에서 이미 확정된 슬롯들의 `budget_amount` 합을 뺀 나머지를 남은 슬롯 수·가중치(`weight_level`)로 재배분
+4. 재배분이 실제로 실행되면(대상 슬롯이 1개 이상 존재) `budget_change_history`에 **별도로** `event_type='rebalance'` 로그를 추가 (before/after는 영향받은 슬롯 목록과 각 `budget_amount` 변화)
+
+> **왜 2개 이벤트로 나누나**: `budget_edit`(1번)은 "사용자가 예산을 고쳤다"는
+> 사실 자체이고, `rebalance`(4번)는 "그 결과로 남은 끼니들이 실제로 재배분됐다"는
+> 별개 사건입니다. 하나로 합치면 G9(재설계 마스터, F2-3 재분배 활용 횟수)와
+> L1(재조정완료 +5P)가 F4의 단순 금액 수정 횟수와 실제 재분배 실행 횟수를 구분해서
+> 셀 수 없습니다. `schema-design.md`의 `budget_change_history` 섹션 참고.
 
 ## 3. F6-5 끼니 삭제 + 재계산
 
