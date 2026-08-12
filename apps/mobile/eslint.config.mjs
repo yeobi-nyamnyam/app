@@ -22,6 +22,19 @@ export default tseslint.config(
     },
   },
   {
+    files: ["*.config.js"],
+    languageOptions: {
+      globals: {
+        require: "readonly",
+        module: "writable",
+        __dirname: "readonly",
+      },
+    },
+    rules: {
+      "@typescript-eslint/no-require-imports": "off",
+    },
+  },
+  {
     ignores: ["dist/**", ".expo/**"],
   },
 );
