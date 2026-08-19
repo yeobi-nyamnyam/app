@@ -70,4 +70,4 @@ jobs:
 
             - 수동으로 값을 고치지 마세요. `tokens.json`(또는 Figma) 쪽을 고친 뒤 다시 머지해주세요.
             - 사람 리뷰 후 사람이 직접 머지합니다.
-          labels: design-tokens
+          labels: "🎨 Design"

@@ -134,7 +134,6 @@ async function main() {
   })
 
   writeFileSync(OUTPUT_PATH, formatted)
-  console.log(`Wrote ${OUTPUT_PATH}`)
 }
 
 main()
