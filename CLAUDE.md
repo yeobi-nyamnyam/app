@@ -53,6 +53,40 @@
 - 색상, 폰트, 간격은 `@repo/tokens`(또는 이를 재-export하는 `@repo/ui`)에서 import
 - variant는 객체 map으로 선언 (if/else 분기 금지)
 - 공통 컴포넌트 만들 때 반드시 Storybook story 같이 작성
+- `packages/ui/src/components/`에 컴포넌트를 추가할 때는 파일을 바로 두지 않고,
+  컴포넌트명과 동일한 폴더로 감싼다. 폴더 안에는 컴포넌트 파일, story 파일,
+  그리고 barrel `index.ts`(`export { X } from './X'` 형태)를 둔다.
+
+  ```
+  components/
+    Button/
+      Button.tsx
+      Button.stories.tsx
+      index.ts
+  ```
+
+  다른 곳에서는 `./components/Button`처럼 폴더명까지만 import한다
+  (`./components/Button/Button`처럼 파일명까지 쓰지 않음).
+- 새 컴포넌트를 만들면 `packages/ui/src/index.ts`(패키지 공개 API 진입점)에도
+  반드시 export를 추가한다. 폴더 안 `index.ts`만 만들고 여기 빠뜨리면 다른 앱에서
+  `@repo/ui`로 import할 수 없다.
+- Props 인터페이스 바로 위에 JSDoc으로 각 prop을 설명한다. `@param prop명 설명`
+  형식으로, 가능한 값(union이면 전부 나열)과 optional 여부·기본값을 함께 적는다.
+
+  ```ts
+  /**
+   * @param label 버튼에 표시할 텍스트
+   * @param variant 버튼의 종류: 'primary' | 'outline' (optional, 기본값 'primary')
+   * @param disabled 버튼이 비활성화 상태인지: true | false (optional, 기본값 false)
+   * @param onPress 버튼을 클릭할 때 발생하는 event 명시 (optional)
+   */
+  export interface ButtonProps {
+    label: string
+    variant?: ButtonVariant
+    disabled?: boolean
+    onPress?: () => void
+  }
+  ```
 
 ## GraphQL 작업 순서
 

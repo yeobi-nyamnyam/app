@@ -16,8 +16,9 @@
   },
   "dependencies": {
     "@repo/tokens": "workspace:*",
-    "react": "^19.2.0",
-    "react-dom": "^19.2.0"
+    "react": "18.3.1",
+    "react-dom": "18.3.1",
+    "react-native": "0.76.9"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.1",
@@ -25,11 +26,12 @@
     "@storybook/react": "^8.6.0",
     "@storybook/react-vite": "^8.6.0",
     "@types/node": "^22.15.3",
-    "@types/react": "^19.2.2",
-    "@types/react-dom": "^19.2.2",
+    "@types/react": "^18.2.79",
+    "@types/react-dom": "^18.2.25",
     "eslint": "^9.39.1",
     "eslint-plugin-react": "^7.37.5",
     "eslint-plugin-react-hooks": "^5.2.0",
+    "react-native-web": "~0.19.13",
     "storybook": "^8.6.0",
     "typescript": "^5.9.2",
     "typescript-eslint": "^8.50.0",
