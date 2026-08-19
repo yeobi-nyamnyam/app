@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react'
 import type { TextStyle } from 'react-native'
 import { StyleSheet, Text as RNText } from 'react-native'
-import { colors, typography } from '../../tokens'
+import { colors, typography } from '@repo/tokens'
 
 export type TextVariant = Exclude<keyof typeof typography, 'fontFamily'>
 

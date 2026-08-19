@@ -1,0 +1,73 @@
+name: Sync Design Tokens
+
+# Tokens Studio opens a PR against `develop` with raw Figma token changes
+# (packages/tokens/tokens.json). Once a human reviews & merges that PR, this
+# workflow regenerates packages/tokens/src/tokens.ts from it and opens a
+# follow-up PR with the generated diff — it never pushes to develop/main
+# directly (see CLAUDE.md branch rules), so a human always does the final merge.
+on:
+  push:
+    branches: [develop]
+    paths:
+      - "packages/tokens/tokens.json"
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: tokens-sync
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Parse tokens.json + convert units → src/tokens.ts
+        run: pnpm --filter @repo/tokens build:tokens
+
+      - name: Lint & type-check generated output
+        run: |
+          pnpm --filter @repo/tokens lint
+          pnpm --filter @repo/tokens type-check
+
+      - name: Check for changes
+        id: diff
+        run: |
+          if git diff --quiet -- packages/tokens/src/tokens.ts; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Open PR with generated tokens
+        if: steps.diff.outputs.changed == 'true'
+        uses: peter-evans/create-pull-request@v6
+        with:
+          commit-message: "[디자인시스템] packages/tokens/src/tokens.ts Figma 동기화"
+          branch: bot/tokens-sync
+          delete-branch: true
+          base: develop
+          title: "[디자인시스템] packages/tokens/src/tokens.ts Figma 동기화"
+          body: |
+            `packages/tokens/tokens.json` 변경분을 파싱해 자동 생성한 diff입니다.
+            (${{ github.event.head_commit.message }} — ${{ github.sha }})
+
+            - 수동으로 값을 고치지 마세요. `tokens.json`(또는 Figma) 쪽을 고친 뒤 다시 머지해주세요.
+            - 사람 리뷰 후 사람이 직접 머지합니다.
+          labels: "🎨 Design"

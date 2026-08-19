@@ -12,7 +12,8 @@
 - DB/Auth: Supabase (pg_graphql, RLS)
 - GraphQL 클라이언트: Apollo Client
 - 타입 생성: graphql-codegen (`pnpm codegen`)
-- 스타일링: RN StyleSheet + `packages/ui/src/tokens.ts`
+- 스타일링: RN StyleSheet + `packages/tokens` (디자인 토큰, Figma/Tokens Studio 자동 동기화 —
+  `docs/design-tokens-pipeline.md` 참고). `packages/ui`가 이를 재-export
 - 공통 컴포넌트: `packages/ui`
 - 공유 타입: `packages/types`
 - 서버: `apps/server` (Express) — 외부 API 프록시 + AI 채팅 처리 (`docs/api-server-boundaries.md` 참고)
@@ -35,7 +36,10 @@
 - StyleSheet 없이 인라인 스타일 숫자/색 하드코딩 금지 (반드시 tokens 참조)
 - console.log 커밋 금지
 - `supabase/migrations` 파일 혼자 수정 금지 (PR 필수, 팀 공유 먼저)
-- `packages/types`, `packages/ui` 혼자 수정 금지 (PR + 리뷰 필수)
+- `packages/types`, `packages/ui`, `packages/tokens` 혼자 수정 금지 (PR + 리뷰 필수)
+- `packages/tokens/src/tokens.ts` 직접 수정 금지 — auto-generated 파일.
+  `packages/tokens/tokens.json`(Figma/Tokens Studio 동기화 대상)을 고칠 것
+  (`docs/design-tokens-pipeline.md` 참고)
 - 외부 API 키(TourAPI, 착한가격업소, 클로바 OCR, AI 채팅, 네이버 지도 Geocoding)를
   클라이언트 코드에 직접 넣기 금지 — 반드시 `apps/server` 경유
 - `.env` 커밋 금지
@@ -46,7 +50,7 @@
 ## 컴포넌트 작성 규칙
 
 - `StyleSheet.create()` 사용
-- 색상, 폰트, 간격은 `tokens.ts`에서 import
+- 색상, 폰트, 간격은 `@repo/tokens`(또는 이를 재-export하는 `@repo/ui`)에서 import
 - variant는 객체 map으로 선언 (if/else 분기 금지)
 - 공통 컴포넌트 만들 때 반드시 Storybook story 같이 작성
 - `packages/ui/src/components/`에 컴포넌트를 추가할 때는 파일을 바로 두지 않고,
@@ -145,3 +149,5 @@ PR은 항상 `feature/이름-기능ID` → `develop`으로 올립니다. `develo
 - `docs/business-logic-notes.md` — 캐스케이드/재분배/배지판정 등 핵심 로직 규칙
 - `docs/api-server-boundaries.md` — 외부 API 서버/클라이언트 경계
 - `docs/team-assignment.md` — 담당자 배정표
+- `docs/design-tokens-pipeline.md` — Figma → PR → `packages/tokens` 자동 동기화 파이프라인
+- `docs/tokens-studio-setup.md` — Tokens Studio 플러그인 GitHub 연동 설정 (디자이너용)

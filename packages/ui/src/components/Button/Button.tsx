@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react'
 import type { TextStyle, ViewStyle } from 'react-native'
 import { Pressable, StyleSheet, Text, View } from 'react-native'
-import { colors, icon as iconSize, radius, spacing, stroke, typography } from '../../tokens'
+import { colors, icon as iconSize, radius, spacing, stroke, typography } from '@repo/tokens'
 
 export type ButtonVariant = 'primary' | 'outline'
 

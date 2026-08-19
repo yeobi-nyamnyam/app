@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react'
 import { View } from 'react-native'
 import { Button } from './Button'
-import { colors, radius } from '../../tokens'
+import { colors, radius } from '@repo/tokens'
 
 const meta: Meta<typeof Button> = {
   title: 'Components/Button',

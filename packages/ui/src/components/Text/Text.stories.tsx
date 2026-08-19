@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react'
 import { View } from 'react-native'
 import { Text, type TextColor, type TextVariant } from './Text'
-import { spacing } from '../../tokens'
+import { spacing } from '@repo/tokens'
 
 const meta: Meta<typeof Text> = {
   title: 'Components/Text',
