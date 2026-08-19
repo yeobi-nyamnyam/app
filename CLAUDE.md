@@ -116,3 +116,4 @@ PR은 항상 `feature/이름-기능ID` → `develop`으로 올립니다. `develo
 - `docs/api-server-boundaries.md` — 외부 API 서버/클라이언트 경계
 - `docs/team-assignment.md` — 담당자 배정표
 - `docs/design-tokens-pipeline.md` — Figma → PR → `packages/tokens` 자동 동기화 파이프라인
+- `docs/tokens-studio-setup.md` — Tokens Studio 플러그인 GitHub 연동 설정 (디자이너용)

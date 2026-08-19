@@ -37,6 +37,11 @@ npm publish 단계는 없습니다. `packages/tokens`는 private workspace 패�
   주석으로 명시되어 있음. 로컬에서 다시 만들려면
   `pnpm --filter @repo/tokens build:tokens`
 
+## Tokens Studio 연동 (디자이너)
+
+Figma 플러그인 설치부터 GitHub 연동 설정까지는 `docs/tokens-studio-setup.md`
+참고.
+
 ## 사람이 항상 하는 일
 
 - Tokens Studio가 만든 원본 PR(`tokens.json`) 리뷰 & 머지
