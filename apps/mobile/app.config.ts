@@ -16,6 +16,7 @@ const config: ExpoConfig = {
   },
   plugins: [
     'expo-router',
+    'expo-font',
     '@react-native-google-signin/google-signin',
     ['@react-native-seoul/kakao-login', { kakaoAppKey: process.env.KAKAO_NATIVE_APP_KEY ?? '' }],
     [
