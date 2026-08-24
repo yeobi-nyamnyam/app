@@ -1,2 +1,2 @@
 export { Character } from './Character'
-export type { CharacterProps, CharacterVariant } from './Character'
+export type { CharacterProps, CharacterShadow, CharacterVariant } from './Character'

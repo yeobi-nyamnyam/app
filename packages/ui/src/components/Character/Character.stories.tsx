@@ -48,3 +48,17 @@ export const AllVariants: Story = {
     </View>
   ),
 }
+
+export const WithShadow: Story = {
+  args: {
+    variant: 'coral',
+    shadow: { offsetY: 4, blur: 3.25, opacity: 0.25 },
+  },
+}
+
+export const WithLayerBlur: Story = {
+  args: {
+    variant: 'apricot',
+    blur: 1.15,
+  },
+}

@@ -107,18 +107,45 @@ export const Splash = ({ onFinish }: SplashProps) => {
           >
             {/* 캐릭터를 tip 목록보다 먼저 그려서 뒤에 깔리게 함 (Figma에서 draft 3의
                 apricot가 tip 목록 위로 살짝 겹치는 레이어 순서와 동일) */}
-            {draft.map((character) => (
-              <View
-                key={character.variant}
-                style={{
-                  position: 'absolute',
-                  left: character.left * scale,
-                  top: (character.top - CONTENT_TOP) * scale,
-                }}
-              >
-                <Character variant={character.variant} size={character.size * scale} />
-              </View>
-            ))}
+            {draft.map((character) => {
+              const boundingSize = character.boundingSize ?? character.size
+              const inset = ((boundingSize - character.size) / 2) * scale
+
+              return (
+                <View
+                  key={character.variant}
+                  style={{
+                    position: 'absolute',
+                    left: character.left * scale,
+                    top: (character.top - CONTENT_TOP) * scale,
+                    width: boundingSize * scale,
+                    height: boundingSize * scale,
+                  }}
+                >
+                  <View
+                    style={[
+                      { position: 'absolute', left: inset, top: inset },
+                      character.rotation
+                        ? { transform: [{ rotate: `${character.rotation}deg` }] }
+                        : undefined,
+                    ]}
+                  >
+                    <Character
+                      variant={character.variant}
+                      size={character.size * scale}
+                      shadow={
+                        character.shadow && {
+                          offsetY: character.shadow.offsetY * scale,
+                          blur: character.shadow.blur * scale,
+                          opacity: character.shadow.opacity,
+                        }
+                      }
+                      blur={character.blur && character.blur * scale}
+                    />
+                  </View>
+                </View>
+              )
+            })}
 
             <View style={{ paddingHorizontal: TITLE_LEFT * scale, gap: spacing[200] * scale }}>
               {TIP_ROWS.map((row) => (
