@@ -45,5 +45,7 @@ export type {
 } from "./components/DayWeightSelector";
 export { Notice } from "./components/Notice";
 export type { NoticeProps, NoticeVariant } from "./components/Notice";
+export { Alert } from "./components/Alert";
+export type { AlertProps, AlertVariant } from "./components/Alert";
 export { colors, typography, spacing, radius, stroke, icon } from "@repo/tokens";
 export { getFontFamily } from "./typography/getFontFamily";
