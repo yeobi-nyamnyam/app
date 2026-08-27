@@ -6,7 +6,8 @@ export type { IconName }
 export type IconSize = keyof typeof iconSize
 
 /**
- * @param name 아이콘 종류: 'bulb' | 'link-horizontal' | 'puzzle'
+ * @param name 아이콘 종류: 'bulb' | 'link-horizontal' | 'puzzle' | 'chevron-left' | 'home' |
+ * 'recommend' | 'chat' | 'record' | 'profile'
  * @param size 아이콘이 차지하는 정사각형 영역 크기: 'xsmall' | 'small' | 'medium' | 'large' | 'xlarge' (optional, 기본값 'medium')
  * @param color 아이콘 선(stroke) 색상 (optional, 기본값 content/neutral/default)
  */
