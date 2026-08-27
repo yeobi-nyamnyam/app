@@ -20,6 +20,8 @@ const meta: Meta<typeof Icon> = {
         'chat',
         'record',
         'profile',
+        'camera',
+        'krw',
       ],
     },
     size: { control: 'select', options: ['xsmall', 'small', 'medium', 'large', 'xlarge'] },
@@ -75,6 +77,14 @@ export const Record: Story = {
 
 export const Profile: Story = {
   args: { name: 'profile' },
+}
+
+export const Camera: Story = {
+  args: { name: 'camera' },
+}
+
+export const Krw: Story = {
+  args: { name: 'krw' },
 }
 
 export const AllSizes: Story = {

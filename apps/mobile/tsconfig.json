@@ -5,6 +5,10 @@
   ],
   "compilerOptions": {
     "strict": true,
+    // expo/tsconfig.base가 moduleResolution을 "node"로 설정해서, 뒤에 오는
+    // 루트 tsconfig.json의 "Bundler" 설정이 병합 순서상 밀리는 경우가 있어 명시적으로 고정
+    // (workspace 패키지의 exports 필드 기반 resolution이 "node"에서는 깨짐).
+    "moduleResolution": "Bundler",
     "types": [
       "node"
     ],
