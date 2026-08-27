@@ -33,5 +33,7 @@ export { FormField } from "./components/FormField";
 export type { FormFieldProps } from "./components/FormField";
 export { Badge } from "./components/Badge";
 export type { BadgeProps, BadgeVariant } from "./components/Badge";
+export { MealCard } from "./components/MealCard";
+export type { MealCardProps, MealCardState } from "./components/MealCard";
 export { colors, typography, spacing, radius, stroke, icon } from "@repo/tokens";
 export { getFontFamily } from "./typography/getFontFamily";
