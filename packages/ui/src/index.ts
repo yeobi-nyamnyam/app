@@ -21,5 +21,7 @@ export { NavBar } from "./components/NavBar";
 export type { NavBarProps, NavBarItemKey } from "./components/NavBar";
 export { CheckBox } from "./components/CheckBox";
 export type { CheckBoxProps } from "./components/CheckBox";
+export { HeaderCard } from "./components/HeaderCard";
+export type { HeaderCardProps, HeaderCardState } from "./components/HeaderCard";
 export { colors, typography, spacing, radius, stroke, icon } from "@repo/tokens";
 export { getFontFamily } from "./typography/getFontFamily";
