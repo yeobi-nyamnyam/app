@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 import { useState } from 'react'
-import type { TextStyle, ViewStyle } from 'react-native'
+import type { KeyboardTypeOptions, TextStyle, ViewStyle } from 'react-native'
 import { StyleSheet, Text, TextInput, View } from 'react-native'
 import { colors, icon as iconSize, radius, spacing, stroke, typography } from '@repo/tokens'
 import { getFontFamily } from '../../typography/getFontFamily'
@@ -16,6 +16,7 @@ type FieldStateKey = 'default' | 'focused' | 'filled' | 'error' | 'disabled'
  * 입력창 아래에 이 메시지가 표시됨 (optional)
  * @param leadingIcon 입력창 좌측에 표시할 24x24 아이콘 (optional)
  * @param tailingIcon 입력창 우측에 표시할 24x24 아이콘 (optional)
+ * @param keyboardType 표시할 키보드 종류, RN TextInput의 keyboardType 그대로 (optional, 기본값 'default')
  */
 export interface TextFieldProps {
   value: string
@@ -25,6 +26,7 @@ export interface TextFieldProps {
   error?: string
   leadingIcon?: ReactNode
   tailingIcon?: ReactNode
+  keyboardType?: KeyboardTypeOptions
 }
 
 const containerVariants: Record<FieldStateKey, ViewStyle> = {
@@ -71,6 +73,7 @@ export const TextField = ({
   error,
   leadingIcon,
   tailingIcon,
+  keyboardType = 'default',
 }: TextFieldProps) => {
   const [isFocused, setIsFocused] = useState(false)
 
@@ -94,6 +97,7 @@ export const TextField = ({
           onChangeText={onChangeText}
           placeholder={placeholder}
           placeholderTextColor={colors.content.neutral.subtlest}
+          keyboardType={keyboardType}
           editable={!disabled}
           onFocus={() => setIsFocused(true)}
           onBlur={() => setIsFocused(false)}

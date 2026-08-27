@@ -21,6 +21,8 @@ export { NavBar } from "./components/NavBar";
 export type { NavBarProps, NavBarItemKey } from "./components/NavBar";
 export { CheckBox } from "./components/CheckBox";
 export type { CheckBoxProps } from "./components/CheckBox";
+export { Switch } from "./components/Switch";
+export type { SwitchProps } from "./components/Switch";
 export { CTACard } from "./components/CTACard";
 export type { CTACardProps } from "./components/CTACard";
 export { UnderlineTabs } from "./components/UnderlineTabs";

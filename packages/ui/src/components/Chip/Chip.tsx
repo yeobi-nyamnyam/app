@@ -92,6 +92,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+    minWidth: 70,
     paddingHorizontal: spacing[12],
     paddingVertical: spacing[8],
     borderRadius: radius.full,

@@ -1,19 +1,19 @@
-import { useMemo } from "react";
-import { Alert, ScrollView, StyleSheet } from "react-native";
+import { Alert, StyleSheet, View } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useMutation, useQuery } from "@apollo/client/react";
-import { Header, spacing } from "@repo/ui";
-import { CreateMealLogDocument, MealSlotDocument } from "@repo/types";
+import { useMutation } from "@apollo/client/react";
+import { Header, NavBar, colors, type NavBarItemKey } from "@repo/ui";
+import { CreateMealLogDocument } from "@repo/types";
 
 import { RecordForm, type RecordFormValues, type MealLogCategory } from "@/components/RecordForm";
 
 type RecordSource = "home" | "recommend" | "chat" | "record";
 
 /**
- * 소비 기록 폼 (F6, F6-1). tripId는 필수, mealSlotId가 있으면 끼니 슬롯에 연결된
- * 기록으로 취급한다 (F6-4 캐스케이드 확정 RPC 연결 전까지 저장은 비활성화).
- * preset* 파라미터는 진입 경로(F6-1, home/recommend/chat)에서 자동채움할 값이다.
+ * 소비 기록 폼 (F6, F6-1). tripId는 필수. 끼니 소비 토글이 켜진 기록(식비)은
+ * 끼니 슬롯 연결·캐스케이드 확정(F6-4)이 붙기 전까지 저장이 비활성화된다
+ * (RecordForm 참고). preset* 파라미터는 진입 경로(F6-1, home/recommend/chat)에서
+ * 자동채움할 값이다.
  */
 export default function RecordNewScreen() {
   const insets = useSafeAreaInsets();
@@ -28,21 +28,6 @@ export default function RecordNewScreen() {
   }>();
 
   const source: RecordSource = params.source ?? "record";
-
-  const { data: mealSlotData } = useQuery(MealSlotDocument, {
-    variables: { id: params.mealSlotId ?? "" },
-    skip: !params.mealSlotId,
-  });
-
-  const mealSlot = mealSlotData?.meal_slotsByPk;
-  const mealSlotContext = useMemo(() => {
-    if (!mealSlot) return undefined;
-    return {
-      date: mealSlot.date,
-      mealType: mealSlot.meal_type,
-      availableAmount: mealSlot.budget_amount + mealSlot.carried_over_amount,
-    };
-  }, [mealSlot]);
 
   const [createMealLog, { loading: submitting }] = useMutation(CreateMealLogDocument);
 
@@ -66,28 +51,41 @@ export default function RecordNewScreen() {
     }
   };
 
+  const handleNavChange = (key: NavBarItemKey) => {
+    if (key === "home") {
+      router.push("/");
+      return;
+    }
+    if (key === "record") {
+      router.push("/record");
+      return;
+    }
+    Alert.alert("준비 중", "아직 구현되지 않은 탭이에요.");
+  };
+
   return (
-    <>
-      <Header title="소비 기록" topInset={insets.top} onBackPress={() => router.back()} />
-      <ScrollView contentContainerStyle={styles.content}>
-        <RecordForm
-          mealSlot={mealSlotContext}
-          submitting={submitting}
-          initialValues={{
-            category: params.presetCategory,
-            storeName: params.presetStoreName,
-            storeAddress: params.presetStoreAddress,
-            amount: params.presetAmount,
-          }}
-          onSubmit={handleSubmit}
-        />
-      </ScrollView>
-    </>
+    <View style={styles.screen}>
+      <Header title="소비 기록 작성" topInset={insets.top} onBackPress={() => router.back()} />
+      <RecordForm
+        submitting={submitting}
+        initialValues={{
+          category: params.presetCategory,
+          storeName: params.presetStoreName,
+          storeAddress: params.presetStoreAddress,
+          amount: params.presetAmount,
+        }}
+        onSubmit={handleSubmit}
+      />
+      <View style={{ paddingBottom: insets.bottom }}>
+        <NavBar active="record" onChange={handleNavChange} />
+      </View>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  content: {
-    padding: spacing[16],
+  screen: {
+    flex: 1,
+    backgroundColor: colors.surface.neutral.default,
   },
 });
