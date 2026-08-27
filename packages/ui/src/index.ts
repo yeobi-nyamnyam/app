@@ -37,5 +37,11 @@ export { MealCard } from "./components/MealCard";
 export type { MealCardProps, MealCardState } from "./components/MealCard";
 export { DayCard } from "./components/DayCard";
 export type { DayCardProps } from "./components/DayCard";
+export { DayWeightSelector } from "./components/DayWeightSelector";
+export type {
+  DayWeightSelectorProps,
+  DayWeightMeal,
+  MealWeight,
+} from "./components/DayWeightSelector";
 export { colors, typography, spacing, radius, stroke, icon } from "@repo/tokens";
 export { getFontFamily } from "./typography/getFontFamily";

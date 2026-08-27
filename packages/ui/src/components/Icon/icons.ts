@@ -3,6 +3,8 @@ export type IconName =
   | 'link-horizontal'
   | 'puzzle'
   | 'chevron-left'
+  | 'chevron-down'
+  | 'chevron-up'
   | 'home'
   | 'recommend'
   | 'chat'
@@ -38,6 +40,17 @@ export const icons: Record<IconName, IconDefinition> = {
     width: 24,
     height: 24,
     d: 'M14 16L10 12L14 8',
+  },
+  // chevron-left(꼭짓점 왼쪽 기준)을 중심(12,12) 기준으로 90도 회전한 좌표
+  'chevron-down': {
+    width: 24,
+    height: 24,
+    d: 'M16 10L12 14L8 10',
+  },
+  'chevron-up': {
+    width: 24,
+    height: 24,
+    d: 'M8 14L12 10L16 14',
   },
   home: {
     width: 24,
