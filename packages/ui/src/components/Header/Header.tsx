@@ -43,8 +43,8 @@ export const Header = ({
   topInset = 0,
 }: HeaderProps) => {
   return (
-    <View style={[styles.container, { paddingTop: spacing[100] + topInset }]}>
-      <Pressable style={styles.leading} onPress={onBackPress} hitSlop={spacing[200]}>
+    <View style={[styles.container, { paddingTop: spacing[4] + topInset }]}>
+      <Pressable style={styles.leading} onPress={onBackPress} hitSlop={spacing[8]}>
         <Icon name="chevron-left" size="medium" />
       </Pressable>
       <Text style={[styles.title, titleAlignVariants[textAlign]]} numberOfLines={1}>
@@ -67,7 +67,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     width: '100%',
     backgroundColor: colors.surface.neutral.default,
-    paddingBottom: spacing[100],
+    paddingBottom: spacing[4],
   },
   leading: {
     width: iconSize.xlarge,
@@ -93,7 +93,7 @@ const styles = StyleSheet.create({
     minWidth: iconSize.xlarge,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingRight: spacing[400],
+    paddingRight: spacing[16],
   },
   tailingText: {
     fontFamily: typography.fontFamily,

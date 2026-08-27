@@ -79,12 +79,12 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface.neutral.default,
   },
   scrollContent: {
-    paddingHorizontal: spacing[400],
-    paddingTop: spacing[600],
-    gap: spacing[400],
+    paddingHorizontal: spacing[16],
+    paddingTop: spacing[24],
+    gap: spacing[16],
   },
   intro: {
-    gap: spacing[100],
+    gap: spacing[4],
   },
   introTitle: {
     fontFamily: typography.fontFamily,
@@ -102,6 +102,6 @@ const styles = StyleSheet.create({
     color: colors.content.neutral.subtlest,
   },
   list: {
-    gap: spacing[200],
+    gap: spacing[8],
   },
 });

@@ -62,7 +62,7 @@ const FONT_WEIGHT_NUMERIC: Record<string, string> = {
 const STROKE_KEY_MAP: Record<string, string> = {
   Border: 'default',
   'Focus Ring': 'focusRing',
-  'Border 05': 'hairline',
+  'Border 0-5': 'hairline',
 }
 
 type TokenTree = { [key: string]: TokenTree | TokenLeaf }
@@ -215,10 +215,10 @@ function buildFlatNumberGroup(
 }
 
 function toSpacingKey(figmaKey: string): string {
-  if (/^\d+$/.test(figmaKey)) return String(Number(figmaKey)) // "050" -> "50"
-  const match = /^Negative (\d+)$/.exec(figmaKey)
-  if (match) return `negative${match[1]}`
-  throw new Error(`Unexpected spacing key: "${figmaKey}"`)
+  // Figma's Spacing scale is now named "Gap N", where N is the px value itself.
+  const value = /^Gap (\d+)$/.exec(figmaKey)?.[1]
+  if (!value) throw new Error(`Unexpected spacing key: "${figmaKey}"`)
+  return value
 }
 
 function toRadiusKey(figmaKey: string): string {

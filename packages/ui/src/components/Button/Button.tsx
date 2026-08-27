@@ -92,8 +92,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: spacing[600],
-    gap: spacing[200],
+    paddingHorizontal: spacing[24],
+    gap: spacing[8],
   },
   icon: {
     width: iconSize.small,

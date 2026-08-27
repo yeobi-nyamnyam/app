@@ -19,7 +19,7 @@ export interface FooterProps {
 
 export const Footer = ({ label = '확인', disabled = false, onPress, bottomInset = 0 }: FooterProps) => {
   return (
-    <View style={[styles.container, { paddingBottom: spacing[300] + bottomInset }]}>
+    <View style={[styles.container, { paddingBottom: spacing[12] + bottomInset }]}>
       <Button label={label} variant="primary" disabled={disabled} onPress={onPress} />
     </View>
   )
@@ -31,7 +31,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface.neutral.default,
     borderTopWidth: stroke.default,
     borderTopColor: colors.border.neutral.subtle,
-    paddingHorizontal: spacing[400],
-    paddingTop: spacing[300],
+    paddingHorizontal: spacing[16],
+    paddingTop: spacing[12],
   },
 })

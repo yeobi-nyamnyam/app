@@ -147,7 +147,7 @@ export const Splash = ({ onFinish }: SplashProps) => {
               )
             })}
 
-            <View style={{ paddingHorizontal: TITLE_LEFT * scale, gap: spacing[200] * scale }}>
+            <View style={{ paddingHorizontal: TITLE_LEFT * scale, gap: spacing[8] * scale }}>
               {TIP_ROWS.map((row) => (
                 <ListRow key={row.title} icon={<Icon name={row.icon} />} title={row.title} />
               ))}
@@ -190,7 +190,7 @@ const styles = StyleSheet.create({
   title: {
     position: 'absolute',
     alignItems: 'center',
-    gap: spacing[100],
+    gap: spacing[4],
   },
   titleText: {
     fontFamily: 'WILDgag-Bold',

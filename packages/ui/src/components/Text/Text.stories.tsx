@@ -72,7 +72,7 @@ const allVariants: TextVariant[] = [
 
 export const AllVariants: Story = {
   render: () => (
-    <View style={{ gap: spacing[200] }}>
+    <View style={{ gap: spacing[8] }}>
       {allVariants.map((variant) => (
         <Text key={variant} variant={variant}>
           {variant}
@@ -94,7 +94,7 @@ const allColors: TextColor[] = [
 
 export const Colors: Story = {
   render: () => (
-    <View style={{ gap: spacing[200] }}>
+    <View style={{ gap: spacing[8] }}>
       {allColors.map((color) => (
         <Text key={color} color={color}>
           {color}
