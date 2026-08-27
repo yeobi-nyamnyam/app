@@ -11,4 +11,6 @@ export type {
   ListRowTitleAlign,
   ListRowTitleWeight,
 } from "./components/ListRow";
+export { Character } from "./components/Character";
+export type { CharacterProps, CharacterShadow, CharacterVariant } from "./components/Character";
 export { colors, typography, spacing, radius, stroke, icon } from "@repo/tokens";
