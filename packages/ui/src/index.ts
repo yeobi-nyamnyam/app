@@ -27,5 +27,7 @@ export { TextField } from "./components/TextField";
 export type { TextFieldProps } from "./components/TextField";
 export { Chip } from "./components/Chip";
 export type { ChipProps, ChipWidth } from "./components/Chip";
+export { FormField } from "./components/FormField";
+export type { FormFieldProps } from "./components/FormField";
 export { colors, typography, spacing, radius, stroke, icon } from "@repo/tokens";
 export { getFontFamily } from "./typography/getFontFamily";
