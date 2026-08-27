@@ -20,15 +20,15 @@ export interface ButtonProps {
   onPress?: () => void
 }
 
-type StateKey = 'default' | 'pressed' | 'disabled'
-
-const stateKeyOf = (disabled: boolean, pressed: boolean): StateKey =>
-  disabled ? 'disabled' : pressed ? 'pressed' : 'default'
+// 이 Button은 누르는 즉시 동작이 끝나고 다른 화면/상태로 넘어가는 "일회성 액션"
+// 버튼이라, 눌렀다는 시각 피드백(색 변화)을 따로 주지 않고 항상 default 모양을
+// 유지한다. 계속 선택된 상태를 보여줘야 하는 버튼(예: 토글)은 이 컴포넌트가 아니라
+// 별도 컴포넌트로 다뤄야 한다.
+type StateKey = 'default' | 'disabled'
 
 const containerVariants: Record<ButtonVariant, Record<StateKey, ViewStyle>> = {
   primary: {
     default: { backgroundColor: colors.surface.primary.default },
-    pressed: { backgroundColor: colors.surface.primary.active },
     disabled: { backgroundColor: colors.surface.primary.disabled },
   },
   outline: {
@@ -36,11 +36,6 @@ const containerVariants: Record<ButtonVariant, Record<StateKey, ViewStyle>> = {
       backgroundColor: 'transparent',
       borderWidth: stroke.default,
       borderColor: colors.border.primary.default,
-    },
-    pressed: {
-      backgroundColor: 'transparent',
-      borderWidth: stroke.focusRing,
-      borderColor: colors.border.primary.bold,
     },
     disabled: {
       backgroundColor: 'transparent',
@@ -53,12 +48,10 @@ const containerVariants: Record<ButtonVariant, Record<StateKey, ViewStyle>> = {
 const labelVariants: Record<ButtonVariant, Record<StateKey, TextStyle>> = {
   primary: {
     default: { color: colors.content.neutral.inverse },
-    pressed: { color: colors.content.neutral.inverse },
     disabled: { color: colors.content.neutral.disabled },
   },
   outline: {
     default: { color: colors.content.neutral.default },
-    pressed: { color: colors.content.neutral.default },
     disabled: { color: colors.content.neutral.disabled },
   },
 }
@@ -70,17 +63,13 @@ export const Button = ({
   icon,
   onPress,
 }: ButtonProps) => {
+  const stateKey: StateKey = disabled ? 'disabled' : 'default'
   return (
     <Pressable onPress={disabled ? undefined : onPress} disabled={disabled}>
-      {({ pressed }) => {
-        const stateKey = stateKeyOf(disabled, pressed)
-        return (
-          <View style={[styles.container, containerVariants[variant][stateKey]]}>
-            {variant === 'primary' && icon ? <View style={styles.icon}>{icon}</View> : null}
-            <Text style={[styles.label, labelVariants[variant][stateKey]]}>{label}</Text>
-          </View>
-        )
-      }}
+      <View style={[styles.container, containerVariants[variant][stateKey]]}>
+        {variant === 'primary' && icon ? <View style={styles.icon}>{icon}</View> : null}
+        <Text style={[styles.label, labelVariants[variant][stateKey]]}>{label}</Text>
+      </View>
     </Pressable>
   )
 }

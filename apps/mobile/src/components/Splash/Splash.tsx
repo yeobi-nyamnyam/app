@@ -18,7 +18,7 @@ const HOLD_DURATION = 1500
 
 const TITLE_TOP_START = 351
 const TITLE_TOP_DRAFT = 231
-const TITLE_LEFT = 36
+const TITLE_LEFT = spacing[36] // Figma 좌측 여백과 값이 같아 토큰을 그대로 사용
 const TITLE_WIDTH = 330
 
 const CONTENT_TOP = 392

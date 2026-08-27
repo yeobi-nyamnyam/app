@@ -2,7 +2,17 @@ import { useEffect, useRef, useState } from "react";
 import { Animated, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
-import { Button, Character, ListRow, colors, radius, spacing, stroke, typography } from "@repo/ui";
+import {
+  Button,
+  Character,
+  ListRow,
+  colors,
+  getFontFamily,
+  radius,
+  spacing,
+  stroke,
+  typography,
+} from "@repo/ui";
 import type { CharacterVariant } from "@repo/ui";
 
 import { BrandIcon } from "@/components/BrandIcon";
@@ -13,9 +23,10 @@ type ScreenStatus = "idle" | "logging-in" | "error";
 
 const CHARACTER_VARIANTS: CharacterVariant[] = ["apricot", "aqua", "sky", "slate", "coral"];
 
-// spacing 토큰의 Gap 스케일이 1~36px로 재설계되면서 이 값(구 spacing[2400], 96px)에
-// 대응하는 토큰이 없어짐 — 토큰이 커버할 때까지 로컬 상수로 유지.
-const HERO_MARGIN_TOP = 96;
+// Figma 기준(402 기준 프레임) 정확한 위치값. 토큰 스케일에 딱 맞는 값이 없어 리터럴로 둠
+// (Splash 컴포넌트의 TITLE_TOP_START 등과 동일한 패턴)
+const HERO_TOP_OFFSET = 78; // 상태바 바로 아래부터 "여비냠냠" 타이틀까지 여백
+const HERO_TO_CHARACTERS_GAP = 22; // 타이틀 블록 하단 ~ 캐릭터 줄 상단
 
 export default function LoginScreen() {
   const insets = useSafeAreaInsets();
@@ -70,7 +81,7 @@ export default function LoginScreen() {
     return (
       <View style={[styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
         <View style={styles.centeredContent}>
-          <View style={styles.loggingInText}>
+          <View>
             <Text style={styles.loggingInTitle}>인증 중입니다</Text>
             <Text style={styles.loggingInSubtitle}>잠시만 기다려주세요</Text>
           </View>
@@ -81,7 +92,13 @@ export default function LoginScreen() {
   }
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
+    <View
+      style={[
+        styles.container,
+        styles.idlePadding,
+        { paddingTop: insets.top, paddingBottom: insets.bottom },
+      ]}
+    >
       <View style={styles.hero}>
         <Text style={styles.title}>여비냠냠</Text>
         <Text style={styles.subtitle}>
@@ -151,10 +168,12 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.surface.neutral.default,
+  },
+  idlePadding: {
     paddingHorizontal: spacing[36],
   },
   hero: {
-    marginTop: HERO_MARGIN_TOP,
+    marginTop: HERO_TOP_OFFSET,
     alignItems: "center",
     gap: spacing[8],
   },
@@ -173,7 +192,7 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   characters: {
-    marginTop: spacing[24],
+    marginTop: HERO_TO_CHARACTERS_GAP,
     flexDirection: "row",
     justifyContent: "center",
     gap: spacing[4],
@@ -183,7 +202,6 @@ const styles = StyleSheet.create({
   },
   buttons: {
     gap: spacing[12],
-    paddingBottom: spacing[12],
   },
   footnote: {
     fontFamily: typography.fontFamily,
@@ -196,17 +214,17 @@ const styles = StyleSheet.create({
   centeredContent: {
     flex: 1,
     justifyContent: "center",
+    paddingHorizontal: spacing[16],
     gap: spacing[24],
   },
   errorCard: {
     borderWidth: stroke.default,
     borderColor: colors.border.neutral.default,
-    borderRadius: radius.full,
+    borderRadius: radius[23],
     padding: spacing[16],
-    gap: spacing[4],
   },
   errorTitle: {
-    fontFamily: typography.fontFamily,
+    fontFamily: getFontFamily(typography.title3Emphasized.fontWeight),
     fontSize: typography.title3Emphasized.fontSize,
     lineHeight: typography.title3Emphasized.lineHeight,
     letterSpacing: typography.title3Emphasized.letterSpacing,
@@ -222,11 +240,8 @@ const styles = StyleSheet.create({
     color: colors.content.neutral.subtlest,
     textAlign: "center",
   },
-  loggingInText: {
-    gap: spacing[4],
-  },
   loggingInTitle: {
-    fontFamily: typography.fontFamily,
+    fontFamily: getFontFamily(typography.title3Emphasized.fontWeight),
     fontSize: typography.title3Emphasized.fontSize,
     lineHeight: typography.title3Emphasized.lineHeight,
     letterSpacing: typography.title3Emphasized.letterSpacing,

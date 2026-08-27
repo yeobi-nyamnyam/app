@@ -1,7 +1,8 @@
 import type { ReactNode } from 'react'
 import type { TextStyle } from 'react-native'
-import { StyleSheet, Text as RNText } from 'react-native'
+import { Text as RNText } from 'react-native'
 import { colors, typography } from '@repo/tokens'
+import { getFontFamily } from '../../typography/getFontFamily'
 
 export type TextVariant = Exclude<keyof typeof typography, 'fontFamily'>
 
@@ -32,21 +33,26 @@ export interface TextProps {
   numberOfLines?: number
 }
 
+const withFontFamily = (variant: TextStyle): TextStyle => ({
+  ...variant,
+  fontFamily: getFontFamily(variant.fontWeight as string),
+})
+
 const typographyVariants: Record<TextVariant, TextStyle> = {
-  title1Bold: typography.title1Bold,
-  title2Bold: typography.title2Bold,
-  title3Regular: typography.title3Regular,
-  title3Emphasized: typography.title3Emphasized,
-  headlineRegular: typography.headlineRegular,
-  headlineEmphasized: typography.headlineEmphasized,
-  bodyRegular: typography.bodyRegular,
-  bodyEmphasized: typography.bodyEmphasized,
-  calloutRegular: typography.calloutRegular,
-  calloutEmphasized: typography.calloutEmphasized,
-  subheadlineRegular: typography.subheadlineRegular,
-  subheadlineEmphasized: typography.subheadlineEmphasized,
-  footnoteRegular: typography.footnoteRegular,
-  footnoteEmphasized: typography.footnoteEmphasized,
+  title1Bold: withFontFamily(typography.title1Bold),
+  title2Bold: withFontFamily(typography.title2Bold),
+  title3Regular: withFontFamily(typography.title3Regular),
+  title3Emphasized: withFontFamily(typography.title3Emphasized),
+  headlineRegular: withFontFamily(typography.headlineRegular),
+  headlineEmphasized: withFontFamily(typography.headlineEmphasized),
+  bodyRegular: withFontFamily(typography.bodyRegular),
+  bodyEmphasized: withFontFamily(typography.bodyEmphasized),
+  calloutRegular: withFontFamily(typography.calloutRegular),
+  calloutEmphasized: withFontFamily(typography.calloutEmphasized),
+  subheadlineRegular: withFontFamily(typography.subheadlineRegular),
+  subheadlineEmphasized: withFontFamily(typography.subheadlineEmphasized),
+  footnoteRegular: withFontFamily(typography.footnoteRegular),
+  footnoteEmphasized: withFontFamily(typography.footnoteEmphasized),
 }
 
 const colorVariants: Record<TextColor, TextStyle> = {
@@ -68,16 +74,10 @@ export const Text = ({
 }: TextProps) => {
   return (
     <RNText
-      style={[styles.base, typographyVariants[variant], colorVariants[color]]}
+      style={[typographyVariants[variant], colorVariants[color]]}
       numberOfLines={numberOfLines}
     >
       {children}
     </RNText>
   )
 }
-
-const styles = StyleSheet.create({
-  base: {
-    fontFamily: typography.fontFamily,
-  },
-})

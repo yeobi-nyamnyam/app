@@ -1,6 +1,6 @@
 import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Button, colors, radius, spacing, stroke, typography } from "@repo/ui";
+import { Button, colors, getFontFamily, radius, spacing, stroke, typography } from "@repo/ui";
 
 /**
  * @param visible 모달 노출 여부: true | false
@@ -49,7 +49,7 @@ const styles = StyleSheet.create({
     maxHeight: "70%",
   },
   title: {
-    fontFamily: typography.fontFamily,
+    fontFamily: getFontFamily(typography.title3Emphasized.fontWeight),
     fontSize: typography.title3Emphasized.fontSize,
     lineHeight: typography.title3Emphasized.lineHeight,
     letterSpacing: typography.title3Emphasized.letterSpacing,

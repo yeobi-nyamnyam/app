@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
 import { router } from "expo-router";
-import { CheckBox, Footer, Header, ListRow, colors, spacing, typography } from "@repo/ui";
+import { CheckBox, Footer, Header, ListRow, colors, getFontFamily, spacing, typography } from "@repo/ui";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { TermsModal } from "@/components/TermsModal";
@@ -49,7 +49,7 @@ export default function SignUpTermsScreen() {
     <View style={styles.container}>
       <Header title="약관 동의" onBackPress={() => supabase.auth.signOut()} topInset={insets.top} />
       <ScrollView contentContainerStyle={styles.scrollContent}>
-        <View style={styles.intro}>
+        <View>
           <Text style={styles.introTitle}>약관에 동의해주세요</Text>
           <Text style={styles.introSubtitle}>서비스를 이용하기 위해 약관에 동의해야 합니다</Text>
         </View>
@@ -83,11 +83,8 @@ const styles = StyleSheet.create({
     paddingTop: spacing[24],
     gap: spacing[16],
   },
-  intro: {
-    gap: spacing[4],
-  },
   introTitle: {
-    fontFamily: typography.fontFamily,
+    fontFamily: getFontFamily(typography.title3Emphasized.fontWeight),
     fontSize: typography.title3Emphasized.fontSize,
     lineHeight: typography.title3Emphasized.lineHeight,
     letterSpacing: typography.title3Emphasized.letterSpacing,
