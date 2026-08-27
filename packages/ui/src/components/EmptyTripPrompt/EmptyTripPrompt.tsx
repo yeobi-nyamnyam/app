@@ -1,16 +1,18 @@
-import { Pressable, StyleSheet, Text as RNText, View } from "react-native";
-import { Button, Text, colors, spacing, typography } from "@repo/ui";
-
-import { EmptyTripIllustration } from "@/components/EmptyTripIllustration";
+import { Pressable, StyleSheet, Text as RNText, View } from 'react-native'
+import { colors, spacing, typography } from '@repo/tokens'
+import { Button } from '../Button'
+import { Text } from '../Text'
+import { EmptyTripIllustration } from '../EmptyTripIllustration'
 
 /**
- * 진행 중인 여행이 없을 때 기록 탭에 보여주는 안내 (Figma "spent-write (empty)", 743:20870).
+ * 진행 중인 여행이 없을 때 보여주는 공용 빈 상태 화면 (Figma "spent-write (empty)", 743:20870).
+ * 기록뿐 아니라 여행이 필요한 모든 기능(추천/채팅 등)의 빈 상태에서 재사용한다.
  * @param onCreateTrip "첫 여행 만들기" 버튼을 눌렀을 때 발생하는 event 명시
  * @param onLoadPastTrip "과거 여행 불러오기"를 눌렀을 때 발생하는 event 명시
  */
 export interface EmptyTripPromptProps {
-  onCreateTrip?: () => void;
-  onLoadPastTrip?: () => void;
+  onCreateTrip?: () => void
+  onLoadPastTrip?: () => void
 }
 
 export const EmptyTripPrompt = ({ onCreateTrip, onLoadPastTrip }: EmptyTripPromptProps) => {
@@ -28,22 +30,22 @@ export const EmptyTripPrompt = ({ onCreateTrip, onLoadPastTrip }: EmptyTripPromp
         </Pressable>
       </View>
     </View>
-  );
-};
+  )
+}
 
 const styles = StyleSheet.create({
   container: {
-    alignItems: "center",
+    alignItems: 'center',
   },
   textBlock: {
-    alignItems: "center",
+    alignItems: 'center',
     gap: spacing[2],
     paddingTop: spacing[16],
     paddingHorizontal: spacing[16],
   },
   actions: {
-    width: "100%",
-    alignItems: "center",
+    width: '100%',
+    alignItems: 'center',
     gap: spacing[16],
     paddingTop: spacing[26],
     paddingHorizontal: spacing[16],
@@ -56,4 +58,4 @@ const styles = StyleSheet.create({
     fontWeight: typography.bodyRegular.fontWeight,
     color: colors.content.primary.default,
   },
-});
+})

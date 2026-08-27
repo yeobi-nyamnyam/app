@@ -25,4 +25,8 @@ export { CTACard } from "./components/CTACard";
 export type { CTACardProps } from "./components/CTACard";
 export { UnderlineTabs } from "./components/UnderlineTabs";
 export type { UnderlineTabsProps } from "./components/UnderlineTabs";
+export { EmptyTripIllustration } from "./components/EmptyTripIllustration";
+export type { EmptyTripIllustrationProps } from "./components/EmptyTripIllustration";
+export { EmptyTripPrompt } from "./components/EmptyTripPrompt";
+export type { EmptyTripPromptProps } from "./components/EmptyTripPrompt";
 export { colors, typography, spacing, radius, stroke, icon } from "@repo/tokens";

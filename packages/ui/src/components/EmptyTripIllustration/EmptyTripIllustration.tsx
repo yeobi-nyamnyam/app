@@ -1,12 +1,12 @@
-import Svg, { Path } from "react-native-svg";
+import Svg, { Path } from 'react-native-svg'
 
 /**
- * 진행 중인 여행이 없을 때(F6 spent-write-empty) 보여주는 일러스트.
- * Figma node 743:20870 > "Frame 39"의 벡터를 그대로 옮김.
+ * 진행 중인 여행이 없을 때 보여주는 마스코트 일러스트 (Figma node 743:20870, "Frame 39").
+ * 여행이 필요한 모든 기능(기록/추천/채팅 등)의 빈 상태 화면에서 공용으로 쓴다.
  * @param size 한 변의 픽셀 크기 (optional, 기본값 120)
  */
 export interface EmptyTripIllustrationProps {
-  size?: number;
+  size?: number
 }
 
 export const EmptyTripIllustration = ({ size = 120 }: EmptyTripIllustrationProps) => {
@@ -33,5 +33,5 @@ export const EmptyTripIllustration = ({ size = 120 }: EmptyTripIllustrationProps
         fill="black"
       />
     </Svg>
-  );
-};
+  )
+}
