@@ -13,4 +13,10 @@ export type {
 } from "./components/ListRow";
 export { Character } from "./components/Character";
 export type { CharacterProps, CharacterShadow, CharacterVariant } from "./components/Character";
+export { Header } from "./components/Header";
+export type { HeaderProps, HeaderTextAlign, HeaderTailing } from "./components/Header";
+export { Footer } from "./components/Footer";
+export type { FooterProps } from "./components/Footer";
+export { NavBar } from "./components/NavBar";
+export type { NavBarProps, NavBarItemKey } from "./components/NavBar";
 export { colors, typography, spacing, radius, stroke, icon } from "@repo/tokens";
