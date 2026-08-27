@@ -1,4 +1,4 @@
-import { StyleSheet, Text, View } from 'react-native'
+import { ScrollView, StyleSheet, Text, View } from 'react-native'
 import { colors, spacing, typography } from '@repo/tokens'
 import { getFontFamily } from '../../typography/getFontFamily'
 import { Chip } from '../Chip'
@@ -27,18 +27,23 @@ export const ChipList = ({ label, options, value, onChange, disabled = false }: 
   return (
     <View style={styles.container}>
       <Text style={styles.label}>{label}</Text>
-      <View style={styles.chipRow}>
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        style={styles.scrollArea}
+        contentContainerStyle={styles.chipRow}
+      >
         {options.map((option) => (
           <Chip
             key={option.value}
             text={option.label}
-            width="fill"
+            width="hug"
             active={value === option.value}
             disabled={disabled}
             onPress={() => onChange(option.value)}
           />
         ))}
-      </View>
+      </ScrollView>
     </View>
   )
 }
@@ -59,8 +64,10 @@ const styles = StyleSheet.create({
     fontWeight: typography.subheadlineEmphasized.fontWeight,
     color: colors.content.neutral.default,
   },
-  chipRow: {
+  scrollArea: {
     flex: 1,
+  },
+  chipRow: {
     flexDirection: 'row',
     gap: spacing[10],
   },
