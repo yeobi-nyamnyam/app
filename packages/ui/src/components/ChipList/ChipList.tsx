@@ -57,11 +57,11 @@ const styles = StyleSheet.create({
   },
   label: {
     flexShrink: 0,
-    fontFamily: getFontFamily(typography.bodyEmphasized.fontWeight),
-    fontSize: typography.bodyEmphasized.fontSize,
-    lineHeight: typography.bodyEmphasized.lineHeight,
-    letterSpacing: typography.bodyEmphasized.letterSpacing,
-    fontWeight: typography.bodyEmphasized.fontWeight,
+    fontFamily: getFontFamily(typography.subheadlineEmphasized.fontWeight),
+    fontSize: typography.subheadlineEmphasized.fontSize,
+    lineHeight: typography.subheadlineEmphasized.lineHeight,
+    letterSpacing: typography.subheadlineEmphasized.letterSpacing,
+    fontWeight: typography.subheadlineEmphasized.fontWeight,
     color: colors.content.neutral.default,
   },
   scrollArea: {
