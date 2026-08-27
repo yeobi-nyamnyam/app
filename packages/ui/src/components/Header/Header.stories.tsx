@@ -37,3 +37,9 @@ export const StartTitleWithTailingText: Story = {
     onTailingPress: action('onTailingPress'),
   },
 }
+
+export const WithTopInset: Story = {
+  args: {
+    topInset: 44,
+  },
+}

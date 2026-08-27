@@ -164,6 +164,9 @@ importers:
       '@repo/types':
         specifier: workspace:*
         version: link:../../packages/types
+      '@supabase/supabase-js':
+        specifier: ^2.112.3
+        version: 2.112.3
       dotenv:
         specifier: ^17.4.2
         version: 17.4.2
