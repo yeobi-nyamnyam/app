@@ -21,4 +21,8 @@ export { NavBar } from "./components/NavBar";
 export type { NavBarProps, NavBarItemKey } from "./components/NavBar";
 export { CheckBox } from "./components/CheckBox";
 export type { CheckBoxProps } from "./components/CheckBox";
+export { CTACard } from "./components/CTACard";
+export type { CTACardProps } from "./components/CTACard";
+export { UnderlineTabs } from "./components/UnderlineTabs";
+export type { UnderlineTabsProps } from "./components/UnderlineTabs";
 export { colors, typography, spacing, radius, stroke, icon } from "@repo/tokens";
