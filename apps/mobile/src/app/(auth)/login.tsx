@@ -7,7 +7,7 @@ import type { CharacterVariant } from "@repo/ui";
 
 import { BrandIcon } from "@/components/BrandIcon";
 import { signInWithGoogle, signInWithKakao } from "@/lib/auth";
-import { hasAgreedToSignUpTerms, isLikelyNewUser } from "@/lib/onboarding";
+import { hasAgreedToSignUpTerms } from "@/lib/onboarding";
 
 type ScreenStatus = "idle" | "logging-in" | "error";
 
@@ -27,11 +27,15 @@ export default function LoginScreen() {
         return;
       }
 
-      if (isLikelyNewUser(user) && !(await hasAgreedToSignUpTerms(user.id))) {
+      // "신규 유저"를 서버 데이터로 판별할 방법이 아직 없어서(약관 동의 이력을
+      // 저장할 컬럼이 없음), 대신 "이 기기가 이 계정의 약관 동의를 확인한 적이
+      // 있는지"만 본다. 뒤로가기로 약관 화면을 벗어나 동의를 안 마친 사람은
+      // 다시 로그인할 때마다 이 화면을 계속 다시 보게 된다 (완료 전까지).
+      if (!(await hasAgreedToSignUpTerms(user.id))) {
         router.replace("/(main)/sign-up-terms");
         return;
       }
-      // 기존 사용자는 (auth) 그룹의 세션 가드가 자동으로 (main)으로 이동시킴
+      // 이미 동의를 마친 사용자는 (auth) 그룹의 세션 가드가 자동으로 (main)으로 이동시킴
     } catch (error) {
       setErrorMessage(
         error instanceof Error
