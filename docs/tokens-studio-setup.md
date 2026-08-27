@@ -49,12 +49,30 @@ Tokens Studio 기본 내보내기 포맷은 `type`/`value` 키를 쓰는 자체 
 저장 후 **"Pull tokens"**를 눌러 현재 저장소에 커밋된 `tokens.json` 값을
 Tokens Studio 편집기로 먼저 불러오세요 (기존 값과 어긋난 상태로 덮어쓰는 것을 방지).
 
-## 5. 토큰 세트 구성
+## 5. 토큰 세트 구성 — Figma Variables/Styles에서 가져오기
 
-`tokens.json`의 최상위 키(`colors`, `typography`, `spacing`, `radius`, `stroke`,
-`icon`)와 정확히 이름이 일치하는 **Token Set**을 Tokens Studio에서 만들고,
-Sync 방식은 **Single file**로 설정하세요. 세트 이름이 다르면 생성된 JSON의 최상위
-키가 달라져 `build-tokens.ts`가 해당 카테고리를 인식하지 못합니다.
+값을 Tokens Studio 편집기에 직접 타이핑하지 말고, **Figma의 실제 Variables/Text
+Styles를 가져와서** 쓰세요 (화면에 적용된 값이 곧 소스가 되도록).
+
+1. `Tokens` 탭 하단 **`Styles & Variables`** 드롭다운 → **`Import variables`** →
+   나오는 목록에서 **`Import all`** (색상 + spacing/radius/stroke/icon 계열의
+   Figma Variable Collection을 전부 가져옵니다)
+2. 같은 드롭다운에서 **`Import styles`** → Figma Text Style을 가져옵니다
+   (타이포그래피 — 이건 fontFamily/fontWeight/fontSize/lineHeight/letterSpacing이
+   이미 스타일별로 합쳐진 합성 토큰이라, Variables만으로는 얻을 수 없는 형태입니다)
+3. 왼쪽 세트 목록에 새로 생기는 세트들(`Color Primitive/Light`, `Color Semantic/Light`,
+   `Font/Default`, `Size/Default`, `Text Leading/Default`, `Dynamic Type/Small`,
+   `Text styles` 등)을 **전부 체크(활성화)** 상태로 두세요. 타이포그래피 합성
+   토큰은 다른 세트의 값을 alias(`{Group.Path}`)로 참조하기 때문에, 일부만
+   체크 해제하면 참조가 끊겨 토큰에 빨간 경고가 뜹니다.
+4. 예전에 손으로 만든 레거시 세트(`colors`, `typography`, `spacing`, `radius`,
+   `stroke`, `icon`)가 남아있다면 삭제하세요 — 이제 안 씁니다.
+5. Sync 방식은 **Single file**로 (여러 세트가 `tokens.json` 하나에 합쳐짐).
+
+`build-tokens.ts`는 이 중 `Color Primitive/Light`, `Color Semantic/Light`,
+`Size/Default`, `Text styles` 4개만 읽습니다. 나머지(`Font/Default` 등)는 alias
+해석에 필요 없어 무시되지만, **Tokens Studio 편집기 자체의 참조가 깨지는 걸
+막으려면 체크 해제하지 마세요.**
 
 ## 6. 값 수정 & Push
 
@@ -71,9 +89,12 @@ Sync 방식은 **Single file**로 설정하세요. 세트 이름이 다르면 �
    `bot/tokens-sync` 브랜치로 후속 PR을 자동으로 엽니다
 3. 개발자가 생성물 PR을 리뷰 & 머지
 
-## 첫 실제 연동 시 확인할 것
+## Figma 쪽 이름이 바뀌면
 
-Tokens Studio 버전에 따라 dimension 값이 `"8px"`가 아니라 단위 없는 `"8"`로
-내려올 수 있습니다. 실제 연동 후 첫 PR의 `tokens.json` diff가 예상과 다르면
-(단위 누락, 필드명 차이 등) `packages/tokens/scripts/build-tokens.ts`의
-`parseDimension`/`parseLineHeight` 정규식을 실제 포맷에 맞게 조정해야 합니다.
+`build-tokens.ts`는 Figma 라벨(`Border 05`, `Radius 4-6`, `XLarge` 등)을
+컴포넌트 코드가 쓰는 키(`stroke.hairline`, `radius['4.6']`, `icon.xlarge`)로
+매핑합니다. Stroke 그룹처럼 이름 규칙이 기계적으로 변환되지 않는 곳은
+`STROKE_KEY_MAP`에 명시적으로 등록돼 있어서, Figma에서 새 stroke 토큰을
+추가하거나 이름을 바꾸면 스크립트가 (엉뚱한 값으로 조용히 매핑되는 대신)
+에러로 바로 실패합니다 — 그러면 `packages/tokens/scripts/build-tokens.ts`의
+해당 매핑 테이블에 새 이름을 추가해주면 됩니다.

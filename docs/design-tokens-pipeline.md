@@ -25,14 +25,25 @@ npm publish 단계는 없습니다. `packages/tokens`는 private workspace 패�
 
 ## 파일 구성
 
-- `packages/tokens/tokens.json` — Figma/Tokens Studio가 쓰는 DTCG 포맷 원본.
-  **이 파일이 실제 소스입니다.**
-- `packages/tokens/scripts/build-tokens.ts` — `tokens.json`을 파싱해
-  `src/tokens.ts`를 생성. 카테고리별 변환 규칙:
-  - `color`: 그대로 통과 (hex 문자열)
-  - `dimension`(spacing/radius/stroke/icon): `"8px"` → `8` (숫자, RN 단위 없는 dp)
-  - `typography`: `fontSize`/`letterSpacing`은 px 문자열 → 숫자, `lineHeight`는
-    px 문자열 또는 `fontSize` 대비 `%` 문자열 모두 지원해 px 숫자로 정규화
+- `packages/tokens/tokens.json` — Tokens Studio의 "Single file" 동기화 결과물.
+  **이 파일이 실제 소스입니다.** Figma Variables(색상/spacing/radius/stroke/icon)와
+  Text Styles(타이포그래피)를 각각 `Import variables`/`Import styles`로 가져온
+  세트가 그대로 커밋됩니다. Tokens Studio는 엄밀한 W3C DTCG를 따르지 않고 자체
+  `$type`(`fontWeights`, `number`, `letterSpacing` 등)과 `{Group.Path}` 형태의
+  alias 참조를 씁니다.
+- `packages/tokens/scripts/build-tokens.ts` — `tokens.json`에서 필요한 4개
+  세트만 읽어 `src/tokens.ts`를 생성:
+  - `Color Semantic/Light` (alias는 `Color Primitive/Light`로 해석) → `colors`
+  - `Text styles` (Figma Text Style 합성 토큰, alias는 세트 내부에서 해석) → `typography`
+  - `Size/Default`의 `Spacing`/`Radius`/`Stroke`/`Icon` 하위 그룹 →
+    `spacing`/`radius`/`stroke`/`icon`
+  - 그 외 세트(`Font/Default`, `Text Leading/Default`, `Dynamic Type/Small` 등)는
+    alias 해석에 필요하지 않아 무시됨
+  - Figma 쪽 라벨(`Border 05`, `Radius 4-6`, `XLarge` 등)을 기존 컴포넌트 코드가
+    쓰는 키 이름(`stroke.hairline`, `radius['4.6']`, `icon.xlarge`)으로 매핑 —
+    이 매핑 덕분에 Figma 네이밍이 바뀌어도 `packages/ui`의 컴포넌트 코드는
+    그대로 유지됨. 매핑에 없는 새 키가 나타나면 스크립트가 즉시 에러로 실패함
+    (`STROKE_KEY_MAP`, `FONT_WEIGHT_NUMERIC` 등)
 - `packages/tokens/src/tokens.ts` — **auto-generated, 직접 수정 금지**. 상단에
   주석으로 명시되어 있음. 로컬에서 다시 만들려면
   `pnpm --filter @repo/tokens build:tokens`

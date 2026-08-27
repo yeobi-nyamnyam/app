@@ -3,20 +3,6 @@
 
 export const colors = {
   content: {
-    neutral: {
-      default: '#424344',
-      subtle: '#6f7274',
-      subtlest: '#9da0a3',
-      disabled: '#b1b3b5',
-      inverse: '#f5f6f6',
-    },
-    primary: {
-      default: '#1f2c33',
-      subtle: '#0d5980',
-      subtlest: '#8dd7fb',
-      disabled: '#b2e4fd',
-      inverse: '#e6f6fe',
-    },
     error: {
       default: '#eb2032',
     },
@@ -26,38 +12,31 @@ export const colors = {
     success: {
       default: '#a5d911',
     },
-  },
-  border: {
     neutral: {
-      bold: '#b1b3b5',
-      default: '#d2d3d5',
-      subtle: '#e1e2e2',
+      default: '#424344',
+      subtle: '#6f7274',
+      subtlest: '#9da0a3',
+      disabled: '#b1b3b5',
+      inverse: '#f5f6f6',
     },
     primary: {
-      bold: '#0b94d9',
-      default: '#5ac4fa',
-      subtle: '#b2e4fd',
-    },
-    error: {
-      default: '#d61d2e',
-    },
-    warn: {
-      default: '#d9aa00',
-    },
-    success: {
-      default: '#96c50f',
+      subtlest: '#8dd7fb',
+      subtle: '#0d5980',
+      disabled: '#b2e4fd',
+      default: '#1f2c33',
+      inverse: '#e6f6fe',
     },
   },
   surface: {
     neutral: {
-      default: '#e1e2e2',
+      default: '#ffffff',
       subtle: '#f5f6f6',
-      disabled: '#d2d3d5',
+      disabled: '#e1e2e2',
     },
     primary: {
-      default: '#8dd7fb',
-      active: '#0d5980',
       disabled: '#e6f6fe',
+      active: '#0d5980',
+      default: '#8dd7fb',
     },
     error: {
       default: '#fde9eb',
@@ -67,6 +46,27 @@ export const colors = {
     },
     success: {
       default: '#f6fbe7',
+    },
+  },
+  border: {
+    neutral: {
+      bold: '#b1b3b5',
+      subtle: '#e1e2e2',
+      default: '#d2d3d5',
+    },
+    primary: {
+      bold: '#0b94d9',
+      subtle: '#b2e4fd',
+      default: '#5ac4fa',
+    },
+    error: {
+      default: '#d61d2e',
+    },
+    warn: {
+      default: '#d9aa00',
+    },
+    success: {
+      default: '#96c50f',
     },
   },
 } as const
@@ -175,11 +175,11 @@ export const spacing = {
   1600: 64,
   2400: 96,
   4000: 160,
+  negative300: -12,
+  negative600: -24,
+  negative400: -16,
   negative100: -4,
   negative200: -8,
-  negative300: -12,
-  negative400: -16,
-  negative600: -24,
 } as const
 
 export const radius = {
@@ -195,15 +195,15 @@ export const radius = {
 } as const
 
 export const stroke = {
-  hairline: 0.5,
   default: 1,
   focusRing: 2,
+  hairline: 0.5,
 } as const
 
 export const icon = {
-  xsmall: 16,
-  small: 20,
+  xlarge: 40,
   medium: 24,
   large: 32,
-  xlarge: 40,
+  xsmall: 16,
+  small: 20,
 } as const

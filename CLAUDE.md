@@ -128,6 +128,11 @@
 4. PR 템플릿(`.github/PULL_REQUEST_TEMPLATE.md`) 기준으로 자동 PR 생성
    - base 브랜치: `develop` (feature 브랜치 → `develop`)
    - 이슈 하나당 PR 하나 원칙
+   - **assignee**: PR을 만든 사람(작업자) 본인
+   - **reviewers**: GitHub 저장소 협업자(collaborators) 중 PR 작성자를 제외한
+     나머지 전원 (`gh api repos/:owner/:repo/collaborators`로 조회해서 지정)
+   - **milestone**: 별다른 지시가 없으면 `🚂 개발`
+   - **labels**: 연결된 이슈에 달린 라벨과 동일하게
 5. 사람이 PR 리뷰
 6. 사람이 머지 (Claude는 머지하지 않음)
 
