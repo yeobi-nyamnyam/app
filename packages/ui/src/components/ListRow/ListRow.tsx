@@ -19,6 +19,12 @@ const ALPHA_BACKGROUND = '#ffffff99'
  * @param titleAlign 제목 정렬: 'left' | 'center' (optional, 기본값 'left')
  * @param titleWeight 제목 굵기: 'regular' | 'semibold' (optional, 기본값 'regular')
  * @param onPress 행을 클릭할 때 발생하는 event 명시 (optional, 전달하면 눌렀을 때 반응하는 행이 됨)
+ * @param onTailingPress tailing 텍스트만 별도로 클릭할 때 발생하는 event 명시 (optional,
+ * 전달하면 tailing이 행 전체와 별개로 눌리는 영역이 됨, 예: "전문 보기" 링크)
+ *
+ * titleAlign이 'center'이고 icon이 있고 tailing이 없을 때는, icon과 같은 너비의 빈 공간을
+ * 우측에 자동으로 둬서 title이 icon 폭에 밀리지 않고 행 전체 기준으로 정중앙에 오게 한다
+ * (예: 로그인 화면의 "카카오로 시작하기" 버튼처럼 좌측 아이콘 + 완전히 중앙 정렬된 텍스트).
  */
 export interface ListRowProps {
   title: string
@@ -28,6 +34,7 @@ export interface ListRowProps {
   titleAlign?: ListRowTitleAlign
   titleWeight?: ListRowTitleWeight
   onPress?: () => void
+  onTailingPress?: () => void
 }
 
 const containerVariants: Record<ListRowBackground, ViewStyle> = {
@@ -63,18 +70,28 @@ export const ListRow = ({
   titleAlign = 'left',
   titleWeight = 'regular',
   onPress,
+  onTailingPress,
 }: ListRowProps) => {
+  const tailingText = tailing ? (
+    <Text style={styles.tailing} numberOfLines={1}>
+      {tailing}
+    </Text>
+  ) : null
+
+  const showCenterSpacer = titleAlign === 'center' && !!icon && !tailing
+
   const content = (
     <View style={[styles.container, containerVariants[backgroundColor]]}>
       <View style={styles.icon}>{icon}</View>
       <Text style={[styles.title, titleWeightVariants[titleWeight], titleAlignVariants[titleAlign]]}>
         {title}
       </Text>
-      {tailing ? (
-        <Text style={styles.tailing} numberOfLines={1}>
-          {tailing}
-        </Text>
-      ) : null}
+      {tailingText && onTailingPress ? (
+        <Pressable onPress={onTailingPress}>{tailingText}</Pressable>
+      ) : (
+        tailingText
+      )}
+      {showCenterSpacer ? <View style={styles.icon} /> : null}
     </View>
   )
 

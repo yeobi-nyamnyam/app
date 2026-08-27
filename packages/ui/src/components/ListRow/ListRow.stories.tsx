@@ -66,3 +66,22 @@ export const Pressable: Story = {
     onPress: action('onPress'),
   },
 }
+
+export const WhiteCenteredWithIcon: Story = {
+  args: {
+    backgroundColor: 'white',
+    titleAlign: 'center',
+    titleWeight: 'semibold',
+    title: '카카오로 시작하기',
+    icon: <Icon name="chat" />,
+  },
+}
+
+export const WithTailingPress: Story = {
+  args: {
+    backgroundColor: 'white',
+    tailing: '전문 보기',
+    onPress: action('onPress'),
+    onTailingPress: action('onTailingPress'),
+  },
+}

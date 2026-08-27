@@ -19,4 +19,6 @@ export { Footer } from "./components/Footer";
 export type { FooterProps } from "./components/Footer";
 export { NavBar } from "./components/NavBar";
 export type { NavBarProps, NavBarItemKey } from "./components/NavBar";
+export { CheckBox } from "./components/CheckBox";
+export type { CheckBoxProps } from "./components/CheckBox";
 export { colors, typography, spacing, radius, stroke, icon } from "@repo/tokens";
