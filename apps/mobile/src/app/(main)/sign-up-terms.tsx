@@ -47,7 +47,7 @@ export default function SignUpTermsScreen() {
 
   return (
     <View style={styles.container}>
-      <Header title="약관 동의" onBackPress={() => supabase.auth.signOut()} />
+      <Header title="약관 동의" onBackPress={() => supabase.auth.signOut()} topInset={insets.top} />
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <View style={styles.intro}>
           <Text style={styles.introTitle}>약관에 동의해주세요</Text>
