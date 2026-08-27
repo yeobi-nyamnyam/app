@@ -1,0 +1,39 @@
+mutation CreateMealLog(
+  $tripId: UUID!
+  $mealSlotId: UUID
+  $category: String!
+  $amount: Int!
+  $storeName: String
+  $storeAddress: String
+  $memo: String
+  $source: String!
+) {
+  insertIntomeal_logsCollection(
+    objects: [
+      {
+        trip_id: $tripId
+        meal_slot_id: $mealSlotId
+        category: $category
+        amount: $amount
+        store_name: $storeName
+        store_address: $storeAddress
+        memo: $memo
+        source: $source
+      }
+    ]
+  ) {
+    affectedCount
+    records {
+      id
+      trip_id
+      meal_slot_id
+      category
+      amount
+      store_name
+      store_address
+      memo
+      source
+      created_at
+    }
+  }
+}

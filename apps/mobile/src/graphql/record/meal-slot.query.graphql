@@ -1,0 +1,14 @@
+query MealSlot($id: UUID!) {
+  meal_slotsByPk(id: $id) {
+    id
+    trip_id
+    date
+    meal_type
+    weight_level
+    budget_amount
+    carried_over_amount
+    is_recorded
+    is_cascade_confirmed
+    recorded_amount
+  }
+}
