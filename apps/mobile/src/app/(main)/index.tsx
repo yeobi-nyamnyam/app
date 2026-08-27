@@ -48,7 +48,9 @@ function EmptyHome() {
       <View style={styles.emptyContent}>
         <EmptyTripPrompt
           onCreateTrip={() => router.push("/trip-new")}
-          onLoadPastTrip={() => Alert.alert("준비 중", "과거 여행 불러오기는 아직 준비 중이에요.")}
+          onLoadPastTrip={() =>
+            Alert.alert("준비 중", "과거 여행 불러오기는 아직 준비 중이에요.")
+          }
         />
       </View>
       <NavBar active="home" onChange={handleNavChange} />
