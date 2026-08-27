@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { Alert, Pressable, ScrollView, StyleSheet, View } from "react-native";
-import { router } from "expo-router";
+import { Redirect, router } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
   DayWeightSelector,
@@ -39,7 +39,17 @@ const handleNavChange = (key: NavBarItemKey) => {
 };
 
 export default function HomeScreen() {
-  return HAS_ACTIVE_TRIP ? <ActiveTripHome /> : <EmptyHome />;
+  const { trip } = useTripStore();
+
+  if (!HAS_ACTIVE_TRIP) {
+    return <EmptyHome />;
+  }
+  // F7(여행 자동 완료) 판정은 서버/RPC 몫이지만, 목데이터 단계에서는 오늘이
+  // 여행 종료일을 지났는지로만 임시 판별해서 완료 화면으로 보낸다.
+  if (MOCK_TODAY > trip.endDate) {
+    return <Redirect href="/trip-complete" />;
+  }
+  return <ActiveTripHome />;
 }
 
 function EmptyHome() {
