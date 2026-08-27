@@ -31,5 +31,7 @@ export { ChipList } from "./components/ChipList";
 export type { ChipListProps, ChipListOption } from "./components/ChipList";
 export { FormField } from "./components/FormField";
 export type { FormFieldProps } from "./components/FormField";
+export { Badge } from "./components/Badge";
+export type { BadgeProps, BadgeVariant } from "./components/Badge";
 export { colors, typography, spacing, radius, stroke, icon } from "@repo/tokens";
 export { getFontFamily } from "./typography/getFontFamily";
