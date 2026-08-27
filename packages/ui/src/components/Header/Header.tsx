@@ -2,6 +2,7 @@ import type { TextStyle } from 'react-native'
 import { Pressable, StyleSheet, Text, View } from 'react-native'
 import { colors, icon as iconSize, spacing, typography } from '@repo/tokens'
 import { Icon } from '../Icon'
+import { getFontFamily } from '../../typography/getFontFamily'
 
 export type HeaderTextAlign = 'center' | 'start'
 export type HeaderTailing = 'none' | 'text'
@@ -81,7 +82,7 @@ const styles = StyleSheet.create({
   },
   title: {
     flex: 1,
-    fontFamily: typography.fontFamily,
+    fontFamily: getFontFamily(typography.title2Bold.fontWeight),
     fontSize: typography.title2Bold.fontSize,
     lineHeight: typography.title2Bold.lineHeight,
     letterSpacing: typography.title2Bold.letterSpacing,
@@ -96,7 +97,7 @@ const styles = StyleSheet.create({
     paddingRight: spacing[16],
   },
   tailingText: {
-    fontFamily: typography.fontFamily,
+    fontFamily: getFontFamily(typography.bodyRegular.fontWeight),
     fontSize: typography.bodyRegular.fontSize,
     lineHeight: typography.bodyRegular.lineHeight,
     letterSpacing: typography.bodyRegular.letterSpacing,

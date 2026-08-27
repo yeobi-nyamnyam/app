@@ -39,6 +39,7 @@ const meta: Meta<typeof Text> = {
         'success',
       ] satisfies TextColor[],
     },
+    align: { control: 'radio', options: ['left', 'center'] },
   },
   args: {
     children: '텍스트입니다',
@@ -102,4 +103,32 @@ export const Colors: Story = {
       ))}
     </View>
   ),
+}
+
+export const AlignLeft: Story = {
+  args: {
+    align: 'left',
+    children: '여러 줄로 자연스럽게 줄바꿈되는 안내 문구입니다. 왼쪽 정렬 예시입니다.',
+  },
+  decorators: [
+    (Story) => (
+      <View style={{ width: 320 }}>
+        <Story />
+      </View>
+    ),
+  ],
+}
+
+export const AlignCenter: Story = {
+  args: {
+    align: 'center',
+    children: '여러 줄로 자연스럽게 줄바꿈되는 안내 문구입니다. 가운데 정렬 예시입니다.',
+  },
+  decorators: [
+    (Story) => (
+      <View style={{ width: 320 }}>
+        <Story />
+      </View>
+    ),
+  ],
 }

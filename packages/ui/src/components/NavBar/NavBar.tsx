@@ -1,6 +1,7 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native'
 import { colors, spacing, stroke, typography } from '@repo/tokens'
 import { Icon, type IconName } from '../Icon'
+import { getFontFamily } from '../../typography/getFontFamily'
 
 export type NavBarItemKey = 'home' | 'recommend' | 'chat' | 'record' | 'profile'
 
@@ -56,7 +57,7 @@ const styles = StyleSheet.create({
     paddingBottom: spacing[12],
   },
   label: {
-    fontFamily: typography.fontFamily,
+    fontFamily: getFontFamily(typography.subheadlineEmphasized.fontWeight),
     fontSize: typography.subheadlineEmphasized.fontSize,
     lineHeight: typography.subheadlineEmphasized.lineHeight,
     letterSpacing: typography.subheadlineEmphasized.letterSpacing,

@@ -2,6 +2,7 @@ import type { ReactNode } from 'react'
 import type { TextStyle, ViewStyle } from 'react-native'
 import { Pressable, StyleSheet, Text, View } from 'react-native'
 import { colors, icon as iconSize, radius, spacing, stroke, typography } from '@repo/tokens'
+import { getFontFamily } from '../../typography/getFontFamily'
 
 export type ListRowBackground = 'white' | 'alpha'
 export type ListRowTitleAlign = 'left' | 'center'
@@ -44,12 +45,14 @@ const containerVariants: Record<ListRowBackground, ViewStyle> = {
 
 const titleWeightVariants: Record<ListRowTitleWeight, TextStyle> = {
   regular: {
+    fontFamily: getFontFamily(typography.bodyRegular.fontWeight),
     fontSize: typography.bodyRegular.fontSize,
     lineHeight: typography.bodyRegular.lineHeight,
     letterSpacing: typography.bodyRegular.letterSpacing,
     fontWeight: typography.bodyRegular.fontWeight,
   },
   semibold: {
+    fontFamily: getFontFamily(typography.bodyEmphasized.fontWeight),
     fontSize: typography.bodyEmphasized.fontSize,
     lineHeight: typography.bodyEmphasized.lineHeight,
     letterSpacing: typography.bodyEmphasized.letterSpacing,
@@ -103,8 +106,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing[8],
-    padding: spacing[12],
-    borderRadius: radius.full,
+    padding: spacing[14],
+    borderRadius: radius[23],
     borderWidth: stroke.default,
     borderColor: colors.border.neutral.default,
     overflow: 'hidden',
@@ -117,12 +120,11 @@ const styles = StyleSheet.create({
   },
   title: {
     flex: 1,
-    fontFamily: typography.fontFamily,
     color: colors.content.neutral.default,
   },
   tailing: {
     flexShrink: 0,
-    fontFamily: typography.fontFamily,
+    fontFamily: getFontFamily(typography.calloutRegular.fontWeight),
     fontSize: typography.calloutRegular.fontSize,
     lineHeight: typography.calloutRegular.lineHeight,
     letterSpacing: typography.calloutRegular.letterSpacing,
