@@ -47,5 +47,7 @@ export { Notice } from "./components/Notice";
 export type { NoticeProps, NoticeVariant } from "./components/Notice";
 export { Alert } from "./components/Alert";
 export type { AlertProps, AlertVariant } from "./components/Alert";
+export { Track } from "./components/Track";
+export type { TrackProps } from "./components/Track";
 export { colors, typography, spacing, radius, stroke, icon } from "@repo/tokens";
 export { getFontFamily } from "./typography/getFontFamily";
