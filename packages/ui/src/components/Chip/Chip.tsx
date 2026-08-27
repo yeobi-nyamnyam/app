@@ -49,8 +49,11 @@ const textColorVariants: Record<StateKey, TextStyle> = {
   activeDisabled: { color: colors.content.neutral.subtlest },
 }
 
+// 'fill'은 Pressable(실제 flex 자식)에 적용한다. 가로로 나열된(row) 부모 안에서는
+// flexGrow가 남는 폭을 나눠 채우고, 세로(column) 부모 안에서는 alignSelf: 'stretch'가
+// 부모 너비만큼 늘려준다 — 부모의 flexDirection에 상관없이 두 속성을 함께 둬야 항상 채워진다.
 const widthVariants: Record<ChipWidth, ViewStyle> = {
-  fill: { width: '100%' },
+  fill: { flexGrow: 1, flexShrink: 1, flexBasis: 0, alignSelf: 'stretch' },
   hug: {},
 }
 
@@ -70,8 +73,12 @@ export const Chip = ({
       : 'inactive'
 
   return (
-    <Pressable onPress={disabled ? undefined : onPress} disabled={disabled}>
-      <View style={[styles.container, containerVariants[stateKey], widthVariants[width]]}>
+    <Pressable
+      onPress={disabled ? undefined : onPress}
+      disabled={disabled}
+      style={widthVariants[width]}
+    >
+      <View style={[styles.container, containerVariants[stateKey]]}>
         <Text style={[styles.text, textColorVariants[stateKey]]} numberOfLines={1}>
           {text}
         </Text>
