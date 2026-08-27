@@ -5,14 +5,11 @@ import { NavBar, colors, type NavBarItemKey } from "@repo/ui";
 import { deleteAccount } from "@/lib/account";
 import { supabase } from "@/lib/supabase";
 
-// TODO: F1(여행 생성)이 붙으면 실제 진행 중인 tripId로 교체
-const PLACEHOLDER_TRIP_ID = "00000000-0000-0000-0000-000000000000";
-
 export default function HomeScreen() {
   const handleNavChange = (key: NavBarItemKey) => {
     if (key === "home") return;
     if (key === "record") {
-      router.push(`/record/new?tripId=${PLACEHOLDER_TRIP_ID}`);
+      router.push("/record");
       return;
     }
     Alert.alert("준비 중", "아직 구현되지 않은 탭이에요.");
