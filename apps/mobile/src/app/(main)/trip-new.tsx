@@ -2,9 +2,19 @@ import { useMemo, useState } from "react";
 import { ScrollView, StyleSheet, View } from "react-native";
 import { router } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { ChipList, FormField, Footer, Header, Notice, TextField, colors, spacing } from "@repo/ui";
+import {
+  ChipList,
+  FormField,
+  Footer,
+  Header,
+  Notice,
+  TextField,
+  colors,
+  spacing,
+} from "@repo/ui";
 
-import { CalendarIcon, KrwIcon, PercentIcon } from "@/components/TripFieldIcons";
+import { DateRangeField } from "@/components/DateRangeField";
+import { KrwIcon, PercentIcon } from "@/components/TripFieldIcons";
 import { formatWon, parseDigits } from "@/lib/format";
 import {
   DEFAULT_MEAL_WEIGHTS,
@@ -25,7 +35,8 @@ export default function TripNewScreen() {
   const insets = useSafeAreaInsets();
   const [name, setName] = useState("");
   const [region, setRegion] = useState("");
-  const [dateRange, setDateRange] = useState("");
+  const [startDate, setStartDate] = useState<string | null>(null);
+  const [endDate, setEndDate] = useState<string | null>(null);
   const [totalBudgetText, setTotalBudgetText] = useState("");
   const [fixedCostText, setFixedCostText] = useState("");
   const [ratioText, setRatioText] = useState("");
@@ -39,10 +50,14 @@ export default function TripNewScreen() {
   const fixedCost = parseDigits(fixedCostText);
   const ratio = parseDigits(ratioText);
 
-  const [startDateRaw, endDateRaw] = dateRange.split("~").map((part) => part.trim());
-  const isValidDateRange = Boolean(startDateRaw && endDateRaw && startDateRaw <= endDateRaw);
+  const isValidDateRange = Boolean(
+    startDate && endDate && startDate <= endDate,
+  );
 
-  const budgetError = totalBudgetText.length > 0 && totalBudget <= fixedCost ? "전체 예산은 고정비용 보다 커야해요" : undefined;
+  const budgetError =
+    totalBudgetText.length > 0 && totalBudget <= fixedCost
+      ? "전체 예산은 고정비용 보다 커야해요"
+      : undefined;
 
   const canConfirm = useMemo(
     () =>
@@ -60,41 +75,66 @@ export default function TripNewScreen() {
     if (!canConfirm) {
       return;
     }
-    const floatingBudget = Math.floor(((totalBudget - fixedCost) * ratio) / 100);
+    const floatingBudget = Math.floor(
+      ((totalBudget - fixedCost) * ratio) / 100,
+    );
     router.push({
       pathname: "/budget-result",
       params: {
         name,
         region,
-        startDate: startDateRaw,
-        endDate: endDateRaw,
+        startDate: startDate ?? "",
+        endDate: endDate ?? "",
         totalBudget: String(totalBudget),
         fixedCost: String(fixedCost),
         ratio: String(ratio),
         floatingBudget: String(floatingBudget),
-        breakfastWeight: WEIGHT_LEVEL_BY_LABEL[weights.breakfast as keyof typeof WEIGHT_LEVEL_BY_LABEL],
-        lunchWeight: WEIGHT_LEVEL_BY_LABEL[weights.lunch as keyof typeof WEIGHT_LEVEL_BY_LABEL],
-        dinnerWeight: WEIGHT_LEVEL_BY_LABEL[weights.dinner as keyof typeof WEIGHT_LEVEL_BY_LABEL],
+        breakfastWeight:
+          WEIGHT_LEVEL_BY_LABEL[
+            weights.breakfast as keyof typeof WEIGHT_LEVEL_BY_LABEL
+          ],
+        lunchWeight:
+          WEIGHT_LEVEL_BY_LABEL[
+            weights.lunch as keyof typeof WEIGHT_LEVEL_BY_LABEL
+          ],
+        dinnerWeight:
+          WEIGHT_LEVEL_BY_LABEL[
+            weights.dinner as keyof typeof WEIGHT_LEVEL_BY_LABEL
+          ],
       },
     });
   };
 
   return (
     <View style={styles.container}>
-      <Header title="새 여행 만들기" onBackPress={() => router.back()} topInset={insets.top} />
+      <Header
+        title="새 여행 만들기"
+        onBackPress={() => router.back()}
+        topInset={insets.top}
+      />
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <FormField label="여행 이름">
-          <TextField value={name} onChangeText={setName} placeholder="예: 친구들과 대구 여행" />
+          <TextField
+            value={name}
+            onChangeText={setName}
+            placeholder="예: 친구들과 대구 여행"
+          />
         </FormField>
         <FormField label="지역">
-          <TextField value={region} onChangeText={setRegion} placeholder="예: 대구" />
+          <TextField
+            value={region}
+            onChangeText={setRegion}
+            placeholder="예: 대구"
+          />
         </FormField>
         <FormField label="기간">
-          <TextField
-            value={dateRange}
-            onChangeText={setDateRange}
-            placeholder="2026-08-12 ~ 2026-08-14"
-            tailingIcon={<CalendarIcon color={colors.content.neutral.default} />}
+          <DateRangeField
+            startDate={startDate}
+            endDate={endDate}
+            onChange={(nextStart, nextEnd) => {
+              setStartDate(nextStart);
+              setEndDate(nextEnd);
+            }}
           />
         </FormField>
         <Notice
@@ -103,17 +143,39 @@ export default function TripNewScreen() {
         />
         <FormField label="전체 예산">
           <TextField
-            value={totalBudgetText ? Number(totalBudgetText).toLocaleString("ko-KR") : ""}
-            onChangeText={(text) => setTotalBudgetText(parseDigits(text) > 0 ? String(parseDigits(text)) : "")}
+            value={
+              totalBudgetText
+                ? Number(totalBudgetText).toLocaleString("ko-KR")
+                : ""
+            }
+            onChangeText={(text) =>
+              setTotalBudgetText(
+                parseDigits(text) > 0 ? String(parseDigits(text)) : "",
+              )
+            }
             placeholder="예: 480,000"
             error={budgetError}
-            tailingIcon={<KrwIcon color={budgetError ? colors.border.error.default : colors.content.neutral.default} />}
+            tailingIcon={
+              <KrwIcon
+                color={
+                  budgetError
+                    ? colors.border.error.default
+                    : colors.content.neutral.default
+                }
+              />
+            }
           />
         </FormField>
         <FormField label="고정비용">
           <TextField
-            value={fixedCostText ? Number(fixedCostText).toLocaleString("ko-KR") : ""}
-            onChangeText={(text) => setFixedCostText(parseDigits(text) > 0 ? String(parseDigits(text)) : "")}
+            value={
+              fixedCostText ? Number(fixedCostText).toLocaleString("ko-KR") : ""
+            }
+            onChangeText={(text) =>
+              setFixedCostText(
+                parseDigits(text) > 0 ? String(parseDigits(text)) : "",
+              )
+            }
             placeholder="예: 180,000"
             tailingIcon={<KrwIcon color={colors.content.neutral.default} />}
           />
@@ -121,7 +183,11 @@ export default function TripNewScreen() {
         <FormField label="식비 비율">
           <TextField
             value={ratioText}
-            onChangeText={(text) => setRatioText(parseDigits(text) > 0 ? String(parseDigits(text)) : "")}
+            onChangeText={(text) =>
+              setRatioText(
+                parseDigits(text) > 0 ? String(parseDigits(text)) : "",
+              )
+            }
             placeholder="예: 35"
             tailingIcon={<PercentIcon color={colors.content.neutral.default} />}
           />
@@ -134,12 +200,17 @@ export default function TripNewScreen() {
                 label={MEAL_TYPE_LABEL[mealType]}
                 options={WEIGHT_OPTIONS}
                 value={weights[mealType]}
-                onChange={(value) => setWeights((prev) => ({ ...prev, [mealType]: value }))}
+                onChange={(value) =>
+                  setWeights((prev) => ({ ...prev, [mealType]: value }))
+                }
               />
             ))}
           </View>
         </FormField>
-        {totalBudgetText.length > 0 && fixedCostText.length > 0 && ratioText.length > 0 && !budgetError ? (
+        {totalBudgetText.length > 0 &&
+        fixedCostText.length > 0 &&
+        ratioText.length > 0 &&
+        !budgetError ? (
           <Notice
             variant="grey"
             title="예상 식비 예산"
@@ -149,7 +220,12 @@ export default function TripNewScreen() {
           />
         ) : null}
       </ScrollView>
-      <Footer label="확인" disabled={!canConfirm} onPress={handleConfirm} bottomInset={insets.bottom} />
+      <Footer
+        label="확인"
+        disabled={!canConfirm}
+        onPress={handleConfirm}
+        bottomInset={insets.bottom}
+      />
     </View>
   );
 }
