@@ -20,7 +20,7 @@ export const TermsModal = ({ visible, title, onClose }: TermsModalProps) => {
     <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
       <View style={styles.backdrop}>
         <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
-        <View style={[styles.sheet, { paddingBottom: spacing[400] + insets.bottom }]}>
+        <View style={[styles.sheet, { paddingBottom: spacing[16] + insets.bottom }]}>
           <Text style={styles.title}>{title}</Text>
           <ScrollView style={styles.body}>
             <Text style={styles.bodyText}>{title}입니다.</Text>
@@ -44,8 +44,8 @@ const styles = StyleSheet.create({
     borderTopRightRadius: radius[16],
     borderWidth: stroke.default,
     borderColor: colors.border.neutral.subtle,
-    padding: spacing[400],
-    gap: spacing[300],
+    padding: spacing[16],
+    gap: spacing[12],
     maxHeight: "70%",
   },
   title: {

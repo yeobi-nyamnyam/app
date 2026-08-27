@@ -102,8 +102,8 @@ const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing[200],
-    padding: spacing[300],
+    gap: spacing[8],
+    padding: spacing[12],
     borderRadius: radius.full,
     borderWidth: stroke.default,
     borderColor: colors.border.neutral.default,

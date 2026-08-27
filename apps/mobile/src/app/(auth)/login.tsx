@@ -13,6 +13,10 @@ type ScreenStatus = "idle" | "logging-in" | "error";
 
 const CHARACTER_VARIANTS: CharacterVariant[] = ["apricot", "aqua", "sky", "slate", "coral"];
 
+// spacing 토큰의 Gap 스케일이 1~36px로 재설계되면서 이 값(구 spacing[2400], 96px)에
+// 대응하는 토큰이 없어짐 — 토큰이 커버할 때까지 로컬 상수로 유지.
+const HERO_MARGIN_TOP = 96;
+
 export default function LoginScreen() {
   const insets = useSafeAreaInsets();
   const [status, setStatus] = useState<ScreenStatus>("idle");
@@ -147,12 +151,12 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.surface.neutral.default,
-    paddingHorizontal: spacing[900],
+    paddingHorizontal: spacing[36],
   },
   hero: {
-    marginTop: spacing[2400],
+    marginTop: HERO_MARGIN_TOP,
     alignItems: "center",
-    gap: spacing[200],
+    gap: spacing[8],
   },
   title: {
     fontFamily: "WILDgag-Bold",
@@ -169,17 +173,17 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   characters: {
-    marginTop: spacing[600],
+    marginTop: spacing[24],
     flexDirection: "row",
     justifyContent: "center",
-    gap: spacing[100],
+    gap: spacing[4],
   },
   spacer: {
     flex: 1,
   },
   buttons: {
-    gap: spacing[300],
-    paddingBottom: spacing[300],
+    gap: spacing[12],
+    paddingBottom: spacing[12],
   },
   footnote: {
     fontFamily: typography.fontFamily,
@@ -192,14 +196,14 @@ const styles = StyleSheet.create({
   centeredContent: {
     flex: 1,
     justifyContent: "center",
-    gap: spacing[600],
+    gap: spacing[24],
   },
   errorCard: {
     borderWidth: stroke.default,
     borderColor: colors.border.neutral.default,
     borderRadius: radius.full,
-    padding: spacing[400],
-    gap: spacing[100],
+    padding: spacing[16],
+    gap: spacing[4],
   },
   errorTitle: {
     fontFamily: typography.fontFamily,
@@ -219,7 +223,7 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   loggingInText: {
-    gap: spacing[100],
+    gap: spacing[4],
   },
   loggingInTitle: {
     fontFamily: typography.fontFamily,
@@ -239,14 +243,14 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   loadingDots: {
-    marginTop: spacing[600],
+    marginTop: spacing[24],
     flexDirection: "row",
     justifyContent: "center",
-    gap: spacing[200],
+    gap: spacing[8],
   },
   loadingDot: {
-    width: spacing[200],
-    height: spacing[200],
+    width: spacing[8],
+    height: spacing[8],
     borderRadius: radius.full,
     backgroundColor: colors.surface.primary.default,
   },
