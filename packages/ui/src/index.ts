@@ -53,5 +53,7 @@ export { BadgeCard } from "./components/BadgeCard";
 export type { BadgeCardProps } from "./components/BadgeCard";
 export { badgeAssets, badgeNames } from "./assets/badges";
 export type { BadgeId } from "./assets/badges";
+export { DataCardRow } from "./components/DataCardRow";
+export type { DataCardRowProps, DataCardRowVariant } from "./components/DataCardRow";
 export { colors, typography, spacing, radius, stroke, icon } from "@repo/tokens";
 export { getFontFamily } from "./typography/getFontFamily";
