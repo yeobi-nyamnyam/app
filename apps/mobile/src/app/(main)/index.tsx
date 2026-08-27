@@ -112,13 +112,15 @@ function ActiveTripHome() {
       <ScrollView
         contentContainerStyle={[styles.dashboardContent, { paddingTop: spacing[16] + insets.top }]}
       >
-        <HeaderCard
-          title={`${mockTrip.name} | ${dayIndex + 1}일차`}
-          consumed={formatWon(consumed)}
-          dayBudget={formatWon(dayBudget)}
-          extraBudget={extraBudget}
-          state={headerState}
-        />
+        <Pressable onPress={() => router.push("/trip-edit")}>
+          <HeaderCard
+            title={`${mockTrip.name} | ${dayIndex + 1}일차`}
+            consumed={formatWon(consumed)}
+            dayBudget={formatWon(dayBudget)}
+            extraBudget={extraBudget}
+            state={headerState}
+          />
+        </Pressable>
         <DayWeightSelector
           title={`${dayIndex + 1}일차 · ${month}.${day}`}
           dayBudget={formatWon(dayBudget)}
