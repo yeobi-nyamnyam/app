@@ -111,10 +111,20 @@ export const DayWeightSelector = ({
         meals.map((meal) => (
           <View key={meal.key} style={[styles.weightGroup, { gap: active ? spacing[8] : spacing[2] }]}>
             <View style={styles.mealRow}>
-              <Text style={active ? styles.mealLabelActive : styles.mealLabelInactive}>
+              <Text
+                style={[
+                  styles.mealLabel,
+                  { color: active ? colors.content.neutral.default : colors.content.neutral.disabled },
+                ]}
+              >
                 {meal.label}
               </Text>
-              <Text style={active ? styles.mealAmountActive : styles.mealAmountInactive}>
+              <Text
+                style={[
+                  styles.mealAmount,
+                  { color: active ? colors.content.primary.bold : colors.content.neutral.disabled },
+                ]}
+              >
                 {meal.amount}
               </Text>
             </View>
@@ -188,37 +198,19 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
   },
-  mealLabelInactive: {
+  mealLabel: {
     fontFamily: getFontFamily(typography.subheadlineEmphasized.fontWeight),
     fontSize: typography.subheadlineEmphasized.fontSize,
     lineHeight: typography.subheadlineEmphasized.lineHeight,
     letterSpacing: typography.subheadlineEmphasized.letterSpacing,
     fontWeight: typography.subheadlineEmphasized.fontWeight,
-    color: colors.content.neutral.disabled,
   },
-  mealAmountInactive: {
+  mealAmount: {
     fontFamily: getFontFamily(typography.bodyEmphasized.fontWeight),
     fontSize: typography.bodyEmphasized.fontSize,
     lineHeight: typography.bodyEmphasized.lineHeight,
     letterSpacing: typography.bodyEmphasized.letterSpacing,
     fontWeight: typography.bodyEmphasized.fontWeight,
-    color: colors.content.neutral.disabled,
-  },
-  mealLabelActive: {
-    fontFamily: getFontFamily(typography.calloutEmphasized.fontWeight),
-    fontSize: typography.calloutEmphasized.fontSize,
-    lineHeight: typography.calloutEmphasized.lineHeight,
-    letterSpacing: typography.calloutEmphasized.letterSpacing,
-    fontWeight: typography.calloutEmphasized.fontWeight,
-    color: colors.content.neutral.default,
-  },
-  mealAmountActive: {
-    fontFamily: getFontFamily(typography.calloutEmphasized.fontWeight),
-    fontSize: typography.calloutEmphasized.fontSize,
-    lineHeight: typography.calloutEmphasized.lineHeight,
-    letterSpacing: typography.calloutEmphasized.letterSpacing,
-    fontWeight: typography.calloutEmphasized.fontWeight,
-    color: colors.content.primary.bold,
   },
   chipRow: {
     width: '100%',
