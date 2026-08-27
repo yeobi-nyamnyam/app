@@ -4,7 +4,7 @@ import { View } from 'react-native'
 import { action } from '@storybook/addon-actions'
 import { FormField } from './FormField'
 import { TextField } from '../TextField'
-import { Chip } from '../Chip'
+import { ChipList } from '../ChipList'
 import { Button } from '../Button'
 
 const meta: Meta<typeof FormField> = {
@@ -36,21 +36,15 @@ const TextFieldExample = (args: { label: string }) => {
 }
 
 const ChipListExample = (args: { label: string }) => {
-  const [selected, setSelected] = useState('Text 1')
-  const options = ['Text 1', 'Text 2', 'Text 3']
+  const [value, setValue] = useState('')
+  const options = [
+    { label: 'Text 1', value: '1' },
+    { label: 'Text 2', value: '2' },
+    { label: 'Text 3', value: '3' },
+  ]
   return (
     <FormField {...args}>
-      <View style={{ flexDirection: 'row', gap: 10 }}>
-        {options.map((text) => (
-          <Chip
-            key={text}
-            text={text}
-            width="fill"
-            active={selected === text}
-            onPress={() => setSelected(text)}
-          />
-        ))}
-      </View>
+      <ChipList label="Label" options={options} value={value} onChange={setValue} />
     </FormField>
   )
 }
