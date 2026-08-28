@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ScrollView, StyleSheet, Text, View } from "react-native";
+import { Alert, ScrollView, StyleSheet, Text, View } from "react-native";
 import { router } from "expo-router";
 import { CheckBox, Footer, Header, ListRow, colors, getFontFamily, spacing, typography } from "@repo/ui";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -39,8 +39,15 @@ export default function SignUpTermsScreen() {
     if (!session) {
       return;
     }
-    await markSignUpTermsAgreed(session.user.id);
-    router.replace("/(main)");
+    try {
+      await markSignUpTermsAgreed(session.user.id, checked.marketing);
+      router.replace("/(main)");
+    } catch (error) {
+      Alert.alert(
+        "약관 동의 저장 실패",
+        error instanceof Error ? error.message : "잠시 후 다시 시도해주세요.",
+      );
+    }
   };
 
   const detailTitle = TERMS.find((term) => term.key === detailTerm)?.title ?? "";

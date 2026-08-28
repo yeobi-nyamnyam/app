@@ -17,6 +17,7 @@ D0~D3, G0~G17, L0~L4, M0~M2)를 한 번씩 훑어 테이블/컬럼으로 반영�
 | F0, F0-1, F0-2, F0-5 | 회원 인증 | `auth.users`(Supabase 내장) — provider/providerId는 Supabase Auth가 자체 관리, 별도 컬럼 불필요 |
 | F0-3 | 회원 탈퇴 | `profiles.status` |
 | F0-4 | 닉네임/고유ID | `profiles.nickname`, `profiles.handle` |
+| F0 (약관 동의) | 회원가입 약관 동의 | `profiles.terms_agreed_at`, `profiles.marketing_agreed` |
 | F1, F1-2~F1-5 | 여행 생성 | `trips`(name, start_date, end_date, total_budget, fixed_cost, food_budget_ratio) |
 | F1-1 | 지역 입력 | `trips.region_code` ↔ `region_cache` |
 | F1-6 | 끼니별 가중치 기본값 | `meal_slots.weight_level` (여행 생성 트랜잭션에서 각 슬롯에 심음) |
@@ -84,7 +85,7 @@ restaurants (캐시 테이블, 24시간 배치 — 착한가격업소+TourAPI �
 ---
 
 ## 1. `profiles`
-Supabase `auth.users`를 확장하는 앱 프로필 (F0-4, F0-3)
+Supabase `auth.users`를 확장하는 앱 프로필 (F0-4, F0-3, F0 약관 동의)
 
 | 컬럼 | 타입 | 설명 |
 |---|---|---|
@@ -92,11 +93,15 @@ Supabase `auth.users`를 확장하는 앱 프로필 (F0-4, F0-3)
 | nickname | text | '형용사+동물' 자동생성, 10자 이내, 중복 허용 |
 | handle | text UNIQUE | `@jdof-v2` 형식, 수정 불가 |
 | status | text CHECK (active/deleted) | 탈퇴 시 'deleted' (F0-3) |
+| terms_agreed_at | timestamptz, nullable | 필수 약관(서비스/개인정보/연령확인/위치정보) 일괄 동의 시각. null이면 미동의 |
+| marketing_agreed | boolean, default false | 마케팅 정보 수신 동의(선택 항목) |
 | created_at / updated_at | timestamptz | |
 
 row 생성: 클라이언트가 만들지 않음. `auth.users` insert 시 `trg_auth_user_created` 트리거
 (`handle_new_user()`)가 nickname/handle을 생성해 자동으로 삽입한다
 (`supabase/migrations/20260828000000_profile_auto_provision.sql`).
+`terms_agreed_at`/`marketing_agreed`는 회원가입 약관 동의 화면에서 클라이언트가
+GraphQL로 UPDATE한다 (`supabase/migrations/20260828010000_profile_terms_agreement.sql`).
 
 ## 2. `trips`
 여행 (F1, F2, F4)

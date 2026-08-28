@@ -1,15 +1,26 @@
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import { AgreeToSignUpTermsDocument, ProfileDocument } from "@repo/types";
 
-// 약관 동의 이력을 저장할 백엔드 스키마가 아직 없어서, 우선 기기 로컬(AsyncStorage)에만
-// "이 계정은 이 기기에서 약관에 동의했다"를 기록한다. 백엔드 스키마가 생기면 이 두 함수의
-// 내부 구현만 서버 저장으로 교체하면 된다.
-const storageKey = (userId: string) => `signup-terms-agreed:${userId}`;
+import { apolloClient } from "@/lib/apollo";
 
 export async function hasAgreedToSignUpTerms(userId: string): Promise<boolean> {
-  const value = await AsyncStorage.getItem(storageKey(userId));
-  return value === "true";
+  const { data } = await apolloClient.query({
+    query: ProfileDocument,
+    variables: { id: userId },
+    fetchPolicy: "network-only",
+  });
+  return data?.profilesByPk?.terms_agreed_at != null;
 }
 
-export async function markSignUpTermsAgreed(userId: string): Promise<void> {
-  await AsyncStorage.setItem(storageKey(userId), "true");
+export async function markSignUpTermsAgreed(
+  userId: string,
+  marketingAgreed: boolean,
+): Promise<void> {
+  await apolloClient.mutate({
+    mutation: AgreeToSignUpTermsDocument,
+    variables: {
+      id: userId,
+      agreedAt: new Date().toISOString(),
+      marketingAgreed,
+    },
+  });
 }
