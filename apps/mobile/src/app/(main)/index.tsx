@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { Alert, Pressable, ScrollView, StyleSheet, View } from "react-native";
-import { router } from "expo-router";
+import { Redirect, router } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
   DayWeightSelector,
@@ -21,13 +21,10 @@ import {
   MOCK_TODAY,
   WEIGHT_LABEL,
   WEIGHT_LEVEL_BY_LABEL,
-  computeMealBudgets,
   getTripDates,
-  mockMealSlots,
-  mockTrip,
   type MealType,
-  type MockMealSlot,
 } from "@/lib/mock/trip";
+import { useTripStore } from "@/lib/mock/tripStore";
 
 // 로그인/여행 목록 API 연동 전까지는 데모용 여행이 항상 진행 중인 것으로 가정
 const HAS_ACTIVE_TRIP = true;
@@ -42,7 +39,17 @@ const handleNavChange = (key: NavBarItemKey) => {
 };
 
 export default function HomeScreen() {
-  return HAS_ACTIVE_TRIP ? <ActiveTripHome /> : <EmptyHome />;
+  const { trip } = useTripStore();
+
+  if (!HAS_ACTIVE_TRIP) {
+    return <EmptyHome />;
+  }
+  // F7(여행 자동 완료) 판정은 서버/RPC 몫이지만, 목데이터 단계에서는 오늘이
+  // 여행 종료일을 지났는지로만 임시 판별해서 완료 화면으로 보낸다.
+  if (MOCK_TODAY > trip.endDate) {
+    return <Redirect href="/trip-complete" />;
+  }
+  return <ActiveTripHome />;
 }
 
 function EmptyHome() {
@@ -51,7 +58,9 @@ function EmptyHome() {
       <View style={styles.emptyContent}>
         <EmptyTripPrompt
           onCreateTrip={() => router.push("/trip-new")}
-          onLoadPastTrip={() => Alert.alert("준비 중", "과거 여행 불러오기는 아직 준비 중이에요.")}
+          onLoadPastTrip={() =>
+            Alert.alert("준비 중", "과거 여행 불러오기는 아직 준비 중이에요.")
+          }
         />
       </View>
       <NavBar active="home" onChange={handleNavChange} />
@@ -61,23 +70,37 @@ function EmptyHome() {
 
 function ActiveTripHome() {
   const insets = useSafeAreaInsets();
-  const [mealSlots, setMealSlots] = useState<MockMealSlot[]>(mockMealSlots);
+  const { trip, mealSlots, updateDayWeights } = useTripStore();
   const [expanded, setExpanded] = useState(true);
 
-  const dayIndex = getTripDates(mockTrip).indexOf(MOCK_TODAY);
+  const dayIndex = getTripDates(trip).indexOf(MOCK_TODAY);
   const todaySlots = useMemo(
     () => mealSlots.filter((slot) => slot.date === MOCK_TODAY),
     [mealSlots],
   );
 
-  const dayBudget = todaySlots.reduce((sum, slot) => sum + slot.budgetAmount, 0);
-  const consumed = todaySlots.reduce((sum, slot) => sum + (slot.recordedAmount ?? 0), 0);
-  const allRecorded = todaySlots.length === MEAL_TYPES.length && todaySlots.every((slot) => slot.isRecorded);
+  const dayBudget = todaySlots.reduce(
+    (sum, slot) => sum + slot.budgetAmount,
+    0,
+  );
+  const consumed = todaySlots.reduce(
+    (sum, slot) => sum + (slot.recordedAmount ?? 0),
+    0,
+  );
+  const allRecorded =
+    todaySlots.length === MEAL_TYPES.length &&
+    todaySlots.every((slot) => slot.isRecorded);
   const anyRecorded = todaySlots.some((slot) => slot.isRecorded);
   const firstUnrecordedIndex = todaySlots.findIndex((slot) => !slot.isRecorded);
 
-  const headerState = allRecorded ? (consumed <= dayBudget ? "plus" : "minus") : "default";
-  const extraBudget = allRecorded ? formatWon(Math.abs(dayBudget - consumed)) : undefined;
+  const headerState = allRecorded
+    ? consumed <= dayBudget
+      ? "plus"
+      : "minus"
+    : "default";
+  const extraBudget = allRecorded
+    ? formatWon(Math.abs(dayBudget - consumed))
+    : undefined;
 
   const [, month, day] = MOCK_TODAY.split("-");
 
@@ -89,36 +112,40 @@ function ActiveTripHome() {
   };
 
   const handleChangeWeight = (mealKey: string, weightLabel: string) => {
-    const weightLevel = WEIGHT_LEVEL_BY_LABEL[weightLabel as keyof typeof WEIGHT_LEVEL_BY_LABEL];
-    setMealSlots((prev) => {
-      const nextWeights: Record<MealType, typeof weightLevel> = {
-        breakfast:
-          prev.find((slot) => slot.date === MOCK_TODAY && slot.mealType === "breakfast")?.weightLevel ?? "light",
-        lunch: prev.find((slot) => slot.date === MOCK_TODAY && slot.mealType === "lunch")?.weightLevel ?? "normal",
-        dinner: prev.find((slot) => slot.date === MOCK_TODAY && slot.mealType === "dinner")?.weightLevel ?? "hearty",
-      };
-      nextWeights[mealKey as MealType] = weightLevel;
-      const recalculated = computeMealBudgets(dayBudget, nextWeights);
-      return prev.map((slot) =>
-        slot.date === MOCK_TODAY
-          ? { ...slot, weightLevel: nextWeights[slot.mealType], budgetAmount: recalculated[slot.mealType] }
-          : slot,
-      );
-    });
+    const weightLevel =
+      WEIGHT_LEVEL_BY_LABEL[weightLabel as keyof typeof WEIGHT_LEVEL_BY_LABEL];
+    const nextWeights: Record<MealType, typeof weightLevel> = {
+      breakfast:
+        todaySlots.find((slot) => slot.mealType === "breakfast")?.weightLevel ??
+        "light",
+      lunch:
+        todaySlots.find((slot) => slot.mealType === "lunch")?.weightLevel ??
+        "normal",
+      dinner:
+        todaySlots.find((slot) => slot.mealType === "dinner")?.weightLevel ??
+        "hearty",
+    };
+    nextWeights[mealKey as MealType] = weightLevel;
+    updateDayWeights(MOCK_TODAY, nextWeights);
   };
 
   return (
     <View style={styles.container}>
       <ScrollView
-        contentContainerStyle={[styles.dashboardContent, { paddingTop: spacing[16] + insets.top }]}
+        contentContainerStyle={[
+          styles.dashboardContent,
+          { paddingTop: spacing[16] + insets.top },
+        ]}
       >
-        <HeaderCard
-          title={`${mockTrip.name} | ${dayIndex + 1}일차`}
-          consumed={formatWon(consumed)}
-          dayBudget={formatWon(dayBudget)}
-          extraBudget={extraBudget}
-          state={headerState}
-        />
+        <Pressable onPress={() => router.push("/trip-edit")}>
+          <HeaderCard
+            title={`${trip.name} | ${dayIndex + 1}일차`}
+            consumed={formatWon(consumed)}
+            dayBudget={formatWon(dayBudget)}
+            extraBudget={extraBudget}
+            state={headerState}
+          />
+        </Pressable>
         <DayWeightSelector
           title={`${dayIndex + 1}일차 · ${month}.${day}`}
           dayBudget={formatWon(dayBudget)}
@@ -136,12 +163,28 @@ function ActiveTripHome() {
         <View style={styles.mealSection}>
           <Text variant="title3Emphasized">오늘의 끼니</Text>
           {todaySlots.map((slot, index) => (
-            <Pressable key={slot.id} onPress={() => handleMealPress(slot.mealType)}>
+            <Pressable
+              key={slot.id}
+              onPress={() => handleMealPress(slot.mealType)}
+            >
               <MealCard
                 meal={MEAL_TYPE_LABEL[slot.mealType]}
-                budget={formatWon(slot.isRecorded ? (slot.recordedAmount ?? 0) : slot.budgetAmount)}
-                state={slot.isRecorded ? "done" : index === firstUnrecordedIndex ? "active" : "pending"}
-                showExcess={slot.isRecorded && (slot.recordedAmount ?? 0) > slot.budgetAmount}
+                budget={formatWon(
+                  slot.isRecorded
+                    ? (slot.recordedAmount ?? 0)
+                    : slot.budgetAmount,
+                )}
+                state={
+                  slot.isRecorded
+                    ? "done"
+                    : index === firstUnrecordedIndex
+                      ? "active"
+                      : "pending"
+                }
+                showExcess={
+                  slot.isRecorded &&
+                  (slot.recordedAmount ?? 0) > slot.budgetAmount
+                }
               />
             </Pressable>
           ))}
