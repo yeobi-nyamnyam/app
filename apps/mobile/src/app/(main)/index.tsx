@@ -35,6 +35,10 @@ const handleNavChange = (key: NavBarItemKey) => {
     router.push("/record");
     return;
   }
+  if (key === "profile") {
+    router.push("/mypage");
+    return;
+  }
   Alert.alert("준비 중", "아직 구현되지 않은 탭이에요.");
 };
 
