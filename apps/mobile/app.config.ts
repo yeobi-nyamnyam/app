@@ -1,29 +1,34 @@
-import type { ExpoConfig } from 'expo/config'
+import type { ExpoConfig } from "expo/config";
 
 const config: ExpoConfig = {
-  name: 'mobile',
-  slug: 'mobile',
-  version: '0.0.0',
-  scheme: 'yeobinyamnyam',
-  orientation: 'portrait',
-  userInterfaceStyle: 'automatic',
-  platforms: ['ios', 'android'],
+  name: "mobile",
+  slug: "mobile",
+  version: "0.0.0",
+  scheme: "yeobinyamnyam",
+  orientation: "portrait",
+  userInterfaceStyle: "automatic",
+  platforms: ["ios", "android"],
   android: {
-    package: 'com.yeobinyamnyam.mobile',
+    package: "com.yeobinyamnyam.mobile",
   },
   ios: {
-    bundleIdentifier: 'com.yeobinyamnyam.mobile',
+    bundleIdentifier: "com.yeobinyamnyam.mobile",
   },
   plugins: [
-    'expo-router',
-    'expo-font',
-    '@react-native-google-signin/google-signin',
-    ['@react-native-seoul/kakao-login', { kakaoAppKey: process.env.KAKAO_NATIVE_APP_KEY ?? '' }],
+    "expo-router",
+    "expo-font",
+    "@react-native-google-signin/google-signin",
     [
-      'expo-build-properties',
+      "@react-native-seoul/kakao-login",
+      { kakaoAppKey: process.env.KAKAO_NATIVE_APP_KEY ?? "" },
+    ],
+    [
+      "expo-build-properties",
       {
         android: {
-          extraMavenRepos: ['https://devrepo.kakao.com/nexus/content/groups/public/'],
+          extraMavenRepos: [
+            "https://devrepo.kakao.com/nexus/content/groups/public/",
+          ],
         },
       },
     ],
@@ -35,6 +40,6 @@ const config: ExpoConfig = {
     kakaoNativeAppKey: process.env.KAKAO_NATIVE_APP_KEY,
     naverMapClientId: process.env.NAVER_MAP_CLIENT_ID,
   },
-}
+};
 
-export default config
+export default config;
