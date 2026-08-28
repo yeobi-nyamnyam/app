@@ -94,6 +94,10 @@ Supabase `auth.users`를 확장하는 앱 프로필 (F0-4, F0-3)
 | status | text CHECK (active/deleted) | 탈퇴 시 'deleted' (F0-3) |
 | created_at / updated_at | timestamptz | |
 
+row 생성: 클라이언트가 만들지 않음. `auth.users` insert 시 `trg_auth_user_created` 트리거
+(`handle_new_user()`)가 nickname/handle을 생성해 자동으로 삽입한다
+(`supabase/migrations/20260828000000_profile_auto_provision.sql`).
+
 ## 2. `trips`
 여행 (F1, F2, F4)
 
@@ -354,3 +358,4 @@ G0~G17 배지 정의
 - [x] **기능명세서 v4(0812) 반영** — F3-5(착한가격업소 배치 캐싱)는 위 `restaurants` 설계와 일치해 별도 스키마 변경 없이 공식 기능 ID만 인용 반영. F6-10(매장명 검색·자동완성)은 새 갭 발견 — `meal_logs`에 `store_latitude`/`store_longitude` 컬럼 추가 (§4 참고). M2(방문 매장 지도)가 좌표를 필요로 하는데 기존엔 `restaurant_id`가 없는 기록(채팅/수기/OCR)의 좌표를 확보할 방법이 없었음. F6-10으로 네이버 검색 API 결과에서 좌표를 받아 채우면 이 갭이 해소됨
 - [x] **`updated_at` 트리거 반영 완료** — 컨벤션(공통 트리거 함수 + 7개 테이블)대로 `supabase/migrations/20260812000000_initial_schema.sql`에 `set_updated_at()` 함수와 테이블별 `trg_*_updated_at` 트리거 7개(profiles/trips/meal_slots/restaurants/meal_logs/diaries/chat_messages)를 추가. `chat_messages.updated_at` 컬럼도 반영됨
 - [x] **`business-logic-notes.md` 동기화 완료** — §2(F2-3)를 `budget_edit`(1번, `trips` 값 변경)과 `rebalance`(4번, 실제 재분배 실행)를 별도 행으로 insert하도록 갱신해 §7(L1 포인트 매핑)의 `rebalance` 이벤트와 일치시킴
+- [x] **F0-4(닉네임/고유ID 자동 생성) 반영 완료** — `profiles` row를 클라이언트가 만들지 않고, `auth.users` insert 트리거(`handle_new_user()`)가 nickname('형용사+동물')/handle(`@xxxx-vN`)을 생성해 자동 삽입하도록 결정 (이슈 #49). 약관 동의(F0) 화면 도달 시점에 `profiles` row가 이미 보장되므로, 후속 이슈(약관 동의 이력을 `profiles`에 컬럼으로 저장)가 이 위에서 진행 가능
