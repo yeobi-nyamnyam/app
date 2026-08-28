@@ -47,7 +47,7 @@ export default function LoginScreen() {
       // 있는지"만 본다. 뒤로가기로 약관 화면을 벗어나 동의를 안 마친 사람은
       // 다시 로그인할 때마다 이 화면을 계속 다시 보게 된다 (완료 전까지).
       if (!(await hasAgreedToSignUpTerms(user.id))) {
-        router.replace("/(main)/sign-up-terms");
+        router.replace("/(main)/auth/sign-up-terms");
         return;
       }
       // 이미 동의를 마친 사용자는 (auth) 그룹의 세션 가드가 자동으로 (main)으로 이동시킴
