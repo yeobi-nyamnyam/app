@@ -79,7 +79,7 @@ export default function TripNewScreen() {
       ((totalBudget - fixedCost) * ratio) / 100,
     );
     router.push({
-      pathname: "/budget-result",
+      pathname: "/budget/result",
       params: {
         name,
         region,

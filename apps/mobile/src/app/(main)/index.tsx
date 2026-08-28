@@ -57,7 +57,7 @@ function EmptyHome() {
     <View style={styles.container}>
       <View style={styles.emptyContent}>
         <EmptyTripPrompt
-          onCreateTrip={() => router.push("/trip-new")}
+          onCreateTrip={() => router.push("/trip-create")}
           onLoadPastTrip={() =>
             Alert.alert("준비 중", "과거 여행 불러오기는 아직 준비 중이에요.")
           }
@@ -137,7 +137,7 @@ function ActiveTripHome() {
           { paddingTop: spacing[16] + insets.top },
         ]}
       >
-        <Pressable onPress={() => router.push("/trip-edit")}>
+        <Pressable onPress={() => router.push("/budget-edit")}>
           <HeaderCard
             title={`${trip.name} | ${dayIndex + 1}일차`}
             consumed={formatWon(consumed)}
@@ -147,7 +147,7 @@ function ActiveTripHome() {
           />
         </Pressable>
         <DayWeightSelector
-          title={`${dayIndex + 1}일차 · ${month}.${day}`}
+          title={`${dayIndex + 1}일차 | ${month}.${day}`}
           dayBudget={formatWon(dayBudget)}
           expanded={expanded}
           active={!anyRecorded}
