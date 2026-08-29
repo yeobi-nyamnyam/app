@@ -123,7 +123,7 @@
 
 1. Claude가 이슈 템플릿(`.github/ISSUE_TEMPLATE/feature.md`) 기준으로 이슈 생성
    - 제목: `[기능ID] 기능명` (예: `[F6-10] 방문 매장명 검색·자동완성`)
-2. 해당 이슈에 맞는 기능별 개발 진행 (`feature/이름-기능ID` 브랜치)
+2. 해당 이슈에 맞는 기능별 개발 진행 (`feature/GitHub핸들명-기능ID` 브랜치)
 3. 커밋
 4. PR 템플릿(`.github/PULL_REQUEST_TEMPLATE.md`) 기준으로 자동 PR 생성
    - base 브랜치: `develop` (feature 브랜치 → `develop`)
@@ -140,9 +140,11 @@
 
 - `main`: 배포용
 - `develop`: 통합 브랜치 — **PR base 브랜치**
-- `feature/이름-기능ID`: 개인 작업 브랜치 (예: `feature/철수-F6-10`)
+- `feature/GitHub핸들명-기능ID`: 개인 작업 브랜치 (예: `feature/choyeon2e-F6-10`)
+  - 한글 이름이 아니라 GitHub 핸들명을 쓴다: 초연 → `choyeon2e`, 수진 → `lemoncurdyogurt`,
+    희정 → `DandelionQZ`
 
-PR은 항상 `feature/이름-기능ID` → `develop`으로 올립니다. `develop` → `main`은
+PR은 항상 `feature/GitHub핸들명-기능ID` → `develop`으로 올립니다. `develop` → `main`은
 배포 시점에 별도로 머지합니다.
 
 ## 참고 문서
