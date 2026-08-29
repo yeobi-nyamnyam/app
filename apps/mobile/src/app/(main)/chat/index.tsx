@@ -146,11 +146,6 @@ function ChatConversation({
       }
 
       setPendingExpense({ category: parsed.category, amount: String(parsed.amount) });
-      appendMessage({
-        id: `ai-${Date.now()}`,
-        sender: "ai",
-        text: "아래에서 확인하고 저장해주세요!",
-      });
     }, 500);
   };
 
@@ -206,7 +201,7 @@ function ChatConversation({
           {pendingExpense ? (
             <View style={{ paddingBottom: insets.bottom }}>
               <ChatRecordSheet
-                title="소비 기록"
+                title="끼니 기록"
                 categories={CATEGORY_OPTIONS}
                 selectedCategory={pendingExpense.category}
                 onSelectCategory={(value) =>
