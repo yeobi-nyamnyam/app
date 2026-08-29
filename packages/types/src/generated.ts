@@ -201,6 +201,8 @@ export type Mutation = {
   deleteFromtripsCollection: TripsDeleteResponse;
   /** Deletes zero or more records from the `user_badges` collection */
   deleteFromuser_badgesCollection: User_BadgesDeleteResponse;
+  generate_random_handle?: Maybe<Scalars['String']['output']>;
+  generate_random_nickname?: Maybe<Scalars['String']['output']>;
   /** Adds one or more `badges` records to the collection */
   insertIntobadgesCollection?: Maybe<BadgesInsertResponse>;
   /** Adds one or more `budget_change_history` records to the collection */
@@ -1663,10 +1665,12 @@ export type Profiles = Node & {
   created_at: Scalars['Datetime']['output'];
   handle: Scalars['String']['output'];
   id: Scalars['UUID']['output'];
+  marketing_agreed: Scalars['Boolean']['output'];
   nickname: Scalars['String']['output'];
   /** Globally Unique Record Identifier */
   nodeId: Scalars['ID']['output'];
   status: Scalars['String']['output'];
+  terms_agreed_at?: Maybe<Scalars['Datetime']['output']>;
   updated_at: Scalars['Datetime']['output'];
 };
 
@@ -1696,6 +1700,7 @@ export type ProfilesFilter = {
   created_at?: InputMaybe<DatetimeFilter>;
   handle?: InputMaybe<StringFilter>;
   id?: InputMaybe<UuidFilter>;
+  marketing_agreed?: InputMaybe<BooleanFilter>;
   nickname?: InputMaybe<StringFilter>;
   nodeId?: InputMaybe<IdFilter>;
   /** Negates a filter */
@@ -1703,6 +1708,7 @@ export type ProfilesFilter = {
   /** Returns true if at least one of its inner filters is true, otherwise returns false */
   or?: InputMaybe<Array<ProfilesFilter>>;
   status?: InputMaybe<StringFilter>;
+  terms_agreed_at?: InputMaybe<DatetimeFilter>;
   updated_at?: InputMaybe<DatetimeFilter>;
 };
 
@@ -1710,8 +1716,10 @@ export type ProfilesInsertInput = {
   created_at?: InputMaybe<Scalars['Datetime']['input']>;
   handle?: InputMaybe<Scalars['String']['input']>;
   id?: InputMaybe<Scalars['UUID']['input']>;
+  marketing_agreed?: InputMaybe<Scalars['Boolean']['input']>;
   nickname?: InputMaybe<Scalars['String']['input']>;
   status?: InputMaybe<Scalars['String']['input']>;
+  terms_agreed_at?: InputMaybe<Scalars['Datetime']['input']>;
   updated_at?: InputMaybe<Scalars['Datetime']['input']>;
 };
 
@@ -1727,8 +1735,10 @@ export type ProfilesOrderBy = {
   created_at?: InputMaybe<OrderByDirection>;
   handle?: InputMaybe<OrderByDirection>;
   id?: InputMaybe<OrderByDirection>;
+  marketing_agreed?: InputMaybe<OrderByDirection>;
   nickname?: InputMaybe<OrderByDirection>;
   status?: InputMaybe<OrderByDirection>;
+  terms_agreed_at?: InputMaybe<OrderByDirection>;
   updated_at?: InputMaybe<OrderByDirection>;
 };
 
@@ -1736,8 +1746,10 @@ export type ProfilesUpdateInput = {
   created_at?: InputMaybe<Scalars['Datetime']['input']>;
   handle?: InputMaybe<Scalars['String']['input']>;
   id?: InputMaybe<Scalars['UUID']['input']>;
+  marketing_agreed?: InputMaybe<Scalars['Boolean']['input']>;
   nickname?: InputMaybe<Scalars['String']['input']>;
   status?: InputMaybe<Scalars['String']['input']>;
+  terms_agreed_at?: InputMaybe<Scalars['Datetime']['input']>;
   updated_at?: InputMaybe<Scalars['Datetime']['input']>;
 };
 
@@ -2300,6 +2312,22 @@ export type User_BadgesUpdateResponse = {
   records: Array<User_Badges>;
 };
 
+export type AgreeToSignUpTermsMutationVariables = Exact<{
+  id: string;
+  agreedAt: string;
+  marketingAgreed: boolean;
+}>;
+
+
+export type AgreeToSignUpTermsMutation = { updateprofilesCollection: { affectedCount: number, records: Array<{ id: string, terms_agreed_at: string | null, marketing_agreed: boolean }> } };
+
+export type ProfileQueryVariables = Exact<{
+  id: string;
+}>;
+
+
+export type ProfileQuery = { profilesByPk: { id: string, nickname: string, handle: string, terms_agreed_at: string | null, marketing_agreed: boolean } | null };
+
 export type CreateMealLogMutationVariables = Exact<{
   tripId: string;
   mealSlotId?: string | null | undefined;
@@ -2322,5 +2350,7 @@ export type MealSlotQueryVariables = Exact<{
 export type MealSlotQuery = { meal_slotsByPk: { id: string, trip_id: string, date: string, meal_type: string, weight_level: string, budget_amount: number, carried_over_amount: number, is_recorded: boolean, is_cascade_confirmed: boolean, recorded_amount: number | null } | null };
 
 
+export const AgreeToSignUpTermsDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"AgreeToSignUpTerms"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"id"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"UUID"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"agreedAt"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"Datetime"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"marketingAgreed"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"Boolean"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"updateprofilesCollection"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"set"},"value":{"kind":"ObjectValue","fields":[{"kind":"ObjectField","name":{"kind":"Name","value":"terms_agreed_at"},"value":{"kind":"Variable","name":{"kind":"Name","value":"agreedAt"}}},{"kind":"ObjectField","name":{"kind":"Name","value":"marketing_agreed"},"value":{"kind":"Variable","name":{"kind":"Name","value":"marketingAgreed"}}}]}},{"kind":"Argument","name":{"kind":"Name","value":"filter"},"value":{"kind":"ObjectValue","fields":[{"kind":"ObjectField","name":{"kind":"Name","value":"id"},"value":{"kind":"ObjectValue","fields":[{"kind":"ObjectField","name":{"kind":"Name","value":"eq"},"value":{"kind":"Variable","name":{"kind":"Name","value":"id"}}}]}}]}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"affectedCount"}},{"kind":"Field","name":{"kind":"Name","value":"records"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"terms_agreed_at"}},{"kind":"Field","name":{"kind":"Name","value":"marketing_agreed"}}]}}]}}]}}]} as unknown as DocumentNode<AgreeToSignUpTermsMutation, AgreeToSignUpTermsMutationVariables>;
+export const ProfileDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"Profile"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"id"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"UUID"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"profilesByPk"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"id"},"value":{"kind":"Variable","name":{"kind":"Name","value":"id"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"nickname"}},{"kind":"Field","name":{"kind":"Name","value":"handle"}},{"kind":"Field","name":{"kind":"Name","value":"terms_agreed_at"}},{"kind":"Field","name":{"kind":"Name","value":"marketing_agreed"}}]}}]}}]} as unknown as DocumentNode<ProfileQuery, ProfileQueryVariables>;
 export const CreateMealLogDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"CreateMealLog"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"tripId"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"UUID"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"mealSlotId"}},"type":{"kind":"NamedType","name":{"kind":"Name","value":"UUID"}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"category"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"amount"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"Int"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"storeName"}},"type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"storeAddress"}},"type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"memo"}},"type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"source"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"insertIntomeal_logsCollection"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"objects"},"value":{"kind":"ListValue","values":[{"kind":"ObjectValue","fields":[{"kind":"ObjectField","name":{"kind":"Name","value":"trip_id"},"value":{"kind":"Variable","name":{"kind":"Name","value":"tripId"}}},{"kind":"ObjectField","name":{"kind":"Name","value":"meal_slot_id"},"value":{"kind":"Variable","name":{"kind":"Name","value":"mealSlotId"}}},{"kind":"ObjectField","name":{"kind":"Name","value":"category"},"value":{"kind":"Variable","name":{"kind":"Name","value":"category"}}},{"kind":"ObjectField","name":{"kind":"Name","value":"amount"},"value":{"kind":"Variable","name":{"kind":"Name","value":"amount"}}},{"kind":"ObjectField","name":{"kind":"Name","value":"store_name"},"value":{"kind":"Variable","name":{"kind":"Name","value":"storeName"}}},{"kind":"ObjectField","name":{"kind":"Name","value":"store_address"},"value":{"kind":"Variable","name":{"kind":"Name","value":"storeAddress"}}},{"kind":"ObjectField","name":{"kind":"Name","value":"memo"},"value":{"kind":"Variable","name":{"kind":"Name","value":"memo"}}},{"kind":"ObjectField","name":{"kind":"Name","value":"source"},"value":{"kind":"Variable","name":{"kind":"Name","value":"source"}}}]}]}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"affectedCount"}},{"kind":"Field","name":{"kind":"Name","value":"records"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"trip_id"}},{"kind":"Field","name":{"kind":"Name","value":"meal_slot_id"}},{"kind":"Field","name":{"kind":"Name","value":"category"}},{"kind":"Field","name":{"kind":"Name","value":"amount"}},{"kind":"Field","name":{"kind":"Name","value":"store_name"}},{"kind":"Field","name":{"kind":"Name","value":"store_address"}},{"kind":"Field","name":{"kind":"Name","value":"memo"}},{"kind":"Field","name":{"kind":"Name","value":"source"}},{"kind":"Field","name":{"kind":"Name","value":"created_at"}}]}}]}}]}}]} as unknown as DocumentNode<CreateMealLogMutation, CreateMealLogMutationVariables>;
 export const MealSlotDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"MealSlot"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"id"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"UUID"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"meal_slotsByPk"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"id"},"value":{"kind":"Variable","name":{"kind":"Name","value":"id"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"trip_id"}},{"kind":"Field","name":{"kind":"Name","value":"date"}},{"kind":"Field","name":{"kind":"Name","value":"meal_type"}},{"kind":"Field","name":{"kind":"Name","value":"weight_level"}},{"kind":"Field","name":{"kind":"Name","value":"budget_amount"}},{"kind":"Field","name":{"kind":"Name","value":"carried_over_amount"}},{"kind":"Field","name":{"kind":"Name","value":"is_recorded"}},{"kind":"Field","name":{"kind":"Name","value":"is_cascade_confirmed"}},{"kind":"Field","name":{"kind":"Name","value":"recorded_amount"}}]}}]}}]} as unknown as DocumentNode<MealSlotQuery, MealSlotQueryVariables>;

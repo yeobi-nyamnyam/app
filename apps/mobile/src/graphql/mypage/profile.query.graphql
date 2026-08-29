@@ -1,0 +1,9 @@
+query Profile($id: UUID!) {
+  profilesByPk(id: $id) {
+    id
+    nickname
+    handle
+    terms_agreed_at
+    marketing_agreed
+  }
+}
