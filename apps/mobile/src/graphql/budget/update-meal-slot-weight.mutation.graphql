@@ -1,0 +1,11 @@
+mutation UpdateMealSlotWeight(
+  $slotIds: [UUID]!
+  $budgetAmounts: [Int]!
+  $weightLevels: [String]!
+) {
+  apply_meal_slot_budgets(
+    p_slot_ids: $slotIds
+    p_budget_amounts: $budgetAmounts
+    p_weight_levels: $weightLevels
+  )
+}

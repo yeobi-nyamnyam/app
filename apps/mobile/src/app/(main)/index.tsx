@@ -2,7 +2,9 @@ import { useMemo, useState } from "react";
 import { Alert, Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { Redirect, router } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useMutation, useQuery } from "@apollo/client/react";
 import {
+  DayCard,
   DayWeightSelector,
   EmptyTripPrompt,
   HeaderCard,
@@ -13,21 +15,38 @@ import {
   spacing,
   type NavBarItemKey,
 } from "@repo/ui";
+import { ActiveTripDocument, UpdateMealSlotWeightDocument } from "@repo/types";
 
 import { formatWon } from "@/lib/format";
 import {
   MEAL_TYPES,
   MEAL_TYPE_LABEL,
-  MOCK_TODAY,
   WEIGHT_LABEL,
   WEIGHT_LEVEL_BY_LABEL,
+  computeMealBudgets,
   getTripDates,
   type MealType,
+  type WeightLevel,
 } from "@/lib/mock/trip";
-import { useTripStore } from "@/lib/mock/tripStore";
+import { useSession } from "@/hooks/useSession";
 
-// 로그인/여행 목록 API 연동 전까지는 데모용 여행이 항상 진행 중인 것으로 가정
-const HAS_ACTIVE_TRIP = true;
+interface ActiveTrip {
+  name: string;
+  startDate: string;
+  endDate: string;
+}
+
+interface ActiveMealSlot {
+  id: string;
+  date: string;
+  mealType: MealType;
+  weightLevel: WeightLevel;
+  budgetAmount: number;
+  isRecorded: boolean;
+  recordedAmount: number | null;
+}
+
+const todayDate = () => new Date().toISOString().slice(0, 10);
 
 const handleNavChange = (key: NavBarItemKey) => {
   if (key === "home") return;
@@ -43,17 +62,56 @@ const handleNavChange = (key: NavBarItemKey) => {
 };
 
 export default function HomeScreen() {
-  const { trip } = useTripStore();
+  const { session } = useSession();
+  const { data, loading, refetch } = useQuery(ActiveTripDocument, {
+    variables: { userId: session?.user.id ?? "" },
+    skip: !session,
+    fetchPolicy: "cache-and-network",
+  });
 
-  if (!HAS_ACTIVE_TRIP) {
+  if (loading && !data) {
+    return (
+      <View style={styles.container}>
+        <View style={styles.emptyContent}>
+          <Text color="subtlest">여행 정보 불러오는 중...</Text>
+        </View>
+        <NavBar active="home" onChange={handleNavChange} />
+      </View>
+    );
+  }
+
+  const tripNode = data?.tripsCollection.edges[0]?.node;
+  if (!tripNode) {
     return <EmptyHome />;
   }
-  // F7(여행 자동 완료) 판정은 서버/RPC 몫이지만, 목데이터 단계에서는 오늘이
-  // 여행 종료일을 지났는지로만 임시 판별해서 완료 화면으로 보낸다.
-  if (MOCK_TODAY > trip.endDate) {
+  // F7(여행 자동 완료) 판정 로직 자체는 수진 담당이라 손대지 않고, trips.status
+  // 필드만 읽어서 완료 화면으로 보낸다.
+  if (tripNode.status === "completed") {
     return <Redirect href="/trip-complete" />;
   }
-  return <ActiveTripHome />;
+
+  const trip: ActiveTrip = {
+    name: tripNode.name,
+    startDate: tripNode.start_date,
+    endDate: tripNode.end_date,
+  };
+  const mealSlots: ActiveMealSlot[] = (tripNode.meal_slotsCollection?.edges ?? []).map((edge) => ({
+    id: edge.node.id,
+    date: edge.node.date,
+    mealType: edge.node.meal_type as MealType,
+    weightLevel: edge.node.weight_level as WeightLevel,
+    budgetAmount: edge.node.budget_amount,
+    isRecorded: edge.node.is_recorded,
+    recordedAmount: edge.node.recorded_amount,
+  }));
+
+  // schema-design.md §2: trips.status는 시작 전/진행 중을 구분하지 않으므로
+  // (둘 다 'ongoing'), "예정" 표시는 클라이언트에서 start_date > 오늘로 계산한다.
+  if (trip.startDate > todayDate()) {
+    return <UpcomingTripHome trip={trip} mealSlots={mealSlots} />;
+  }
+
+  return <ActiveTripHome trip={trip} mealSlots={mealSlots} onChanged={() => refetch()} />;
 }
 
 function EmptyHome() {
@@ -72,21 +130,80 @@ function EmptyHome() {
   );
 }
 
-function ActiveTripHome() {
+function UpcomingTripHome({
+  trip,
+  mealSlots,
+}: {
+  trip: ActiveTrip;
+  mealSlots: ActiveMealSlot[];
+}) {
   const insets = useSafeAreaInsets();
-  const { trip, mealSlots, updateDayWeights } = useTripStore();
+  const daysUntilStart = Math.round(
+    (new Date(trip.startDate).getTime() - new Date(todayDate()).getTime()) /
+      (1000 * 60 * 60 * 24),
+  );
+  const firstDaySlots = mealSlots
+    .filter((slot) => slot.date === trip.startDate)
+    .sort((a, b) => MEAL_TYPES.indexOf(a.mealType) - MEAL_TYPES.indexOf(b.mealType));
+  const firstDayBudget = firstDaySlots.reduce((sum, slot) => sum + slot.budgetAmount, 0);
+  const budgetFor = (mealType: MealType) =>
+    firstDaySlots.find((slot) => slot.mealType === mealType)?.budgetAmount ?? 0;
+  const [, month, day] = trip.startDate.split("-");
+
+  return (
+    <View style={styles.container}>
+      <ScrollView
+        contentContainerStyle={[
+          styles.dashboardContent,
+          { paddingTop: spacing[16] + insets.top },
+        ]}
+      >
+        <HeaderCard
+          title={trip.name}
+          consumedLabel="여행 시작까지"
+          consumed={daysUntilStart > 0 ? `D-${daysUntilStart}` : "D-day"}
+          budgetLabel="시작일"
+          dayBudget={`${month}.${day}`}
+        />
+        <Text variant="title3Emphasized">1일차 예산 미리보기</Text>
+        <DayCard
+          day={`1일차 / ${month}.${day}`}
+          totalBudget={formatWon(firstDayBudget)}
+          breakfast={formatWon(budgetFor("breakfast"))}
+          lunch={formatWon(budgetFor("lunch"))}
+          dinner={formatWon(budgetFor("dinner"))}
+        />
+      </ScrollView>
+      <NavBar active="home" onChange={handleNavChange} />
+    </View>
+  );
+}
+
+function ActiveTripHome({
+  trip,
+  mealSlots,
+  onChanged,
+}: {
+  trip: ActiveTrip;
+  mealSlots: ActiveMealSlot[];
+  onChanged: () => void;
+}) {
+  const insets = useSafeAreaInsets();
   const [expanded, setExpanded] = useState(true);
+  const [updateMealSlotWeight] = useMutation(UpdateMealSlotWeightDocument);
 
-  const dayIndex = getTripDates(trip).indexOf(MOCK_TODAY);
+  const today = todayDate();
+  const dayIndex = getTripDates(trip).indexOf(today);
   const todaySlots = useMemo(
-    () => mealSlots.filter((slot) => slot.date === MOCK_TODAY),
-    [mealSlots],
+    () =>
+      mealSlots
+        .filter((slot) => slot.date === today)
+        // GraphQL 쿼리는 끼니 순서를 보장하지 않아 아침/점심/저녁 순으로 직접 정렬
+        .sort((a, b) => MEAL_TYPES.indexOf(a.mealType) - MEAL_TYPES.indexOf(b.mealType)),
+    [mealSlots, today],
   );
 
-  const dayBudget = todaySlots.reduce(
-    (sum, slot) => sum + slot.budgetAmount,
-    0,
-  );
+  const dayBudget = todaySlots.reduce((sum, slot) => sum + slot.budgetAmount, 0);
   const consumed = todaySlots.reduce(
     (sum, slot) => sum + (slot.recordedAmount ?? 0),
     0,
@@ -106,7 +223,7 @@ function ActiveTripHome() {
     ? formatWon(Math.abs(dayBudget - consumed))
     : undefined;
 
-  const [, month, day] = MOCK_TODAY.split("-");
+  const [, month, day] = today.split("-");
 
   const handleMealPress = (mealType: MealType) => {
     Alert.alert(
@@ -115,10 +232,10 @@ function ActiveTripHome() {
     );
   };
 
-  const handleChangeWeight = (mealKey: string, weightLabel: string) => {
+  const handleChangeWeight = async (mealKey: string, weightLabel: string) => {
     const weightLevel =
       WEIGHT_LEVEL_BY_LABEL[weightLabel as keyof typeof WEIGHT_LEVEL_BY_LABEL];
-    const nextWeights: Record<MealType, typeof weightLevel> = {
+    const nextWeights: Record<MealType, WeightLevel> = {
       breakfast:
         todaySlots.find((slot) => slot.mealType === "breakfast")?.weightLevel ??
         "light",
@@ -130,7 +247,27 @@ function ActiveTripHome() {
         "hearty",
     };
     nextWeights[mealKey as MealType] = weightLevel;
-    updateDayWeights(MOCK_TODAY, nextWeights);
+
+    const recalculated = computeMealBudgets(dayBudget, nextWeights);
+    const targetSlots = MEAL_TYPES.map((mealType) =>
+      todaySlots.find((slot) => slot.mealType === mealType),
+    ).filter((slot): slot is ActiveMealSlot => slot != null);
+
+    try {
+      await updateMealSlotWeight({
+        variables: {
+          slotIds: targetSlots.map((slot) => slot.id),
+          budgetAmounts: targetSlots.map((slot) => recalculated[slot.mealType]),
+          weightLevels: targetSlots.map((slot) => nextWeights[slot.mealType]),
+        },
+      });
+      onChanged();
+    } catch (error) {
+      Alert.alert(
+        "가중치 변경 실패",
+        error instanceof Error ? error.message : "잠시 후 다시 시도해주세요.",
+      );
+    }
   };
 
   return (

@@ -1,0 +1,37 @@
+query ActiveTrip($userId: UUID!) {
+  tripsCollection(
+    filter: { user_id: { eq: $userId }, status: { eq: "ongoing" } }
+    orderBy: [{ created_at: DescNullsLast }]
+    first: 1
+  ) {
+    edges {
+      node {
+        id
+        name
+        region_code
+        start_date
+        end_date
+        total_budget
+        fixed_cost
+        food_budget_ratio
+        floating_budget
+        status
+        meal_slotsCollection(first: 1000) {
+          edges {
+            node {
+              id
+              date
+              meal_type
+              weight_level
+              budget_amount
+              carried_over_amount
+              is_recorded
+              is_cascade_confirmed
+              recorded_amount
+            }
+          }
+        }
+      }
+    }
+  }
+}

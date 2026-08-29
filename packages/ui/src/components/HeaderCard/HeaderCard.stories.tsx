@@ -55,3 +55,14 @@ export const AllStates: Story = {
     </View>
   ),
 }
+
+export const UpcomingTrip: Story = {
+  args: {
+    title: '친구들과 대구 여행',
+    consumed: 'D-1',
+    consumedLabel: '여행 시작까지',
+    dayBudget: '08.30',
+    budgetLabel: '시작일',
+    state: 'default',
+  },
+}
