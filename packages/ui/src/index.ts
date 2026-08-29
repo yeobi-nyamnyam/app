@@ -77,5 +77,7 @@ export { ChatBubble } from "./components/ChatBubble";
 export type { ChatBubbleProps, ChatBubbleSender, ChatBubbleVariant } from "./components/ChatBubble";
 export { ChatInputBar } from "./components/ChatInputBar";
 export type { ChatInputBarProps } from "./components/ChatInputBar";
+export { ChatRecordSheet } from "./components/ChatRecordSheet";
+export type { ChatRecordSheetProps } from "./components/ChatRecordSheet";
 export { colors, typography, spacing, radius, stroke, icon } from "@repo/tokens";
 export { getFontFamily } from "./typography/getFontFamily";
