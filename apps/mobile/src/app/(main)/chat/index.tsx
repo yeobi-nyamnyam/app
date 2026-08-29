@@ -159,6 +159,17 @@ function ChatConversation({
           buttonLabel: "메뉴 기록",
           onButtonPress: () => goToRecordScreen(String(parsed.amount)),
         });
+        // 추천(F3) 화면이 아직 없어서 실제 이동은 못 시키고, 어디로 이어질지만
+        // 보여준다 (Figma "Meal Recommand" 말풍선).
+        appendMessage({
+          id: `ai-recommend-${Date.now()}`,
+          sender: "ai",
+          variant: "cta",
+          title: formatWon(remaining),
+          description: "오늘 남은 식비가 줄었어요. 추천에서 다시 골라보세요.",
+          buttonLabel: "새 추천 보기",
+          onButtonPress: () => Alert.alert("준비 중", "추천 화면은 아직 준비 중이에요."),
+        });
         return;
       }
 
