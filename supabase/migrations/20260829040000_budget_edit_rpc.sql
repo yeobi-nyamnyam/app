@@ -31,7 +31,22 @@ create or replace function public.edit_trip_budget(
 declare
   v_before jsonb;
   v_after public.trips;
+  v_recorded_total int;
 begin
+  -- F4-1 로컬 검증(버튼 비활성화)과 동일한 규칙을 서버에서도 재검증한다
+  -- (business-logic-notes.md §5: "서버/RPC가 재검증 후 trips 갱신").
+  if p_total_budget < p_fixed_cost + p_floating_budget then
+    raise exception '전체 예산이 고정비용+유동비용보다 적습니다';
+  end if;
+
+  select coalesce(sum(budget_amount), 0) into v_recorded_total
+  from public.meal_slots
+  where trip_id = p_trip_id and is_recorded = true;
+
+  if p_floating_budget < v_recorded_total then
+    raise exception '유동비용이 이미 기록된 끼니 예산 합보다 적습니다';
+  end if;
+
   select to_jsonb(t) into v_before from public.trips t where t.id = p_trip_id;
 
   update public.trips
