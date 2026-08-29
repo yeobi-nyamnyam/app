@@ -73,5 +73,7 @@ export { ChatLogList } from "./components/ChatLogList";
 export type { ChatLogListProps, ChatLogListItem } from "./components/ChatLogList";
 export { SectionHeader } from "./components/SectionHeader";
 export type { SectionHeaderProps } from "./components/SectionHeader";
+export { ChatBubble } from "./components/ChatBubble";
+export type { ChatBubbleProps, ChatBubbleSender, ChatBubbleVariant } from "./components/ChatBubble";
 export { colors, typography, spacing, radius, stroke, icon } from "@repo/tokens";
 export { getFontFamily } from "./typography/getFontFamily";

@@ -2,13 +2,13 @@ import { Pressable, StyleSheet, Text, View } from 'react-native'
 import { colors, radius, spacing, stroke, typography } from '@repo/tokens'
 
 /**
- * @param title 카드 제목
+ * @param title 카드 제목 (optional, 없으면 설명 텍스트만 표시)
  * @param description 제목 아래 설명 텍스트
  * @param buttonLabel 하단 버튼에 표시할 텍스트
  * @param onPress 버튼을 클릭할 때 발생하는 event 명시
  */
 export interface CTACardProps {
-  title: string
+  title?: string
   description: string
   buttonLabel: string
   onPress?: () => void
@@ -18,7 +18,7 @@ export const CTACard = ({ title, description, buttonLabel, onPress }: CTACardPro
   return (
     <View style={styles.container}>
       <View style={styles.textBlock}>
-        <Text style={styles.title}>{title}</Text>
+        {title ? <Text style={styles.title}>{title}</Text> : null}
         <Text style={styles.description}>{description}</Text>
       </View>
       <Pressable style={styles.button} onPress={onPress}>
