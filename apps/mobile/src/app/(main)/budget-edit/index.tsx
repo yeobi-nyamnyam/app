@@ -66,7 +66,7 @@ const toEditableBudget = (trip: EditTrip): EditableBudget => ({
 
 export default function TripEditScreen() {
   const { session } = useSession();
-  const { data, loading } = useQuery(ActiveTripDocument, {
+  const { data, loading, refetch } = useQuery(ActiveTripDocument, {
     variables: { userId: session?.user.id ?? "" },
     skip: !session,
     fetchPolicy: "cache-and-network",
@@ -100,10 +100,18 @@ export default function TripEditScreen() {
     recordedAmount: edge.node.recorded_amount,
   }));
 
-  return <TripEditForm trip={trip} mealSlots={mealSlots} />;
+  return <TripEditForm trip={trip} mealSlots={mealSlots} onSaved={() => refetch()} />;
 }
 
-function TripEditForm({ trip, mealSlots }: { trip: EditTrip; mealSlots: EditMealSlot[] }) {
+function TripEditForm({
+  trip,
+  mealSlots,
+  onSaved,
+}: {
+  trip: EditTrip;
+  mealSlots: EditMealSlot[];
+  onSaved: () => void;
+}) {
   const insets = useSafeAreaInsets();
   const [editTripBudget, { loading: isSaving }] = useMutation(EditTripBudgetDocument);
   const { data: regionData } = useQuery(RegionNameDocument, {
@@ -209,6 +217,7 @@ function TripEditForm({ trip, mealSlots }: { trip: EditTrip; mealSlots: EditMeal
       setChangeLines(lines);
       setCommitted(draft);
       setEditingField(null);
+      onSaved();
     } catch (error) {
       RNAlert.alert(
         "예산 수정 실패",
