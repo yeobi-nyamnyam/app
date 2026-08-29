@@ -67,5 +67,7 @@ export { DataCardRow } from "./components/DataCardRow";
 export type { DataCardRowProps, DataCardRowVariant } from "./components/DataCardRow";
 export { BudgetFieldRow } from "./components/BudgetFieldRow";
 export type { BudgetFieldRowProps, BudgetFieldRowState } from "./components/BudgetFieldRow";
+export { ChatLogRow } from "./components/ChatLogRow";
+export type { ChatLogRowProps } from "./components/ChatLogRow";
 export { colors, typography, spacing, radius, stroke, icon } from "@repo/tokens";
 export { getFontFamily } from "./typography/getFontFamily";
