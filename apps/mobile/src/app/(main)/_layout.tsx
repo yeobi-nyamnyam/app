@@ -1,7 +1,6 @@
 import { Redirect, Stack } from "expo-router";
 
 import { useSession } from "@/hooks/useSession";
-import { TripStoreProvider } from "@/lib/mock/tripStore";
 
 export default function MainLayout() {
   const { session, isLoading } = useSession();
@@ -14,9 +13,5 @@ export default function MainLayout() {
     return <Redirect href="/(auth)/login" />;
   }
 
-  return (
-    <TripStoreProvider>
-      <Stack screenOptions={{ headerShown: false }} />
-    </TripStoreProvider>
-  );
+  return <Stack screenOptions={{ headerShown: false }} />;
 }

@@ -27,7 +27,7 @@ import {
   getTripDates,
   type MealType,
   type WeightLevel,
-} from "@/lib/mock/trip";
+} from "@/lib/budget";
 import { useSession } from "@/hooks/useSession";
 
 interface ActiveTrip {
