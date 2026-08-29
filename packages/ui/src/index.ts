@@ -71,5 +71,7 @@ export { ChatLogRow } from "./components/ChatLogRow";
 export type { ChatLogRowProps } from "./components/ChatLogRow";
 export { ChatLogList } from "./components/ChatLogList";
 export type { ChatLogListProps, ChatLogListItem } from "./components/ChatLogList";
+export { SectionHeader } from "./components/SectionHeader";
+export type { SectionHeaderProps } from "./components/SectionHeader";
 export { colors, typography, spacing, radius, stroke, icon } from "@repo/tokens";
 export { getFontFamily } from "./typography/getFontFamily";
