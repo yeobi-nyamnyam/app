@@ -12,7 +12,7 @@ import {
   getTripDates,
   type MealType,
   type WeightLevel,
-} from "@/lib/mock/trip";
+} from "@/lib/budget";
 import { createTrip } from "@/lib/trip";
 
 const toWeightLevel = (value: string | string[] | undefined, fallback: WeightLevel): WeightLevel => {

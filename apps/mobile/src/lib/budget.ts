@@ -1,37 +1,9 @@
 import type { MealWeight } from "@repo/ui";
 
-// TourAPI/착한가격업소 연동 전까지 F1~F4 화면을 데모하기 위한 목데이터.
-// 형태는 docs/schema-design.md의 trips/meal_slots 테이블을 그대로 따른다.
+// F1~F4 예산 계산 순수 유틸. docs/business-logic-notes.md의 배분/재분배 규칙을 그대로 구현한다.
 
 export type MealType = "breakfast" | "lunch" | "dinner";
 export type WeightLevel = "light" | "normal" | "hearty";
-
-export interface MockTrip {
-  id: string;
-  name: string;
-  regionCode: string;
-  regionName: string;
-  startDate: string;
-  endDate: string;
-  totalBudget: number;
-  fixedCost: number;
-  foodBudgetRatio: number;
-  floatingBudget: number;
-  status: "ongoing" | "completed";
-}
-
-export interface MockMealSlot {
-  id: string;
-  tripId: string;
-  date: string;
-  mealType: MealType;
-  weightLevel: WeightLevel;
-  budgetAmount: number;
-  carriedOverAmount: number;
-  isRecorded: boolean;
-  isCascadeConfirmed: boolean;
-  recordedAmount: number | null;
-}
 
 export const MEAL_TYPES: MealType[] = ["breakfast", "lunch", "dinner"];
 
@@ -109,19 +81,27 @@ export const computeDayBudgets = (
   );
 };
 
+export interface RedistributableSlot {
+  id: string;
+  isRecorded: boolean;
+  budgetAmount: number;
+  weightLevel: WeightLevel;
+}
+
 /**
  * F2-3 남은 끼니 기준 재분배 (business-logic-notes.md §2).
  * is_recorded=true 슬롯은 소급 변경하지 않고, 새 floatingBudget에서 그 슬롯들의
  * budget_amount 합을 뺀 나머지를 남은(is_recorded=false) 슬롯들의 weight_level
- * 비율로 재배분한다.
+ * 비율로 재배분한다. 계산에 필요한 최소 필드(RedistributableSlot)만 요구하는
+ * 제네릭이라 실제 GraphQL 응답 슬롯 타입 그대로 재사용할 수 있다.
  *
  * @param mealSlots 여행의 전체 끼니 슬롯
  * @param nextFloatingBudget 새로 저장된 유동비용(식비 예산)
  */
-export const redistributeUnrecordedSlots = (
-  mealSlots: MockMealSlot[],
+export const redistributeUnrecordedSlots = <T extends RedistributableSlot>(
+  mealSlots: T[],
   nextFloatingBudget: number,
-): MockMealSlot[] => {
+): T[] => {
   const recordedTotal = mealSlots
     .filter((slot) => slot.isRecorded)
     .reduce((sum, slot) => sum + slot.budgetAmount, 0);
@@ -155,9 +135,7 @@ export const redistributeUnrecordedSlots = (
   );
 };
 
-export const getTripDates = (
-  trip: Pick<MockTrip, "startDate" | "endDate">,
-): string[] => {
+export const getTripDates = (trip: { startDate: string; endDate: string }): string[] => {
   const dates: string[] = [];
   const cursor = new Date(trip.startDate);
   const end = new Date(trip.endDate);
@@ -167,48 +145,3 @@ export const getTripDates = (
   }
   return dates;
 };
-
-export const mockTrip: MockTrip = {
-  id: "trip-1",
-  name: "친구들과 대구 여행",
-  regionCode: "daegu",
-  regionName: "대구",
-  startDate: "2026-08-12",
-  endDate: "2026-08-14",
-  totalBudget: 480000,
-  fixedCost: 180000,
-  foodBudgetRatio: 45,
-  floatingBudget: 135000,
-  status: "ongoing",
-};
-
-// 실제로는 로그인한 유저의 오늘 날짜와 trip.startDate로 계산되지만, 백엔드 연동 전이라 2일차로 고정
-export const MOCK_TODAY = "2026-08-13";
-
-const buildMealSlots = (trip: MockTrip): MockMealSlot[] => {
-  const dates = getTripDates(trip);
-  const dayBudgets = computeDayBudgets(trip.floatingBudget, dates.length);
-
-  return dates.flatMap((date, dayIndex) => {
-    const dayBudget = dayBudgets[dayIndex] ?? 0;
-    const mealBudgets = computeMealBudgets(dayBudget, DEFAULT_MEAL_WEIGHTS);
-    return MEAL_TYPES.map((mealType) => {
-      const isPastBreakfastOnDay2 =
-        date === "2026-08-13" && mealType === "breakfast";
-      return {
-        id: `${trip.id}-${date}-${mealType}`,
-        tripId: trip.id,
-        date,
-        mealType,
-        weightLevel: DEFAULT_MEAL_WEIGHTS[mealType],
-        budgetAmount: mealBudgets[mealType],
-        carriedOverAmount: 0,
-        isRecorded: isPastBreakfastOnDay2,
-        isCascadeConfirmed: false,
-        recordedAmount: isPastBreakfastOnDay2 ? mealBudgets[mealType] : null,
-      };
-    });
-  });
-};
-
-export const mockMealSlots: MockMealSlot[] = buildMealSlots(mockTrip);

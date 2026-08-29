@@ -23,7 +23,7 @@ import {
   WEIGHT_LABEL,
   WEIGHT_LEVEL_BY_LABEL,
   type MealType,
-} from "@/lib/mock/trip";
+} from "@/lib/budget";
 import { findRegionByName } from "@/lib/region";
 
 const WEIGHT_OPTIONS = [

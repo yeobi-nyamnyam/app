@@ -1,7 +1,8 @@
 import { useState } from "react";
-import { ScrollView, StyleSheet, TextInput, View } from "react-native";
+import { Alert as RNAlert, ScrollView, StyleSheet, TextInput, View } from "react-native";
 import { router } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useMutation, useQuery } from "@apollo/client/react";
 import {
   Alert,
   BudgetFieldRow,
@@ -15,10 +16,11 @@ import {
   spacing,
   typography,
 } from "@repo/ui";
+import { ActiveTripDocument, EditTripBudgetDocument, RegionNameDocument } from "@repo/types";
 
 import { formatWon, parseDigits } from "@/lib/format";
-import { getTripDates } from "@/lib/mock/trip";
-import { useTripStore } from "@/lib/mock/tripStore";
+import { getTripDates, redistributeUnrecordedSlots, type WeightLevel } from "@/lib/budget";
+import { useSession } from "@/hooks/useSession";
 
 interface EditableBudget {
   name: string;
@@ -29,6 +31,25 @@ interface EditableBudget {
 
 type EditableField = keyof EditableBudget;
 
+interface EditTrip {
+  id: string;
+  name: string;
+  regionCode: string;
+  startDate: string;
+  endDate: string;
+  totalBudget: number;
+  fixedCost: number;
+  floatingBudget: number;
+}
+
+interface EditMealSlot {
+  id: string;
+  isRecorded: boolean;
+  weightLevel: WeightLevel;
+  budgetAmount: number;
+  recordedAmount: number | null;
+}
+
 const FIELD_LABEL: Record<EditableField, string> = {
   name: "여행 이름",
   totalBudget: "전체 예산",
@@ -36,12 +57,7 @@ const FIELD_LABEL: Record<EditableField, string> = {
   floatingBudget: "유동비용",
 };
 
-const toEditableBudget = (trip: {
-  name: string;
-  totalBudget: number;
-  fixedCost: number;
-  floatingBudget: number;
-}) => ({
+const toEditableBudget = (trip: EditTrip): EditableBudget => ({
   name: trip.name,
   totalBudget: trip.totalBudget,
   fixedCost: trip.fixedCost,
@@ -49,14 +65,54 @@ const toEditableBudget = (trip: {
 });
 
 export default function TripEditScreen() {
+  const { session } = useSession();
+  const { data, loading } = useQuery(ActiveTripDocument, {
+    variables: { userId: session?.user.id ?? "" },
+    skip: !session,
+    fetchPolicy: "cache-and-network",
+  });
+
+  if (loading && !data) {
+    return null;
+  }
+
+  const tripNode = data?.tripsCollection.edges[0]?.node;
+  if (!tripNode) {
+    router.back();
+    return null;
+  }
+
+  const trip: EditTrip = {
+    id: tripNode.id,
+    name: tripNode.name,
+    regionCode: tripNode.region_code,
+    startDate: tripNode.start_date,
+    endDate: tripNode.end_date,
+    totalBudget: tripNode.total_budget,
+    fixedCost: tripNode.fixed_cost,
+    floatingBudget: tripNode.floating_budget,
+  };
+  const mealSlots: EditMealSlot[] = (tripNode.meal_slotsCollection?.edges ?? []).map((edge) => ({
+    id: edge.node.id,
+    isRecorded: edge.node.is_recorded,
+    weightLevel: edge.node.weight_level as WeightLevel,
+    budgetAmount: edge.node.budget_amount,
+    recordedAmount: edge.node.recorded_amount,
+  }));
+
+  return <TripEditForm trip={trip} mealSlots={mealSlots} />;
+}
+
+function TripEditForm({ trip, mealSlots }: { trip: EditTrip; mealSlots: EditMealSlot[] }) {
   const insets = useSafeAreaInsets();
-  const { trip, mealSlots, applyBudgetEdit } = useTripStore();
-  const [committed, setCommitted] = useState<EditableBudget>(() =>
-    toEditableBudget(trip),
-  );
-  const [draft, setDraft] = useState<EditableBudget>(() =>
-    toEditableBudget(trip),
-  );
+  const [editTripBudget, { loading: isSaving }] = useMutation(EditTripBudgetDocument);
+  const { data: regionData } = useQuery(RegionNameDocument, {
+    variables: { code: trip.regionCode },
+  });
+  const regionName = regionData?.region_cacheCollection.edges[0]?.node.region_name ?? trip.regionCode;
+
+  const [committed, setCommitted] = useState<EditableBudget>(() => toEditableBudget(trip));
+  const [draft, setDraft] = useState<EditableBudget>(() => toEditableBudget(trip));
   const [editingField, setEditingField] = useState<EditableField | null>(null);
   const [editingText, setEditingText] = useState("");
   const [changeLines, setChangeLines] = useState<string[]>([]);
@@ -111,7 +167,7 @@ export default function TripEditScreen() {
     setEditingField(null);
   };
 
-  const handleConfirm = () => {
+  const handleConfirm = async () => {
     if (!hasPendingChanges || !isValid) {
       return;
     }
@@ -128,18 +184,37 @@ export default function TripEditScreen() {
         field === "name" ? draft[field] : formatWon(draft[field] as number);
       lines.push(`${FIELD_LABEL[field]} ${from} → ${to}`);
     });
-    if (
-      draft.floatingBudget !== committed.floatingBudget &&
-      unrecordedCount > 0
-    ) {
+
+    const redistributed = redistributeUnrecordedSlots(mealSlots, draft.floatingBudget);
+    const changedSlots = redistributed.filter((slot) => !slot.isRecorded);
+
+    if (draft.floatingBudget !== committed.floatingBudget && unrecordedCount > 0) {
       lines.push(
         `재분배: 아직 기록 안 한 끼니 ${unrecordedCount}개 예산이 다시 계산됐어요`,
       );
     }
-    applyBudgetEdit(draft);
-    setChangeLines(lines);
-    setCommitted(draft);
-    setEditingField(null);
+
+    try {
+      await editTripBudget({
+        variables: {
+          tripId: trip.id,
+          name: draft.name,
+          totalBudget: draft.totalBudget,
+          fixedCost: draft.fixedCost,
+          floatingBudget: draft.floatingBudget,
+          slotIds: changedSlots.map((slot) => slot.id),
+          slotAmounts: changedSlots.map((slot) => slot.budgetAmount),
+        },
+      });
+      setChangeLines(lines);
+      setCommitted(draft);
+      setEditingField(null);
+    } catch (error) {
+      RNAlert.alert(
+        "예산 수정 실패",
+        error instanceof Error ? error.message : "잠시 후 다시 시도해주세요.",
+      );
+    }
   };
 
   const readOnlyRow = (label: string, value: string) => (
@@ -212,7 +287,7 @@ export default function TripEditScreen() {
 
         <View style={styles.fieldCard}>
           {editableRow("name")}
-          {readOnlyRow("지역", trip.regionName)}
+          {readOnlyRow("지역", regionName)}
           {readOnlyRow("기간", dateRangeLabel)}
           {editableRow("totalBudget")}
           {editableRow("fixedCost")}
@@ -227,8 +302,8 @@ export default function TripEditScreen() {
       ) : null}
 
       <Footer
-        label="수정 완료"
-        disabled={!hasPendingChanges || !isValid}
+        label={isSaving ? "저장 중..." : "수정 완료"}
+        disabled={!hasPendingChanges || !isValid || isSaving}
         onPress={handleConfirm}
         bottomInset={insets.bottom}
       />
