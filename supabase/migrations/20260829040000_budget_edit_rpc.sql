@@ -14,8 +14,14 @@
 -- meal_slots의 budget_amount 실제 갱신은 F2에서 만든 apply_meal_slot_budgets를
 -- 재사용한다(is_recorded=true인 슬롯은 소급 변경하지 않는 안전장치 포함).
 -- =========================================
+-- 이전 버전(p_name 없는 6-arg 시그니처)이 이미 적용돼 있을 수 있어, 새 시그니처로
+-- 교체하기 전에 명시적으로 제거한다 (create or replace는 인자 목록이 다르면
+-- 새 함수를 추가로 만들 뿐 기존 함수를 지우지 않아 오버로드가 중복 생김).
+drop function if exists public.edit_trip_budget(uuid, int, int, int, uuid[], int[]);
+
 create or replace function public.edit_trip_budget(
   p_trip_id uuid,
+  p_name text,
   p_total_budget int,
   p_fixed_cost int,
   p_floating_budget int,
@@ -29,7 +35,8 @@ begin
   select to_jsonb(t) into v_before from public.trips t where t.id = p_trip_id;
 
   update public.trips
-  set total_budget = p_total_budget,
+  set name = p_name,
+      total_budget = p_total_budget,
       fixed_cost = p_fixed_cost,
       floating_budget = p_floating_budget
   where id = p_trip_id
