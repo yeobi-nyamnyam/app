@@ -23,6 +23,7 @@ const meta: Meta<typeof Icon> = {
         'camera',
         'krw',
         'arrow-right',
+        'swap',
       ],
     },
     size: { control: 'select', options: ['xsmall', 'small', 'medium', 'large', 'xlarge'] },
@@ -90,6 +91,10 @@ export const Krw: Story = {
 
 export const ArrowRight: Story = {
   args: { name: 'arrow-right' },
+}
+
+export const Swap: Story = {
+  args: { name: 'swap' },
 }
 
 export const AllSizes: Story = {
