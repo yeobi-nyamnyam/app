@@ -147,11 +147,15 @@ function ChatConversation({
       }
 
       if (parsed.category === "식비") {
+        // 이 분기에 오는 시점엔 금액은 항상 파싱돼 있다(금액을 못 찾으면 위에서 먼저
+        // 다시 물어봄). "얼마 썼는지 말해달라"는 고정 문구 대신 방금 말한 금액을
+        // 그대로 인지했다는 걸 보여줘야, "저녁으로 13000원 썼어" 같은 문장에도 어색하지
+        // 않다.
         appendMessage({
           id: `ai-${Date.now()}`,
           sender: "ai",
           variant: "cta",
-          description: "끼니 소비는 채팅에서 바로 확정할 수 없어요. 기록 화면에서 남겨주세요!",
+          description: `${formatWon(parsed.amount)} 썼군요! 끼니 소비는 채팅에서 바로 저장할 수 없어서, 기록 화면에서 확인하고 남겨주세요.`,
           buttonLabel: "메뉴 기록",
           onButtonPress: () => goToRecordScreen(String(parsed.amount)),
         });
