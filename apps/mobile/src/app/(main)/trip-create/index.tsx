@@ -24,6 +24,7 @@ import {
   WEIGHT_LEVEL_BY_LABEL,
   type MealType,
 } from "@/lib/mock/trip";
+import { findRegionByName } from "@/lib/region";
 
 const WEIGHT_OPTIONS = [
   { label: "가볍게", value: "가볍게" },
@@ -35,6 +36,8 @@ export default function TripNewScreen() {
   const insets = useSafeAreaInsets();
   const [name, setName] = useState("");
   const [region, setRegion] = useState("");
+  const [regionError, setRegionError] = useState<string | undefined>();
+  const [isValidatingRegion, setIsValidatingRegion] = useState(false);
   const [startDate, setStartDate] = useState<string | null>(null);
   const [endDate, setEndDate] = useState<string | null>(null);
   const [totalBudgetText, setTotalBudgetText] = useState("");
@@ -71,8 +74,20 @@ export default function TripNewScreen() {
     [name, region, isValidDateRange, totalBudget, fixedCost, ratio],
   );
 
-  const handleConfirm = () => {
-    if (!canConfirm) {
+  const handleConfirm = async () => {
+    if (!canConfirm || isValidatingRegion) {
+      return;
+    }
+    setRegionError(undefined);
+    setIsValidatingRegion(true);
+    let matchedRegion;
+    try {
+      matchedRegion = await findRegionByName(region.trim());
+    } finally {
+      setIsValidatingRegion(false);
+    }
+    if (!matchedRegion) {
+      setRegionError("조회할 수 없는 지역입니다");
       return;
     }
     const floatingBudget = Math.floor(
@@ -82,7 +97,8 @@ export default function TripNewScreen() {
       pathname: "/budget/result",
       params: {
         name,
-        region,
+        region: matchedRegion.regionName,
+        regionCode: matchedRegion.regionCode,
         startDate: startDate ?? "",
         endDate: endDate ?? "",
         totalBudget: String(totalBudget),
@@ -123,8 +139,12 @@ export default function TripNewScreen() {
         <FormField label="지역">
           <TextField
             value={region}
-            onChangeText={setRegion}
+            onChangeText={(text) => {
+              setRegion(text);
+              setRegionError(undefined);
+            }}
             placeholder="예: 대구"
+            error={regionError}
           />
         </FormField>
         <FormField label="기간">
@@ -221,8 +241,8 @@ export default function TripNewScreen() {
         ) : null}
       </ScrollView>
       <Footer
-        label="확인"
-        disabled={!canConfirm}
+        label={isValidatingRegion ? "확인 중..." : "확인"}
+        disabled={!canConfirm || isValidatingRegion}
         onPress={handleConfirm}
         bottomInset={insets.bottom}
       />
