@@ -1,0 +1,36 @@
+mutation CreateTripWithMealSlots(
+  $name: String!
+  $regionCode: String!
+  $startDate: Date!
+  $endDate: Date!
+  $totalBudget: Int!
+  $fixedCost: Int!
+  $foodBudgetRatio: BigFloat!
+  $floatingBudget: Int!
+  $dates: [Date]!
+  $mealTypes: [String]!
+  $weightLevels: [String]!
+  $budgetAmounts: [Int]!
+) {
+  create_trip_with_meal_slots(
+    p_name: $name
+    p_region_code: $regionCode
+    p_start_date: $startDate
+    p_end_date: $endDate
+    p_total_budget: $totalBudget
+    p_fixed_cost: $fixedCost
+    p_food_budget_ratio: $foodBudgetRatio
+    p_floating_budget: $floatingBudget
+    p_dates: $dates
+    p_meal_types: $mealTypes
+    p_weight_levels: $weightLevels
+    p_budget_amounts: $budgetAmounts
+  ) {
+    id
+    name
+    region_code
+    start_date
+    end_date
+    status
+  }
+}

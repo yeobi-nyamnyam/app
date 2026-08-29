@@ -1,16 +1,19 @@
-import { ScrollView, StyleSheet, Text as RNText, View } from "react-native";
+import { useState } from "react";
+import { Alert, ScrollView, StyleSheet, Text as RNText, View } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { DayCard, Footer, Header, Text, colors, getFontFamily, radius, spacing, typography } from "@repo/ui";
 
 import { formatWon } from "@/lib/format";
 import {
+  MEAL_TYPES,
   computeDayBudgets,
   computeMealBudgets,
   getTripDates,
   type MealType,
   type WeightLevel,
 } from "@/lib/mock/trip";
+import { createTrip } from "@/lib/trip";
 
 const toWeightLevel = (value: string | string[] | undefined, fallback: WeightLevel): WeightLevel => {
   return value === "light" || value === "normal" || value === "hearty" ? value : fallback;
@@ -18,7 +21,10 @@ const toWeightLevel = (value: string | string[] | undefined, fallback: WeightLev
 
 export default function BudgetResultScreen() {
   const insets = useSafeAreaInsets();
+  const [isCreating, setIsCreating] = useState(false);
   const params = useLocalSearchParams<{
+    name: string;
+    regionCode: string;
     startDate: string;
     endDate: string;
     totalBudget: string;
@@ -44,6 +50,53 @@ export default function BudgetResultScreen() {
   const dates = params.startDate && params.endDate ? getTripDates({ startDate: params.startDate, endDate: params.endDate }) : [];
   const dayBudgets = computeDayBudgets(floatingBudget, Math.max(dates.length, 1));
 
+  const dayBreakdowns = dates.map((date, dayIndex) => ({
+    date,
+    dayBudget: dayBudgets[dayIndex] ?? 0,
+    mealBudgets: computeMealBudgets(dayBudgets[dayIndex] ?? 0, weights),
+  }));
+
+  const handleGoHome = async () => {
+    setIsCreating(true);
+    try {
+      const slotDates: string[] = [];
+      const slotMealTypes: string[] = [];
+      const slotWeightLevels: string[] = [];
+      const slotBudgetAmounts: number[] = [];
+      dayBreakdowns.forEach(({ date, mealBudgets }) => {
+        MEAL_TYPES.forEach((mealType) => {
+          slotDates.push(date);
+          slotMealTypes.push(mealType);
+          slotWeightLevels.push(weights[mealType]);
+          slotBudgetAmounts.push(mealBudgets[mealType]);
+        });
+      });
+
+      await createTrip({
+        name: params.name,
+        regionCode: params.regionCode,
+        startDate: params.startDate,
+        endDate: params.endDate,
+        totalBudget,
+        fixedCost,
+        foodBudgetRatio: ratio,
+        floatingBudget,
+        dates: slotDates,
+        mealTypes: slotMealTypes,
+        weightLevels: slotWeightLevels,
+        budgetAmounts: slotBudgetAmounts,
+      });
+      router.replace("/");
+    } catch (error) {
+      Alert.alert(
+        "여행 생성 실패",
+        error instanceof Error ? error.message : "잠시 후 다시 시도해주세요.",
+      );
+    } finally {
+      setIsCreating(false);
+    }
+  };
+
   return (
     <View style={styles.container}>
       <Header title="예산 산정 결과" onBackPress={() => router.back()} topInset={insets.top} />
@@ -58,9 +111,7 @@ export default function BudgetResultScreen() {
 
         <Text variant="title3Emphasized">일별 · 끼니별 배분</Text>
         <View style={styles.dayCards}>
-          {dates.map((date, dayIndex) => {
-            const dayBudget = dayBudgets[dayIndex] ?? 0;
-            const mealBudgets = computeMealBudgets(dayBudget, weights);
+          {dayBreakdowns.map(({ date, dayBudget, mealBudgets }, dayIndex) => {
             const [, month, day] = date.split("-");
             return (
               <DayCard
@@ -75,7 +126,12 @@ export default function BudgetResultScreen() {
           })}
         </View>
       </ScrollView>
-      <Footer label="홈으로 가기" onPress={() => router.replace("/")} bottomInset={insets.bottom} />
+      <Footer
+        label={isCreating ? "생성 중..." : "홈으로 가기"}
+        disabled={isCreating}
+        onPress={handleGoHome}
+        bottomInset={insets.bottom}
+      />
     </View>
   );
 }

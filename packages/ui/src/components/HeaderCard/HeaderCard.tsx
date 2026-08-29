@@ -7,8 +7,10 @@ export type HeaderCardState = 'default' | 'plus' | 'minus'
 
 /**
  * @param title 카드 상단에 표시할 제목 텍스트 (예: "친구들과 대구 여행 | 2일차")
- * @param consumed 오늘 사용한 식비 금액 텍스트 (예: "12,000원")
- * @param dayBudget 하루 예산 금액 텍스트 (예: "45,000원")
+ * @param consumed 큰 글씨로 강조할 값 텍스트 (예: "12,000원", "D-1")
+ * @param consumedLabel consumed 값 위에 표시할 라벨 (optional, 기본값 '오늘 식비 사용량')
+ * @param dayBudget 하단 행에 표시할 값 텍스트 (예: "45,000원", "08.30")
+ * @param budgetLabel dayBudget 값 옆에 표시할 라벨 (optional, 기본값 '일 예산')
  * @param extraBudget 여유/초과 식비 금액 텍스트, state가 'plus' 또는 'minus'일 때만 표시됨 (optional)
  * @param state 카드 상태: 'default' | 'plus' | 'minus' (optional, 기본값 'default').
  * 'plus'는 여유 식비(주황) 박스, 'minus'는 초과 식비(빨강) 박스를 하단에 추가로 보여준다
@@ -16,7 +18,9 @@ export type HeaderCardState = 'default' | 'plus' | 'minus'
 export interface HeaderCardProps {
   title: string
   consumed: string
+  consumedLabel?: string
   dayBudget: string
+  budgetLabel?: string
   extraBudget?: string
   state?: HeaderCardState
 }
@@ -39,7 +43,9 @@ const surplusBoxVariants: Record<
 export const HeaderCard = ({
   title,
   consumed,
+  consumedLabel = '오늘 식비 사용량',
   dayBudget,
+  budgetLabel = '일 예산',
   extraBudget,
   state = 'default',
 }: HeaderCardProps) => {
@@ -51,11 +57,11 @@ export const HeaderCard = ({
         {title}
       </Text>
       <View>
-        <Text style={styles.consumedLabel}>오늘 식비 사용량</Text>
+        <Text style={styles.consumedLabel}>{consumedLabel}</Text>
         <Text style={styles.consumedValue}>{consumed}</Text>
       </View>
       <View style={styles.budgetRow}>
-        <Text style={styles.budgetText}>일 예산</Text>
+        <Text style={styles.budgetText}>{budgetLabel}</Text>
         <Text style={styles.budgetText}>{dayBudget}</Text>
       </View>
       {surplus && (

@@ -38,7 +38,10 @@ const config: CodegenConfig = {
           Date: 'string',
           Datetime: 'string',
           Time: 'string',
-          BigFloat: 'number',
+          // pg_graphql의 BigFloat는 응답으로는 숫자를 주지만, mutation 변수로
+          // 보낼 때는 문자열만 받는다("Invalid input for BigFloat type. String
+          // required") — input/output 타입을 분리해서 실제 동작에 맞춘다.
+          BigFloat: { input: 'string', output: 'number' },
           BigInt: 'string',
           Cursor: 'string',
           Opaque: 'unknown',
