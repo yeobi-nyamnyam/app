@@ -49,3 +49,60 @@ export const parseChatExpense = (text: string): ParsedChatExpense | null => {
  */
 export const formatChatTime = (date: Date): string =>
   `${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`;
+
+export interface ChatMockTrip {
+  id: string;
+  name: string;
+}
+
+export type ChatLogFilterCategory = "식비" | "기타소비";
+
+export interface ChatMockLogEntry {
+  id: string;
+  title: string;
+  time: string;
+  categoryLabel: string;
+  filterCategory: ChatLogFilterCategory;
+  price: number;
+}
+
+export interface ChatMockLogGroup {
+  date: string;
+  entries: ChatMockLogEntry[];
+}
+
+// TODO(C0 API 연동): 실제 여행/예산/채팅 로그 데이터 연동 전까지 chat 화면 전체가
+// 공유하는 목데이터. F1/F2가 화면을 먼저 만들고 나중에 쿼리를 붙인 흐름과 동일하다.
+export const MOCK_HAS_ACTIVE_TRIP = true;
+
+export const MOCK_TRIP: ChatMockTrip = {
+  id: "00000000-0000-0000-0000-000000000000",
+  name: "친구들과 대구 여행",
+};
+
+export const MOCK_DAY_BUDGET = 45000;
+export const MOCK_CONSUMED = 13000;
+
+export const MOCK_LOG_GROUPS: ChatMockLogGroup[] = [
+  {
+    date: "08.13 | 2일차",
+    entries: [
+      { id: "1", title: "미분당", time: "19:20", categoryLabel: "점심", filterCategory: "식비", price: 13000 },
+    ],
+  },
+  {
+    date: "08.12 | 1일차",
+    entries: [
+      { id: "2", title: "돼지국밥", time: "19:20", categoryLabel: "저녁", filterCategory: "식비", price: 18000 },
+      { id: "3", title: "돈까스", time: "19:20", categoryLabel: "점심", filterCategory: "식비", price: 15000 },
+      {
+        id: "4",
+        title: "김밥천국 A세트",
+        time: "19:20",
+        categoryLabel: "아침",
+        filterCategory: "식비",
+        price: 12000,
+      },
+    ],
+  },
+];
