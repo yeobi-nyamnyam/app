@@ -69,5 +69,7 @@ export { BudgetFieldRow } from "./components/BudgetFieldRow";
 export type { BudgetFieldRowProps, BudgetFieldRowState } from "./components/BudgetFieldRow";
 export { ChatLogRow } from "./components/ChatLogRow";
 export type { ChatLogRowProps } from "./components/ChatLogRow";
+export { ChatLogList } from "./components/ChatLogList";
+export type { ChatLogListProps, ChatLogListItem } from "./components/ChatLogList";
 export { colors, typography, spacing, radius, stroke, icon } from "@repo/tokens";
 export { getFontFamily } from "./typography/getFontFamily";
