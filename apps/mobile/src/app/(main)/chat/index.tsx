@@ -20,13 +20,14 @@ import { formatWon } from "@/lib/format";
 import { formatChatTime, parseChatExpense } from "@/lib/chat";
 
 interface ActiveTrip {
+  id: string;
   name: string;
 }
 
 // TODO(C0 API 연동): 실제 여행/예산 데이터 연동 전까지 쓰는 목데이터. F1/F2가 화면을
 // 먼저 만들고 나중에 ActiveTripDocument 쿼리를 붙인 것과 동일한 흐름으로 이어간다.
 const MOCK_HAS_ACTIVE_TRIP = true;
-const MOCK_TRIP: ActiveTrip = { name: "친구들과 대구 여행" };
+const MOCK_TRIP: ActiveTrip = { id: "00000000-0000-0000-0000-000000000000", name: "친구들과 대구 여행" };
 const MOCK_DAY_BUDGET = 45000;
 const MOCK_CONSUMED = 13000;
 
@@ -113,6 +114,17 @@ function ChatConversation({
     setMessages((prev) => [...prev, message]);
   };
 
+  // 끼니 소비(식비)는 슬롯 연결·캐스케이드 확정(F6-4)이 아직 없어 RecordForm에서도
+  // 저장을 막아둔 상태라, 채팅에서 확정하지 않고 기록 화면(F6-1 chat 경로)으로 보낸다.
+  // ChatRecordSheet의 카테고리엔 애초에 "식비"가 없어서, AI가 식비를 다른 카테고리로
+  // 잘못 인식했을 때도 시트의 "끼니 기록" 버튼으로 여기로 빠져나올 수 있다.
+  const goToRecordScreen = (amount?: string) => {
+    const params = new URLSearchParams({ tripId: trip.id, source: "chat" });
+    if (amount) params.set("presetAmount", amount);
+    setPendingExpense(null);
+    router.push(`/record/new?${params.toString()}`);
+  };
+
   const handleSend = () => {
     const text = inputValue.trim();
     if (!text) return;
@@ -134,13 +146,14 @@ function ChatConversation({
         return;
       }
 
-      // 끼니 소비(식비)는 슬롯 연결·캐스케이드 확정(F6-4)이 아직 붙지 않아
-      // RecordForm에서도 저장을 막아둔 상태라, 채팅에서도 동일하게 안내만 한다.
       if (parsed.category === "식비") {
         appendMessage({
           id: `ai-${Date.now()}`,
           sender: "ai",
-          text: "끼니 소비 기록은 곧 채팅에서도 지원할 예정이에요. 지금은 기록 탭에서 남겨주세요!",
+          variant: "cta",
+          description: "끼니 소비는 채팅에서 바로 확정할 수 없어요. 기록 화면에서 남겨주세요!",
+          buttonLabel: "메뉴 기록",
+          onButtonPress: () => goToRecordScreen(String(parsed.amount)),
         });
         return;
       }
@@ -202,6 +215,7 @@ function ChatConversation({
             <View style={{ paddingBottom: insets.bottom }}>
               <ChatRecordSheet
                 title="끼니 기록"
+                onTitlePress={() => goToRecordScreen(pendingExpense.amount)}
                 categories={CATEGORY_OPTIONS}
                 selectedCategory={pendingExpense.category}
                 onSelectCategory={(value) =>
