@@ -75,5 +75,7 @@ export { SectionHeader } from "./components/SectionHeader";
 export type { SectionHeaderProps } from "./components/SectionHeader";
 export { ChatBubble } from "./components/ChatBubble";
 export type { ChatBubbleProps, ChatBubbleSender, ChatBubbleVariant } from "./components/ChatBubble";
+export { ChatInputBar } from "./components/ChatInputBar";
+export type { ChatInputBarProps } from "./components/ChatInputBar";
 export { colors, typography, spacing, radius, stroke, icon } from "@repo/tokens";
 export { getFontFamily } from "./typography/getFontFamily";
