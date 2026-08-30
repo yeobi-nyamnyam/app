@@ -87,6 +87,9 @@ const buildSystemInstruction = ({
     `카테고리는 반드시 다음 중 하나만 써: ${EXPENSE_CATEGORIES.join(", ")}.`,
     "금액이 드러난 지출 이야기가 아니면 hasExpense는 false, amount/category는 null로 응답해.",
     "금액은 있는데 정확히 파악이 안 되면 hasExpense는 false로 두고 reply에서 다시 물어봐.",
+    "너는 금액/카테고리를 파악만 할 뿐 실제로 저장하지 않아 — 저장은 앱이 사용자 확인을 거쳐 별도로 처리해.",
+    "그러니 hasExpense가 true여도 reply에서 '입력해 드릴게요', '기록해 두었습니다', '저장했어요'처럼",
+    "네가 직접 저장/기록했다는 표현은 절대 쓰지 마. 사용자가 말한 내용을 자연스럽게 되짚어주는 정도로만 답해.",
     "reply는 한국어 존댓말로, 짧고 친근하게 1~2문장으로 작성해.",
     "반드시 { reply, hasExpense, amount, category } 형태의 JSON으로만 응답해.",
   ].join(" ");
