@@ -3,7 +3,7 @@ import { Alert, ScrollView, StyleSheet, View } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useQuery } from "@apollo/client/react";
-import { Chip, Header, RecordCard, Text, colors, spacing } from "@repo/ui";
+import { Chip, Header, NavBar, RecordCard, Text, colors, spacing, type NavBarItemKey } from "@repo/ui";
 import { TripHistoryDocument, TripMealLogsDocument } from "@repo/types";
 
 import { formatDateWithWeekday, formatTime, formatWon } from "@/lib/format";
@@ -95,10 +95,35 @@ export default function RecordHistoryScreen() {
     });
   };
 
+  const handleNavChange = (key: NavBarItemKey) => {
+    if (key === "record") {
+      router.push("/record");
+      return;
+    }
+    if (key === "home") {
+      router.push("/");
+      return;
+    }
+    if (key === "recommend") {
+      router.push("/recommend");
+      return;
+    }
+    if (key === "chat") {
+      router.push("/chat");
+      return;
+    }
+    if (key === "profile") {
+      router.push("/mypage");
+      return;
+    }
+    Alert.alert("준비 중", "아직 구현되지 않은 탭이에요.");
+  };
+
   return (
     <View style={[styles.screen, { paddingTop: insets.top }]}>
       <Header
         title={params.tripName}
+        textAlign="start"
         tailing="text"
         tailingText="예산 변동 히스토리 보기"
         onBackPress={() => router.back()}
@@ -109,32 +134,37 @@ export default function RecordHistoryScreen() {
           <Chip key={option} text={option} active={filter === option} onPress={() => setFilter(option)} />
         ))}
       </View>
-      {loading && !mealLogsData ? (
-        <View style={styles.emptyState}>
-          <Text color="subtlest">기록 불러오는 중...</Text>
-        </View>
-      ) : groups.length === 0 ? (
-        <View style={styles.emptyState}>
-          <Text color="subtlest">아직 기록이 없어요.</Text>
-        </View>
-      ) : (
-        <ScrollView contentContainerStyle={styles.content}>
-          {groups.map((group) => (
-            <View key={group.dateLabel} style={styles.section}>
-              <Text variant="title3Emphasized">{group.dateLabel}</Text>
-              {group.logs.map(({ node }) => (
-                <RecordCard
-                  key={node.id}
-                  title={node.store_name ?? node.memo ?? node.category}
-                  period={formatTime(node.created_at)}
-                  budget={formatWon(node.amount)}
-                  onPress={() => goToEdit(node)}
-                />
-              ))}
-            </View>
-          ))}
-        </ScrollView>
-      )}
+      <View style={styles.body}>
+        {loading && !mealLogsData ? (
+          <View style={styles.emptyState}>
+            <Text color="subtlest">기록 불러오는 중...</Text>
+          </View>
+        ) : groups.length === 0 ? (
+          <View style={styles.emptyState}>
+            <Text color="subtlest">아직 기록이 없어요.</Text>
+          </View>
+        ) : (
+          <ScrollView contentContainerStyle={styles.content}>
+            {groups.map((group) => (
+              <View key={group.dateLabel} style={styles.section}>
+                <Text variant="title3Emphasized">{group.dateLabel}</Text>
+                {group.logs.map(({ node }) => (
+                  <RecordCard
+                    key={node.id}
+                    title={node.store_name ?? node.memo ?? node.category}
+                    period={formatTime(node.created_at)}
+                    budget={formatWon(node.amount)}
+                    onPress={() => goToEdit(node)}
+                  />
+                ))}
+              </View>
+            ))}
+          </ScrollView>
+        )}
+      </View>
+      <View style={{ paddingBottom: insets.bottom }}>
+        <NavBar active="record" onChange={handleNavChange} />
+      </View>
     </View>
   );
 }
@@ -149,6 +179,9 @@ const styles = StyleSheet.create({
     gap: spacing[6],
     paddingHorizontal: spacing[16],
     paddingTop: spacing[24],
+  },
+  body: {
+    flex: 1,
   },
   content: {
     padding: spacing[16],

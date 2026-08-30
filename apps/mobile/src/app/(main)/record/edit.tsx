@@ -11,12 +11,14 @@ import {
   Header,
   Icon,
   Modal,
+  NavBar,
   Text,
   TextField,
   colors,
   radius,
   spacing,
   stroke,
+  type NavBarItemKey,
 } from "@repo/ui";
 import { DeleteMealLogDocument, UpdateMealLogDocument } from "@repo/types";
 
@@ -102,10 +104,34 @@ export default function RecordEditScreen() {
     }
   };
 
+  const handleNavChange = (key: NavBarItemKey) => {
+    if (key === "record") {
+      router.push("/record");
+      return;
+    }
+    if (key === "home") {
+      router.push("/");
+      return;
+    }
+    if (key === "recommend") {
+      router.push("/recommend");
+      return;
+    }
+    if (key === "chat") {
+      router.push("/chat");
+      return;
+    }
+    if (key === "profile") {
+      router.push("/mypage");
+      return;
+    }
+    Alert.alert("준비 중", "아직 구현되지 않은 탭이에요.");
+  };
+
   return (
     <View style={styles.screen}>
       <Header title={params.title} onBackPress={() => router.back()} topInset={insets.top} />
-      <ScrollView contentContainerStyle={styles.content}>
+      <ScrollView style={styles.scroll} contentContainerStyle={styles.content}>
         <View style={styles.section}>
           <Text variant="title3Emphasized">기록 상세</Text>
           <View style={styles.card}>
@@ -160,11 +186,12 @@ export default function RecordEditScreen() {
             <TextField value={memo} onChangeText={setMemo} placeholder="예: 어묵꼬치, 생필품" />
           </FormField>
         </View>
+      </ScrollView>
 
+      <View style={styles.footer}>
         <Text variant="footnoteRegular" color="subtle">
           {deleteWarning}
         </Text>
-
         <View style={styles.buttonRow}>
           <View style={styles.buttonFlex}>
             <Button label={updating ? "저장 중..." : "수정 저장"} disabled={!canSave} onPress={handleSave} />
@@ -173,7 +200,11 @@ export default function RecordEditScreen() {
             <Button label="기록 삭제" variant="outline" disabled={!canDelete} onPress={handleDeletePress} />
           </View>
         </View>
-      </ScrollView>
+      </View>
+
+      <View style={{ paddingBottom: insets.bottom }}>
+        <NavBar active="record" onChange={handleNavChange} />
+      </View>
 
       <RNModal
         visible={isDeleteConfirmVisible}
@@ -201,9 +232,18 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.surface.neutral.default,
   },
+  scroll: {
+    flex: 1,
+  },
   content: {
     padding: spacing[16],
     gap: spacing[20],
+  },
+  footer: {
+    paddingHorizontal: spacing[16],
+    paddingTop: spacing[12],
+    paddingBottom: spacing[12],
+    gap: spacing[8],
   },
   section: {
     gap: spacing[4],
