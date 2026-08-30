@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@asteasolutions/zod-to-openapi": "^9.1.0",
+    "@google/generative-ai": "^0.24.1",
     "@repo/types": "workspace:*",
     "@supabase/supabase-js": "^2.112.3",
     "dotenv": "^17.4.2",

@@ -1,0 +1,9 @@
+mutation UpdateChatMessageStatus($id: UUID!, $status: String!) {
+  updatechat_messagesCollection(filter: { id: { eq: $id } }, set: { status: $status }) {
+    affectedCount
+    records {
+      id
+      status
+    }
+  }
+}
