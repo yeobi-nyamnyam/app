@@ -101,6 +101,12 @@ const MOCK_MAP_MARKERS: RecommendMapMarker[] = [
 ];
 const DEFAULT_SELECTED_MARKER_ID = "m3";
 
+// TODO(F2/F3 데이터 연동): 끼니명 + 예산 상한은 예산 산정(F2) 결과로 교체.
+// 가격보기(Figma node 733:15526)는 "저녁 18,000원 이하", 지도보기(node 733:15646)는
+// "저녁"만 — 두 화면이 같은 SectionHeader를 쓰지만 타이틀 구성이 다르다.
+const MEAL_NAME = "저녁";
+const MEAL_BUDGET_LABEL = "18,000원 이하";
+
 const DEFAULT_SORT_VALUE = "price-asc";
 const SORT_OPTIONS: SortOption[] = [
   { value: DEFAULT_SORT_VALUE, label: "가격 낮은 순" },
@@ -154,7 +160,7 @@ export default function RecommendScreen() {
   return (
     <View style={[styles.screen, { paddingTop: insets.top }]}>
       <SectionHeader
-        title="저녁 18,000원 이하"
+        title={viewMode === 0 ? `${MEAL_NAME} ${MEAL_BUDGET_LABEL}` : MEAL_NAME}
         trailing={
           <View style={styles.segmentedControlSlot}>
             <SegmentedControl

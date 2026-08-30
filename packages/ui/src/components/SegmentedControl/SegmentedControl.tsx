@@ -45,7 +45,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    height: 45,
+    height: 34,
     padding: spacing[2],
     borderRadius: radius[7],
     backgroundColor: TRACK_BACKGROUND,
