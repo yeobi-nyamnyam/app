@@ -4,6 +4,7 @@ mutation UpdateMealLog(
   $storeName: String
   $storeAddress: String
   $memo: String
+  $category: String
 ) {
   update_meal_log(
     p_meal_log_id: $mealLogId
@@ -11,6 +12,7 @@ mutation UpdateMealLog(
     p_store_name: $storeName
     p_store_address: $storeAddress
     p_memo: $memo
+    p_category: $category
   ) {
     id
     trip_id
