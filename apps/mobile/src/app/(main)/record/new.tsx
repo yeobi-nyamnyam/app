@@ -1,11 +1,13 @@
 import { Alert, StyleSheet, View } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useMutation } from "@apollo/client/react";
+import { useMutation, useQuery } from "@apollo/client/react";
 import { Header, NavBar, colors, type NavBarItemKey } from "@repo/ui";
-import { CreateMealLogDocument } from "@repo/types";
+import { ActiveTripDocument, CreateMealLogDocument } from "@repo/types";
 
 import { RecordForm, type RecordFormValues, type MealLogCategory } from "@/components/RecordForm";
+import { useSession } from "@/hooks/useSession";
+import { getTripDates, type MealType } from "@/lib/budget";
 
 type RecordSource = "home" | "recommend" | "chat" | "record";
 
@@ -28,6 +30,21 @@ export default function RecordNewScreen() {
   }>();
 
   const source: RecordSource = params.source ?? "record";
+
+  const { session } = useSession();
+  const { data } = useQuery(ActiveTripDocument, {
+    variables: { userId: session?.user.id ?? "" },
+    skip: !session,
+  });
+  const tripNode = data?.tripsCollection.edges[0]?.node;
+  const tripDates = tripNode
+    ? getTripDates({ startDate: tripNode.start_date, endDate: tripNode.end_date })
+    : [];
+  const mealSlots = (tripNode?.meal_slotsCollection?.edges ?? []).map((edge) => ({
+    date: edge.node.date,
+    mealType: edge.node.meal_type as MealType,
+    isRecorded: edge.node.is_recorded,
+  }));
 
   const [createMealLog, { loading: submitting }] = useMutation(CreateMealLogDocument);
 
@@ -68,6 +85,8 @@ export default function RecordNewScreen() {
       <Header title="소비 기록 작성" topInset={insets.top} onBackPress={() => router.back()} />
       <RecordForm
         submitting={submitting}
+        tripDates={tripDates}
+        mealSlots={mealSlots}
         initialValues={{
           category: params.presetCategory,
           storeName: params.presetStoreName,
