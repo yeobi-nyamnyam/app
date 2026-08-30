@@ -25,8 +25,8 @@ const TABS = ["기록 작성하기", "기록보기"];
 /**
  * 기록 탭 진입 화면 (Figma "write"). 소비 기록/여행 일기 작성 진입점 + 기록보기 탭.
  * 일기(D0~D3)는 기록 기능 개발이 끝난 뒤 별도로 작업하므로 여기서는 진입 버튼만 둔다.
- * "기록보기"(F6-8/F6-9)는 여행 전체 소비 기록을 최신순으로 보여주는 최소 목록만 우선
- * 구현했다 — 수정/삭제(F6-5/F6-6) 진입은 별도 이슈에서 이어서 붙인다.
+ * "기록보기"(F6-8/F6-9)는 여행 전체 소비 기록을 최신순으로 보여주고, 항목을 누르면
+ * 수정/삭제(F6-5/F6-6) 화면(`record/edit.tsx`)으로 이동한다.
  */
 export default function RecordWriteScreen() {
   const insets = useSafeAreaInsets();
@@ -43,6 +43,7 @@ export default function RecordWriteScreen() {
   const { data: mealLogsData, loading: mealLogsLoading } = useQuery(TripMealLogsDocument, {
     variables: { tripId: tripId ?? "" },
     skip: !tripId,
+    fetchPolicy: "cache-and-network",
   });
   const mealSlotById = new Map(
     (tripNode?.meal_slotsCollection?.edges ?? []).map((edge) => [
@@ -124,7 +125,26 @@ export default function RecordWriteScreen() {
             const title = slot
               ? `${MEAL_TYPE_LABEL[slot.mealType]} · ${node.store_name ?? node.memo ?? "식비"}`
               : `${node.category} · ${node.store_name ?? node.memo ?? ""}`;
-            return <ListRow key={node.id} title={title} tailing={formatWon(node.amount)} />;
+            return (
+              <ListRow
+                key={node.id}
+                title={title}
+                tailing={formatWon(node.amount)}
+                onPress={() =>
+                  router.push({
+                    pathname: "/record/edit",
+                    params: {
+                      logId: node.id,
+                      title: slot ? MEAL_TYPE_LABEL[slot.mealType] : node.category,
+                      amount: String(node.amount),
+                      storeName: node.store_name ?? "",
+                      storeAddress: node.store_address ?? "",
+                      memo: node.memo ?? "",
+                    },
+                  })
+                }
+              />
+            );
           })}
         </ScrollView>
       )}
