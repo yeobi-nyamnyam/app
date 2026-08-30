@@ -177,12 +177,20 @@ chatRouter.post("/chat", async (req, res) => {
     Connection: "keep-alive",
   });
 
-  // Gemini의 JSON 구조화 출력은 토큰 스트리밍과 상충해 완성된 응답을 한 번에 받는다.
-  // 지연시간 체감을 줄이려는 "SSE 스트리밍 릴레이" 결정을 지키기 위해, 완성된 reply를
-  // 단어 단위로 짧게 끊어 흘려보내 타이핑 효과를 낸다.
-  for (const word of validated.data.reply.split(" ")) {
-    res.write(`event: token\ndata: ${JSON.stringify(`${word} `)}\n\n`);
-    await sleep(30);
+  // 소비로 파싱되면(끼니든 아니든) 클라이언트가 reply 대신 CTA 카드/기록 시트를
+  // 바로 보여주고 reply 텍스트는 화면에 노출하지 않는다 — 그럴 때는 굳이 스트리밍
+  // 하지 않고 바로 done을 보낸다. 일반 대화/재질문일 때만 타이핑 효과를 낸다.
+  const willShowStructuredUi =
+    validated.data.hasExpense && validated.data.category != null && validated.data.amount != null;
+
+  if (!willShowStructuredUi) {
+    // Gemini의 JSON 구조화 출력은 토큰 스트리밍과 상충해 완성된 응답을 한 번에 받는다.
+    // 지연시간 체감을 줄이려는 "SSE 스트리밍 릴레이" 결정을 지키기 위해, 완성된 reply를
+    // 단어 단위로 짧게 끊어 흘려보내 타이핑 효과를 낸다.
+    for (const word of validated.data.reply.split(" ")) {
+      res.write(`event: token\ndata: ${JSON.stringify(`${word} `)}\n\n`);
+      await sleep(30);
+    }
   }
   res.write(`event: done\ndata: ${JSON.stringify(validated.data)}\n\n`);
   res.end();
