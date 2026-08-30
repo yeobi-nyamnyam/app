@@ -1,6 +1,6 @@
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { Alert, ScrollView, StyleSheet, View } from "react-native";
-import { router } from "expo-router";
+import { router, useFocusEffect } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useQuery } from "@apollo/client/react";
 import {
@@ -79,11 +79,20 @@ export default function ChatScreen() {
   });
   const tripNode = tripData?.tripsCollection.edges[0]?.node;
 
-  const { data: logsData } = useQuery(ChatMealLogsDocument, {
+  const { data: logsData, refetch: refetchLogs } = useQuery(ChatMealLogsDocument, {
     variables: { tripId: tripNode?.id ?? "" },
     skip: !tripNode,
     fetchPolicy: "cache-and-network",
   });
+
+  // 대화 화면에서 소비를 확정하고 돌아왔을 때 목록에 바로 반영되도록, 이 화면이
+  // 포커스를 받을 때마다 다시 조회한다 (Expo Router는 뒤로가기로 돌아와도 이전
+  // 화면 인스턴스를 그대로 재사용해 useQuery가 자동으로 다시 실행되지 않는다).
+  useFocusEffect(
+    useCallback(() => {
+      if (tripNode) void refetchLogs();
+    }, [tripNode, refetchLogs]),
+  );
 
   const entries: ChatLogEntry[] = useMemo(
     () =>
