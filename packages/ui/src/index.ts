@@ -89,5 +89,7 @@ export { Preview } from "./components/Preview";
 export type { PreviewProps } from "./components/Preview";
 export { FloatingButton } from "./components/FloatingButton";
 export type { FloatingButtonProps } from "./components/FloatingButton";
+export { RecordCard } from "./components/RecordCard";
+export type { RecordCardProps } from "./components/RecordCard";
 export { colors, typography, spacing, radius, stroke, icon } from "@repo/tokens";
 export { getFontFamily } from "./typography/getFontFamily";

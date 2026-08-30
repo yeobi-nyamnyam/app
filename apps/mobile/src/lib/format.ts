@@ -33,3 +33,24 @@ export const todayDate = (): string => {
   const pad = (n: number) => String(n).padStart(2, "0");
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
 };
+
+/**
+ * @param isoDateTime ISO timestamptz 문자열
+ */
+export const formatTime = (isoDateTime: string): string => {
+  const date = new Date(isoDateTime);
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${pad(date.getHours())}:${pad(date.getMinutes())}`;
+};
+
+const WEEKDAY_LABEL = ["일", "월", "화", "수", "목", "금", "토"];
+
+/**
+ * @param isoDateTime ISO timestamptz 문자열 — "YYYY.MM.DD (요일)" 형식(여행 기록 목록의
+ * 날짜 구분 헤더)으로 변환
+ */
+export const formatDateWithWeekday = (isoDateTime: string): string => {
+  const date = new Date(isoDateTime);
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${date.getFullYear()}.${pad(date.getMonth() + 1)}.${pad(date.getDate())} (${WEEKDAY_LABEL[date.getDay()]})`;
+};
