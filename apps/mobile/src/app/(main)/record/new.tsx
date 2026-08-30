@@ -3,7 +3,7 @@ import { router, useLocalSearchParams } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useMutation, useQuery } from "@apollo/client/react";
 import { Header, NavBar, colors, type NavBarItemKey } from "@repo/ui";
-import { ActiveTripDocument, CreateMealLogDocument } from "@repo/types";
+import { ActiveTripDocument, CreateMealLogDocument, RecordMealLogDocument } from "@repo/types";
 
 import { RecordForm, type RecordFormValues, type MealLogCategory } from "@/components/RecordForm";
 import { useSession } from "@/hooks/useSession";
@@ -13,15 +13,14 @@ type RecordSource = "home" | "recommend" | "chat" | "record";
 
 /**
  * 소비 기록 폼 (F6, F6-1). tripId는 필수. 끼니 소비 토글이 켜진 기록(식비)은
- * 끼니 슬롯 연결·캐스케이드 확정(F6-4)이 붙기 전까지 저장이 비활성화된다
- * (RecordForm 참고). preset* 파라미터는 진입 경로(F6-1, home/recommend/chat)에서
- * 자동채움할 값이다.
+ * record_meal_log RPC(F6-4 캐스케이드 확정 포함)로, 그 외 카테고리는 기존
+ * meal_logs 단순 insert로 저장한다. preset* 파라미터는 진입 경로(F6-1,
+ * home/recommend/chat)에서 자동채움할 값이다.
  */
 export default function RecordNewScreen() {
   const insets = useSafeAreaInsets();
   const params = useLocalSearchParams<{
     tripId: string;
-    mealSlotId?: string;
     source?: RecordSource;
     presetCategory?: MealLogCategory;
     presetStoreName?: string;
@@ -35,33 +34,54 @@ export default function RecordNewScreen() {
   const { data } = useQuery(ActiveTripDocument, {
     variables: { userId: session?.user.id ?? "" },
     skip: !session,
+    fetchPolicy: "cache-and-network",
   });
   const tripNode = data?.tripsCollection.edges[0]?.node;
   const tripDates = tripNode
     ? getTripDates({ startDate: tripNode.start_date, endDate: tripNode.end_date })
     : [];
   const mealSlots = (tripNode?.meal_slotsCollection?.edges ?? []).map((edge) => ({
+    id: edge.node.id,
     date: edge.node.date,
     mealType: edge.node.meal_type as MealType,
     isRecorded: edge.node.is_recorded,
   }));
 
-  const [createMealLog, { loading: submitting }] = useMutation(CreateMealLogDocument);
+  const [createMealLog, { loading: creatingMealLog }] = useMutation(CreateMealLogDocument);
+  const [recordMealLog, { loading: recordingMealLog }] = useMutation(RecordMealLogDocument);
+  const submitting = creatingMealLog || recordingMealLog;
 
   const handleSubmit = async (values: RecordFormValues) => {
     try {
-      await createMealLog({
-        variables: {
-          tripId: params.tripId,
-          mealSlotId: params.mealSlotId ?? null,
-          category: values.category,
-          amount: Number(values.amount),
-          storeName: values.storeName || null,
-          storeAddress: values.storeAddress || null,
-          memo: values.memo || null,
-          source,
-        },
-      });
+      if (values.category === "식비") {
+        if (!values.mealSlotId) {
+          throw new Error("끼니를 선택해주세요.");
+        }
+        await recordMealLog({
+          variables: {
+            tripId: params.tripId,
+            mealSlotId: values.mealSlotId,
+            amount: Number(values.amount),
+            storeName: values.storeName || null,
+            storeAddress: values.storeAddress || null,
+            memo: values.memo || null,
+            source,
+          },
+        });
+      } else {
+        await createMealLog({
+          variables: {
+            tripId: params.tripId,
+            mealSlotId: null,
+            category: values.category,
+            amount: Number(values.amount),
+            storeName: values.storeName || null,
+            storeAddress: values.storeAddress || null,
+            memo: values.memo || null,
+            source,
+          },
+        });
+      }
       router.back();
     } catch (error) {
       Alert.alert("저장 실패", error instanceof Error ? error.message : "잠시 후 다시 시도해주세요.");

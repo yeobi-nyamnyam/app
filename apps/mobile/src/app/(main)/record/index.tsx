@@ -31,6 +31,7 @@ export default function RecordWriteScreen() {
   const { data, loading } = useQuery(ActiveTripDocument, {
     variables: { userId: session?.user.id ?? "" },
     skip: !session,
+    fetchPolicy: "cache-and-network",
   });
   const tripId = data?.tripsCollection.edges[0]?.node.id;
 
