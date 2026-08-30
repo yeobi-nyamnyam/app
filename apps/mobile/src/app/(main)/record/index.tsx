@@ -24,6 +24,10 @@ export default function RecordWriteScreen() {
       router.push("/");
       return;
     }
+    if (key === "chat") {
+      router.push("/chat");
+      return;
+    }
     if (key === "profile") {
       router.push("/mypage");
       return;

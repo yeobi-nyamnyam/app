@@ -101,16 +101,19 @@ const styles = StyleSheet.create({
   },
   bubble: {
     maxWidth: 256,
+    flexShrink: 1,
     paddingHorizontal: spacing[16],
     paddingVertical: spacing[12],
   },
   bubbleAi: {
+    alignSelf: 'flex-start',
     backgroundColor: colors.surface.neutral.default,
     borderWidth: stroke.hairline,
     borderColor: colors.border.neutral.default,
     borderRadius: radius[26],
   },
   bubbleUser: {
+    alignSelf: 'flex-end',
     backgroundColor: colors.surface.primary.default,
     borderRadius: radius[26],
   },
@@ -122,7 +125,6 @@ const styles = StyleSheet.create({
     gap: spacing[4],
   },
   text: {
-    width: '100%',
     fontFamily: getFontFamily(typography.bodyRegular.fontWeight),
     fontSize: typography.bodyRegular.fontSize,
     lineHeight: typography.bodyRegular.lineHeight,
@@ -150,7 +152,6 @@ const styles = StyleSheet.create({
     color: colors.content.neutral.default,
   },
   confirmedPrice: {
-    width: '100%',
     fontFamily: getFontFamily(typography.bodyEmphasized.fontWeight),
     fontSize: typography.bodyEmphasized.fontSize,
     lineHeight: typography.bodyEmphasized.lineHeight,
