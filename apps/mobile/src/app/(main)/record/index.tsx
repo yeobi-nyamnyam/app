@@ -2,10 +2,20 @@ import { useState } from "react";
 import { Alert, ScrollView, StyleSheet, View } from "react-native";
 import { router } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { CTACard, NavBar, Text, UnderlineTabs, colors, spacing, type NavBarItemKey } from "@repo/ui";
+import { useQuery } from "@apollo/client/react";
+import {
+  CTACard,
+  EmptyTripPrompt,
+  NavBar,
+  Text,
+  UnderlineTabs,
+  colors,
+  spacing,
+  type NavBarItemKey,
+} from "@repo/ui";
+import { ActiveTripDocument } from "@repo/types";
 
-// TODO: F1(여행 생성)이 붙으면 실제 진행 중인 tripId로 교체
-const PLACEHOLDER_TRIP_ID = "00000000-0000-0000-0000-000000000000";
+import { useSession } from "@/hooks/useSession";
 
 const TABS = ["기록 작성하기", "기록보기"];
 
@@ -17,6 +27,14 @@ const TABS = ["기록 작성하기", "기록보기"];
 export default function RecordWriteScreen() {
   const insets = useSafeAreaInsets();
   const [activeTab, setActiveTab] = useState(0);
+  const { session } = useSession();
+  const { data, loading } = useQuery(ActiveTripDocument, {
+    variables: { userId: session?.user.id ?? "" },
+    skip: !session,
+  });
+  const tripId = data?.tripsCollection.edges[0]?.node.id;
+
+  const handleRecordPress = () => router.push(`/record/new?tripId=${tripId}`);
 
   const handleNavChange = (key: NavBarItemKey) => {
     if (key === "record") return;
@@ -39,21 +57,36 @@ export default function RecordWriteScreen() {
     <View style={[styles.screen, { paddingTop: insets.top }]}>
       <UnderlineTabs tabs={TABS} activeIndex={activeTab} onChange={setActiveTab} />
       {activeTab === 0 ? (
-        <ScrollView contentContainerStyle={styles.content}>
-          <Text>오늘의 소비와 여행 일기를 남겨보세요</Text>
-          <CTACard
-            title="소비 기록 작성"
-            description="끼니 소비와 기타 소비를 기록해보세요"
-            buttonLabel="작성하기"
-            onPress={() => router.push(`/record/new?tripId=${PLACEHOLDER_TRIP_ID}`)}
-          />
-          <CTACard
-            title="여행 일기 작성"
-            description="오늘 하루의 여행을 글로 남겨보세요"
-            buttonLabel="작성하기"
-            onPress={() => Alert.alert("준비 중", "일기 기능은 기록 개발 완료 후 추가돼요.")}
-          />
-        </ScrollView>
+        loading && !data ? (
+          <View style={styles.emptyState}>
+            <Text color="subtlest">여행 정보 불러오는 중...</Text>
+          </View>
+        ) : tripId ? (
+          <ScrollView contentContainerStyle={styles.content}>
+            <Text>오늘의 소비와 여행 일기를 남겨보세요</Text>
+            <CTACard
+              title="소비 기록 작성"
+              description="끼니 소비와 기타 소비를 기록해보세요"
+              buttonLabel="작성하기"
+              onPress={handleRecordPress}
+            />
+            <CTACard
+              title="여행 일기 작성"
+              description="오늘 하루의 여행을 글로 남겨보세요"
+              buttonLabel="작성하기"
+              onPress={() => Alert.alert("준비 중", "일기 기능은 기록 개발 완료 후 추가돼요.")}
+            />
+          </ScrollView>
+        ) : (
+          <View style={styles.emptyState}>
+            <EmptyTripPrompt
+              onCreateTrip={() => router.push("/trip-create")}
+              onLoadPastTrip={() =>
+                Alert.alert("준비 중", "과거 여행 불러오기는 아직 준비 중이에요.")
+              }
+            />
+          </View>
+        )
       ) : (
         <View style={styles.emptyState}>
           <Text color="subtlest">기록보기는 준비 중이에요.</Text>

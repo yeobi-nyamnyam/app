@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import {
   Button,
@@ -13,6 +13,9 @@ import {
   typography,
 } from "@repo/ui";
 
+import { MEAL_TYPES, MEAL_TYPE_LABEL, type MealType } from "@/lib/budget";
+import { formatDigitsForDisplay, parseDigits } from "@/lib/format";
+
 import { ReceiptUploadBox } from "../ReceiptUploadBox";
 import { StoreSearchModal, type StoreSearchResult } from "../StoreSearchModal";
 import { DropdownField, type DropdownOption } from "../DropdownField";
@@ -21,36 +24,33 @@ export type MealLogCategory = "식비" | "교통" | "숙박" | "기념품" | "�
 
 const CATEGORY_OPTIONS: MealLogCategory[] = ["식비", "교통", "숙박", "기념품", "기타"];
 
-const MEAL_TYPE_OPTIONS: DropdownOption[] = [
-  { value: "breakfast", label: "아침" },
-  { value: "lunch", label: "점심" },
-  { value: "dinner", label: "저녁" },
-];
+const MEAL_TYPE_OPTIONS: DropdownOption[] = MEAL_TYPES.map((mealType) => ({
+  value: mealType,
+  label: MEAL_TYPE_LABEL[mealType],
+}));
 
-// TODO(F1): 여행 생성이 붙으면 tripId로 실제 시작일/종료일을 조회해서 대체한다.
-const MOCK_TRIP_START = new Date(2026, 7, 28); // 2026-08-28
-const MOCK_TRIP_END = new Date(2026, 7, 30); // 2026-08-30
+const todayDate = () => new Date().toISOString().slice(0, 10);
 
-function buildTripDayOptions(start: Date, end: Date): DropdownOption[] {
-  const options: DropdownOption[] = [];
-  const cursor = new Date(start);
-  let dayIndex = 1;
-
-  while (cursor.getTime() <= end.getTime()) {
-    const month = String(cursor.getMonth() + 1).padStart(2, "0");
-    const day = String(cursor.getDate()).padStart(2, "0");
-    options.push({
-      value: `${cursor.getFullYear()}-${month}-${day}`,
-      label: `${dayIndex}일차 | ${month}.${day}`,
-    });
-    cursor.setDate(cursor.getDate() + 1);
-    dayIndex += 1;
-  }
-
-  return options;
+// 아직 오지 않은 날짜는 방문 기록 대상이 아니므로 드롭다운에 노출하지 않는다.
+// 일차 번호는 여행 전체 기간 기준으로 매겨야 해서 필터링 전에 index를 먼저 계산한다.
+function buildTripDayOptions(dates: string[]): DropdownOption[] {
+  const today = todayDate();
+  return dates
+    .map((date, index) => {
+      const [, month, day] = date.split("-");
+      return {
+        value: date,
+        label: `${index + 1}일차 | ${month}.${day}`,
+      };
+    })
+    .filter((option) => option.value <= today);
 }
 
-const TRIP_DAY_OPTIONS = buildTripDayOptions(MOCK_TRIP_START, MOCK_TRIP_END);
+export interface RecordFormMealSlot {
+  date: string;
+  mealType: MealType;
+  isRecorded: boolean;
+}
 
 export interface RecordFormValues {
   category: MealLogCategory | "";
@@ -64,11 +64,16 @@ export interface RecordFormValues {
  * @param initialValues 진입 경로(F6-1)에 따라 미리 채워진 값 (optional). category가
  * '식비'가 아닌 값으로 주어지면 끼니 소비 토글이 꺼진 채로 시작한다
  * @param submitting 저장 요청 진행 중 여부 (optional, 기본값 false)
+ * @param tripDates 여행 기간 내 날짜 목록(YYYY-MM-DD 오름차순), 방문 날짜 드롭다운 옵션으로 사용
+ * @param mealSlots 여행의 전체 끼니 슬롯(날짜/끼니때/기록 여부) — 끼니 때 드롭다운에서
+ * 선택한 날짜에 이미 기록된 끼니를 제외하는 데 사용
  * @param onSubmit 저장 버튼을 눌렀을 때 폼 값을 전달하는 콜백
  */
 export interface RecordFormProps {
   initialValues?: Partial<RecordFormValues>;
   submitting?: boolean;
+  tripDates: string[];
+  mealSlots: RecordFormMealSlot[];
   onSubmit: (values: RecordFormValues) => void;
 }
 
@@ -97,7 +102,13 @@ const PickerField = ({
   </Pressable>
 );
 
-export const RecordForm = ({ initialValues, submitting = false, onSubmit }: RecordFormProps) => {
+export const RecordForm = ({
+  initialValues,
+  submitting = false,
+  tripDates,
+  mealSlots,
+  onSubmit,
+}: RecordFormProps) => {
   const initialCategory = initialValues?.category;
   const [isMeal, setIsMeal] = useState(!initialCategory || initialCategory === "식비");
   const [category, setCategory] = useState<MealLogCategory | "">(
@@ -113,6 +124,23 @@ export const RecordForm = ({ initialValues, submitting = false, onSubmit }: Reco
   const [mealType, setMealType] = useState("");
   const [isStoreSearchVisible, setIsStoreSearchVisible] = useState(false);
 
+  const tripDayOptions = useMemo(() => buildTripDayOptions(tripDates), [tripDates]);
+  const availableMealTypeOptions = useMemo(() => {
+    const recordedMealTypes = new Set(
+      mealSlots
+        .filter((slot) => slot.date === visitDate && slot.isRecorded)
+        .map((slot) => slot.mealType),
+    );
+    return MEAL_TYPE_OPTIONS.filter(
+      (option) => !recordedMealTypes.has(option.value as MealType),
+    );
+  }, [mealSlots, visitDate]);
+
+  const handleVisitDateChange = (nextDate: string) => {
+    setVisitDate(nextDate);
+    setMealType("");
+  };
+
   const handleToggleMeal = () => {
     setIsMeal((prev) => {
       const next = !prev;
@@ -121,7 +149,10 @@ export const RecordForm = ({ initialValues, submitting = false, onSubmit }: Reco
     });
   };
 
-  const handleAmountChange = (text: string) => setAmount(text.replace(/[^0-9]/g, ""));
+  const handleAmountChange = (text: string) => {
+    const digits = parseDigits(text);
+    setAmount(digits > 0 ? String(digits) : "");
+  };
 
   const handleReceiptUpload = () =>
     Alert.alert("준비 중", "영수증 OCR 자동 채우기는 별도 이슈에서 진행돼요.");
@@ -156,9 +187,9 @@ export const RecordForm = ({ initialValues, submitting = false, onSubmit }: Reco
         <FormField label="방문 날짜">
           <DropdownField
             placeholder="방문 날짜를 선택하세요"
-            options={TRIP_DAY_OPTIONS}
+            options={tripDayOptions}
             value={visitDate}
-            onChange={setVisitDate}
+            onChange={handleVisitDateChange}
           />
         </FormField>
 
@@ -166,7 +197,7 @@ export const RecordForm = ({ initialValues, submitting = false, onSubmit }: Reco
           <FormField label="끼니 때">
             <DropdownField
               placeholder="끼니를 선택하세요"
-              options={MEAL_TYPE_OPTIONS}
+              options={availableMealTypeOptions}
               value={mealType}
               onChange={setMealType}
             />
@@ -209,7 +240,7 @@ export const RecordForm = ({ initialValues, submitting = false, onSubmit }: Reco
 
         <FormField label="금액">
           <TextField
-            value={amount}
+            value={formatDigitsForDisplay(amount)}
             onChangeText={handleAmountChange}
             placeholder="예: 12,000"
             keyboardType="number-pad"

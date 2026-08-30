@@ -15,7 +15,7 @@ import {
 
 import { DateRangeField } from "@/components/DateRangeField";
 import { KrwIcon, PercentIcon } from "@/components/TripFieldIcons";
-import { formatWon, parseDigits } from "@/lib/format";
+import { formatDigitsForDisplay, formatWon, parseDigits } from "@/lib/format";
 import {
   DEFAULT_MEAL_WEIGHTS,
   MEAL_TYPES,
@@ -163,11 +163,7 @@ export default function TripNewScreen() {
         />
         <FormField label="전체 예산">
           <TextField
-            value={
-              totalBudgetText
-                ? Number(totalBudgetText).toLocaleString("ko-KR")
-                : ""
-            }
+            value={formatDigitsForDisplay(totalBudgetText)}
             onChangeText={(text) =>
               setTotalBudgetText(
                 parseDigits(text) > 0 ? String(parseDigits(text)) : "",
@@ -188,9 +184,7 @@ export default function TripNewScreen() {
         </FormField>
         <FormField label="고정비용">
           <TextField
-            value={
-              fixedCostText ? Number(fixedCostText).toLocaleString("ko-KR") : ""
-            }
+            value={formatDigitsForDisplay(fixedCostText)}
             onChangeText={(text) =>
               setFixedCostText(
                 parseDigits(text) > 0 ? String(parseDigits(text)) : "",
