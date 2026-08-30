@@ -31,6 +31,10 @@ export default function MyPageScreen() {
       router.push("/");
       return;
     }
+    if (key === "recommend") {
+      router.push("/recommend");
+      return;
+    }
     if (key === "chat") {
       router.push("/chat");
       return;

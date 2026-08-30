@@ -60,6 +60,10 @@ export default function RecordWriteScreen() {
       router.push("/");
       return;
     }
+    if (key === "recommend") {
+      router.push("/recommend");
+      return;
+    }
     if (key === "chat") {
       router.push("/chat");
       return;

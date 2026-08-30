@@ -39,6 +39,10 @@ const handleNavChange = (key: NavBarItemKey) => {
     router.push("/");
     return;
   }
+  if (key === "recommend") {
+    router.push("/recommend");
+    return;
+  }
   if (key === "record") {
     router.push("/record");
     return;

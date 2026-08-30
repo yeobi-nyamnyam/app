@@ -50,6 +50,10 @@ const todayDate = () => new Date().toISOString().slice(0, 10);
 
 const handleNavChange = (key: NavBarItemKey) => {
   if (key === "home") return;
+  if (key === "recommend") {
+    router.push("/recommend");
+    return;
+  }
   if (key === "chat") {
     router.push("/chat");
     return;
