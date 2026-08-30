@@ -127,7 +127,7 @@ export default function RecordHistoryScreen() {
         tailing="text"
         tailingText="예산 변동 히스토리 보기"
         onBackPress={() => router.back()}
-        onTailingPress={() => Alert.alert("준비 중", "예산 변동 히스토리는 아직 준비 중이에요.")}
+        onTailingPress={() => router.push({ pathname: "/record/budget-history", params: { tripId: params.tripId } })}
       />
       <View style={styles.filterRow}>
         {FILTERS.map((option) => (
