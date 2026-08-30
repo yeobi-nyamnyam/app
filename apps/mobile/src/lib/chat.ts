@@ -1,48 +1,93 @@
+import EventSource from "react-native-sse";
+import { supabase } from "@/lib/supabase";
 import type { MealLogCategory } from "@/components/RecordForm";
 
-export interface ParsedChatExpense {
-  amount: number;
-  category: MealLogCategory;
+// apps/server 채팅 SSE 엔드포인트. lib/account.ts와 동일한 패턴.
+const serverUrl = process.env.EXPO_PUBLIC_SERVER_URL ?? "http://localhost:4000";
+
+export type ChatRole = "user" | "ai";
+
+export interface ChatHistoryItem {
+  role: ChatRole;
+  text: string;
 }
 
-const CATEGORY_KEYWORDS: { category: MealLogCategory; keywords: string[] }[] = [
-  { category: "교통", keywords: ["버스", "택시", "지하철", "기차", "톨게이트", "주유", "교통"] },
-  { category: "숙박", keywords: ["숙소", "호텔", "모텔", "게스트하우스", "숙박"] },
-  { category: "기념품", keywords: ["기념품", "선물", "쇼핑"] },
-  { category: "식비", keywords: ["아침", "점심", "저녁", "밥", "식사", "먹", "간식", "카페", "커피"] },
-];
-
-const extractAmount = (text: string): number | null => {
-  const manMatch = text.match(/(\d+(?:\.\d+)?)\s*만\s*원?/);
-  if (manMatch) return Math.round(Number(manMatch[1] ?? "0") * 10000);
-
-  const cheonMatch = text.match(/(\d+(?:\.\d+)?)\s*천\s*원?/);
-  if (cheonMatch) return Math.round(Number(cheonMatch[1] ?? "0") * 1000);
-
-  const wonMatch = text.match(/([\d,]+)\s*원/);
-  if (wonMatch) return Number((wonMatch[1] ?? "0").replace(/,/g, ""));
-
-  const bareNumber = text.match(/\d{3,}/);
-  if (bareNumber) return Number(bareNumber[0] ?? "0");
-
-  return null;
-};
+export interface ChatParsedResult {
+  reply: string;
+  hasExpense: boolean;
+  amount: number | null;
+  category: MealLogCategory | null;
+}
 
 /**
- * @param text 사용자가 채팅에 입력한 자유 텍스트
- * 실제 LLM 연동(C2, provider 미확정)이 붙기 전까지 쓰는 간단한 로컬 키워드 휴리스틱.
- * 금액을 찾지 못하면 null을 반환한다. 카테고리를 찾지 못하면 '기타'로 처리한다.
+ * @param tripName 오늘 진행 중인 여행 이름 (프롬프트 컨텍스트용)
+ * @param todayBudget 오늘 남은 식비 계산에 쓰는 오늘의 식비 예산
+ * @param todayConsumed 오늘 지금까지 소비한 금액
+ * @param message 사용자가 방금 보낸 메시지
+ * @param history 이번 대화 화면에서 지금까지 주고받은 턴 (매번 새 세션이라 과거 세션은 포함 안 함)
+ * @param onToken AI 응답이 스트리밍될 때마다 지금까지 누적된 전체 텍스트를 넘겨준다
+ * @param onDone 서버가 검증한 최종 파싱 결과를 넘겨준다
+ * @param onError 인증 실패/네트워크 오류/서버 오류 시 호출된다
+ *
+ * apps/server의 POST /chat SSE 엔드포인트를 호출해 AI 응답을 스트리밍으로 받는다.
  */
-export const parseChatExpense = (text: string): ParsedChatExpense | null => {
-  const amount = extractAmount(text);
-  if (amount === null || amount <= 0) return null;
+export async function streamChatReply({
+  tripName,
+  todayBudget,
+  todayConsumed,
+  message,
+  history,
+  onToken,
+  onDone,
+  onError,
+}: {
+  tripName: string;
+  todayBudget: number;
+  todayConsumed: number;
+  message: string;
+  history: ChatHistoryItem[];
+  onToken: (accumulatedText: string) => void;
+  onDone: (result: ChatParsedResult) => void;
+  onError: (error: Error) => void;
+}): Promise<void> {
+  const { data } = await supabase.auth.getSession();
+  const accessToken = data.session?.access_token;
+  if (!accessToken) {
+    onError(new Error("로그인이 필요합니다."));
+    return;
+  }
 
-  const matched = CATEGORY_KEYWORDS.find(({ keywords }) =>
-    keywords.some((keyword) => text.includes(keyword)),
-  );
+  let accumulated = "";
+  const es = new EventSource<"token" | "done">(`${serverUrl}/chat`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${accessToken}`,
+    },
+    body: JSON.stringify({ tripName, todayBudget, todayConsumed, message, history }),
+  });
 
-  return { amount, category: matched?.category ?? "기타" };
-};
+  es.addEventListener("token", (event) => {
+    if (event.data == null) return;
+    accumulated += JSON.parse(event.data) as string;
+    onToken(accumulated);
+  });
+
+  es.addEventListener("done", (event) => {
+    if (event.data) {
+      onDone(JSON.parse(event.data) as ChatParsedResult);
+    } else {
+      onError(new Error("AI 응답을 받아오지 못했습니다."));
+    }
+    es.close();
+  });
+
+  es.addEventListener("error", (event) => {
+    const message = "message" in event ? event.message : "AI 응답을 받아오지 못했습니다.";
+    onError(new Error(message));
+    es.close();
+  });
+}
 
 /**
  * @param date 시각을 표시할 Date 객체
@@ -50,59 +95,11 @@ export const parseChatExpense = (text: string): ParsedChatExpense | null => {
 export const formatChatTime = (date: Date): string =>
   `${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`;
 
-export interface ChatMockTrip {
-  id: string;
-  name: string;
-}
-
 export type ChatLogFilterCategory = "식비" | "기타소비";
 
-export interface ChatMockLogEntry {
-  id: string;
-  title: string;
-  time: string;
-  categoryLabel: string;
-  filterCategory: ChatLogFilterCategory;
-  price: number;
-}
-
-export interface ChatMockLogGroup {
-  date: string;
-  entries: ChatMockLogEntry[];
-}
-
-// TODO(C0 API 연동): 실제 여행/예산/채팅 로그 데이터 연동 전까지 chat 화면 전체가
-// 공유하는 목데이터. F1/F2가 화면을 먼저 만들고 나중에 쿼리를 붙인 흐름과 동일하다.
-export const MOCK_HAS_ACTIVE_TRIP = true;
-
-export const MOCK_TRIP: ChatMockTrip = {
-  id: "00000000-0000-0000-0000-000000000000",
-  name: "친구들과 대구 여행",
-};
-
-export const MOCK_DAY_BUDGET = 45000;
-export const MOCK_CONSUMED = 13000;
-
-export const MOCK_LOG_GROUPS: ChatMockLogGroup[] = [
-  {
-    date: "08.13 | 2일차",
-    entries: [
-      { id: "1", title: "미분당", time: "19:20", categoryLabel: "점심", filterCategory: "식비", price: 13000 },
-    ],
-  },
-  {
-    date: "08.12 | 1일차",
-    entries: [
-      { id: "2", title: "돼지국밥", time: "19:20", categoryLabel: "저녁", filterCategory: "식비", price: 18000 },
-      { id: "3", title: "돈까스", time: "19:20", categoryLabel: "점심", filterCategory: "식비", price: 15000 },
-      {
-        id: "4",
-        title: "김밥천국 A세트",
-        time: "19:20",
-        categoryLabel: "아침",
-        filterCategory: "식비",
-        price: 12000,
-      },
-    ],
-  },
-];
+/**
+ * @param category meal_logs.category 값
+ * 채팅 로그 목록의 "전체/식비/기타소비" 필터 칩과 맞추기 위한 매핑.
+ */
+export const toChatLogFilterCategory = (category: MealLogCategory): ChatLogFilterCategory =>
+  category === "식비" ? "식비" : "기타소비";
