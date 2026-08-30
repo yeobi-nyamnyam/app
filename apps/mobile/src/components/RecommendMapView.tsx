@@ -1,4 +1,5 @@
-import { Pressable, StyleSheet, View } from "react-native";
+import { StyleSheet, View } from "react-native";
+import { NaverMapMarkerOverlay, NaverMapView } from "@mj-studio/react-native-naver-map";
 import { Icon, Preview, Text, colors, radius, spacing } from "@repo/ui";
 
 // Figma "color/info"(#2A8ADF)와 그 테두리(#E0F3FF)는 아직 packages/tokens에 없는
@@ -17,9 +18,8 @@ export interface RecommendMapMarker {
   distance: string;
   /** good_price 업소만 값이 있음 (착한가격업소만 가격 정보 보장, docs/schema-design.md §12 참고) */
   price?: string;
-  /** 지도 영역 안에서의 상대 위치, 0~1 비율 */
-  left: number;
-  top: number;
+  latitude: number;
+  longitude: number;
 }
 
 /**
@@ -39,18 +39,18 @@ const LegendItem = ({ color, label }: { color: string; label: string }) => (
 
 /**
  * 추천 탭 "지도보기" 화면의 지도 영역 (Figma "recommand-map", node 733:15646 /
- * 733:15879). 네이버 지도 클라이언트 SDK 연동 전까지는 자리표시자 배경 위에
- * 마커만 절대 위치로 배치한다.
- * SDK 연동은 Naver Cloud Platform Application 등록(Client ID 발급)이 선행돼야
- * 해서 이번 스코프에서는 제외했다 (이슈 #83 참고).
+ * 733:15879). 네이버 지도 클라이언트 SDK(`@mj-studio/react-native-naver-map`)로
+ * 렌더링하고, 마커는 커스텀 뷰 오버레이로 얹는다.
  *
  * @param markers 지도에 표시할 마커 목록
+ * @param currentLocation 현재 위치 마커 + 초기 카메라 중심 좌표
  * @param selectedMarkerId 현재 선택된 마커 id (optional, 없으면 하단 프리뷰 미표시)
  * @param onSelectMarker 마커를 누를 때 발생하는 event 명시, 선택한 마커 id 전달
  * @param onPressDetail 하단 프리뷰의 "상세 보기" 버튼을 클릭할 때 발생하는 event 명시 (optional)
  */
 export interface RecommendMapViewProps {
   markers: RecommendMapMarker[];
+  currentLocation: { latitude: number; longitude: number };
   selectedMarkerId?: string;
   onSelectMarker: (id: string) => void;
   onPressDetail?: () => void;
@@ -58,6 +58,7 @@ export interface RecommendMapViewProps {
 
 export const RecommendMapView = ({
   markers,
+  currentLocation,
   selectedMarkerId,
   onSelectMarker,
   onPressDetail,
@@ -67,45 +68,62 @@ export const RecommendMapView = ({
   return (
     <View style={styles.container}>
       <View style={styles.mapArea}>
-        {/* TODO(F3-1 지도 SDK 연동): 네이버 지도 클라이언트 SDK로 교체 */}
-        <View style={styles.mapPlaceholder} />
+        <NaverMapView
+          style={StyleSheet.absoluteFill}
+          mapType="Basic"
+          initialCamera={{
+            latitude: currentLocation.latitude,
+            longitude: currentLocation.longitude,
+            zoom: 15,
+          }}
+        >
+          <NaverMapMarkerOverlay
+            latitude={currentLocation.latitude}
+            longitude={currentLocation.longitude}
+            width={16}
+            height={16}
+            anchor={{ x: 0.5, y: 0.5 }}
+          >
+            <View collapsable={false} style={styles.currentLocationMarker} />
+          </NaverMapMarkerOverlay>
+          {markers.map((marker) => {
+            const isSelected = marker.id === selectedMarkerId;
+            return (
+              <NaverMapMarkerOverlay
+                key={marker.id}
+                latitude={marker.latitude}
+                longitude={marker.longitude}
+                width={isSelected ? 24 : 8}
+                height={isSelected ? 24 : 8}
+                anchor={{ x: 0.5, y: 0.5 }}
+                onTap={() => onSelectMarker(marker.id)}
+              >
+                {isSelected ? (
+                  <View collapsable={false} style={styles.selectedMarker}>
+                    <Icon name="restaurant" size="medium" color={colors.content.neutral.inverse} />
+                  </View>
+                ) : (
+                  <View
+                    collapsable={false}
+                    style={[
+                      styles.dotMarker,
+                      {
+                        backgroundColor:
+                          marker.source === "good_price"
+                            ? colors.surface.primary.bold
+                            : colors.surface.primary.default,
+                      },
+                    ]}
+                  />
+                )}
+              </NaverMapMarkerOverlay>
+            );
+          })}
+        </NaverMapView>
         <View style={styles.legend}>
           <LegendItem color={colors.surface.primary.bold} label="착한가격업소" />
           <LegendItem color={colors.surface.primary.default} label="일반 업소" />
         </View>
-        <View style={styles.currentLocationMarker} />
-        {markers.map((marker) => {
-          const isSelected = marker.id === selectedMarkerId;
-          return (
-            <Pressable
-              key={marker.id}
-              hitSlop={8}
-              style={[
-                styles.markerHitArea,
-                { left: `${marker.left * 100}%`, top: `${marker.top * 100}%` },
-              ]}
-              onPress={() => onSelectMarker(marker.id)}
-            >
-              {isSelected ? (
-                <View style={styles.selectedMarker}>
-                  <Icon name="restaurant" size="medium" color={colors.content.neutral.inverse} />
-                </View>
-              ) : (
-                <View
-                  style={[
-                    styles.dotMarker,
-                    {
-                      backgroundColor:
-                        marker.source === "good_price"
-                          ? colors.surface.primary.bold
-                          : colors.surface.primary.default,
-                    },
-                  ]}
-                />
-              )}
-            </Pressable>
-          );
-        })}
       </View>
       {selectedMarker ? (
         <Preview
@@ -128,11 +146,6 @@ const styles = StyleSheet.create({
   mapArea: {
     flex: 1,
     overflow: "hidden",
-    backgroundColor: colors.border.neutral.default,
-  },
-  mapPlaceholder: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: colors.border.neutral.default,
   },
   legend: {
     position: "absolute",
@@ -157,9 +170,6 @@ const styles = StyleSheet.create({
     borderRadius: radius.full,
   },
   currentLocationMarker: {
-    position: "absolute",
-    left: "65%",
-    top: "27%",
     width: 16,
     height: 16,
     borderRadius: radius.full,
@@ -171,11 +181,6 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.6,
     shadowRadius: 6,
     elevation: 6,
-  },
-  markerHitArea: {
-    position: "absolute",
-    alignItems: "center",
-    justifyContent: "center",
   },
   dotMarker: {
     width: 8,

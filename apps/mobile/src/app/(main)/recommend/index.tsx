@@ -47,8 +47,11 @@ const MOCK_RESTAURANTS = [
   },
 ];
 
-// TODO(F3-1 데이터 연동): restaurants GraphQL 쿼리 + 실제 위경도 기반 좌표 변환으로 교체.
-// 지금은 Figma "recommand-map" 화면(node 733:15646, 733:15879) 마커 배치 예시 그대로의 정적 mock.
+// TODO(F3-1 데이터 연동): restaurants GraphQL 쿼리(실제 latitude/longitude)로 교체.
+// 지금은 대구 북구 인근 좌표를 임의로 흩뿌린 정적 mock (Figma "recommand-map" 화면,
+// node 733:15646, 733:15879의 마커 배치 예시를 좌표로 옮김).
+const CURRENT_LOCATION = { latitude: 35.8974, longitude: 128.5865 };
+
 const MOCK_MAP_MARKERS: RecommendMapMarker[] = [
   {
     id: "m1",
@@ -57,8 +60,8 @@ const MOCK_MAP_MARKERS: RecommendMapMarker[] = [
     category: "한식",
     distance: "0.5km",
     price: "6,500원",
-    left: 91 / 402,
-    top: 101 / 522,
+    latitude: 35.9009,
+    longitude: 128.584,
   },
   {
     id: "m2",
@@ -67,8 +70,8 @@ const MOCK_MAP_MARKERS: RecommendMapMarker[] = [
     category: "한식",
     distance: "0.8km",
     price: "15,000원",
-    left: 213 / 402,
-    top: 242 / 522,
+    latitude: 35.8959,
+    longitude: 128.591,
   },
   {
     id: "m3",
@@ -77,8 +80,8 @@ const MOCK_MAP_MARKERS: RecommendMapMarker[] = [
     category: "한식",
     distance: "0.4km",
     price: "6,000원",
-    left: 125 / 402,
-    top: 250 / 522,
+    latitude: 35.8944,
+    longitude: 128.581,
   },
   {
     id: "m4",
@@ -86,8 +89,8 @@ const MOCK_MAP_MARKERS: RecommendMapMarker[] = [
     name: "가마솥 순대국밥",
     category: "한식",
     distance: "0.1km",
-    left: 272 / 402,
-    top: 261 / 522,
+    latitude: 35.8984,
+    longitude: 128.593,
   },
   {
     id: "m5",
@@ -95,8 +98,8 @@ const MOCK_MAP_MARKERS: RecommendMapMarker[] = [
     name: "둔산식당",
     category: "한식",
     distance: "0.6km",
-    left: 353 / 402,
-    top: 199 / 522,
+    latitude: 35.9029,
+    longitude: 128.596,
   },
 ];
 
@@ -223,6 +226,7 @@ export default function RecommendScreen() {
       ) : (
         <RecommendMapView
           markers={MOCK_MAP_MARKERS}
+          currentLocation={CURRENT_LOCATION}
           selectedMarkerId={selectedMarkerId}
           onSelectMarker={setSelectedMarkerId}
         />

@@ -23,11 +23,16 @@ const config: ExpoConfig = {
       { kakaoAppKey: process.env.KAKAO_NATIVE_APP_KEY ?? "" },
     ],
     [
+      "@mj-studio/react-native-naver-map",
+      { client_id: process.env.NAVER_MAP_CLIENT_ID ?? "" },
+    ],
+    [
       "expo-build-properties",
       {
         android: {
           extraMavenRepos: [
             "https://devrepo.kakao.com/nexus/content/groups/public/",
+            "https://repository.map.naver.com/archive/maven",
           ],
         },
       },
