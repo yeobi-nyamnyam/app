@@ -15,6 +15,8 @@ import {
   type NavBarItemKey,
 } from "@repo/ui";
 
+import { SortSheet, type SortOption } from "@/components/SortSheet";
+
 // TODO(F3 데이터 연동): restaurants + F3-3(예산 기준 실시간 산정) GraphQL 쿼리로 교체.
 // 지금은 Figma "recommand-price" 화면(node 721:14702) 예시 그대로의 정적 mock.
 const MOCK_RESTAURANTS = [
@@ -44,6 +46,21 @@ const MOCK_RESTAURANTS = [
   },
 ];
 
+const DEFAULT_SORT_VALUE = "price-asc";
+const SORT_OPTIONS: SortOption[] = [
+  { value: DEFAULT_SORT_VALUE, label: "가격 낮은 순" },
+  { value: "price-desc", label: "가격 높은 순" },
+];
+
+const parsePrice = (price: string) => Number(price.replace(/[^0-9]/g, ""));
+
+const sortByValue = (items: typeof MOCK_RESTAURANTS, sortValue: string) =>
+  [...items].sort((a, b) =>
+    sortValue === "price-desc"
+      ? parsePrice(b.price) - parsePrice(a.price)
+      : parsePrice(a.price) - parsePrice(b.price),
+  );
+
 const handleNavChange = (key: NavBarItemKey) => {
   if (key === "recommend") return;
   if (key === "home") {
@@ -71,6 +88,8 @@ const handleNavChange = (key: NavBarItemKey) => {
 export default function RecommendScreen() {
   const insets = useSafeAreaInsets();
   const [viewMode, setViewMode] = useState<0 | 1>(0);
+  const [sortValue, setSortValue] = useState(DEFAULT_SORT_VALUE);
+  const [isSortSheetOpen, setSortSheetOpen] = useState(false);
 
   const handleViewModeChange = (index: 0 | 1) => {
     if (index === 1) {
@@ -80,11 +99,9 @@ export default function RecommendScreen() {
     setViewMode(index);
   };
 
-  const handleSortPress = () => {
-    Alert.alert("준비 중", "정렬 기능은 아직 준비 중이에요.");
-  };
-
   const hasResults = MOCK_RESTAURANTS.length > 0;
+  const sortedRestaurants = sortByValue(MOCK_RESTAURANTS, sortValue);
+  const sortLabel = SORT_OPTIONS.find((option) => option.value === sortValue)?.label ?? "";
 
   return (
     <View style={[styles.screen, { paddingTop: insets.top }]}>
@@ -106,15 +123,15 @@ export default function RecommendScreen() {
         </Text>
         <View style={styles.sortRow}>
           <Text variant="subheadlineEmphasized">조건에 맞는 곳 {MOCK_RESTAURANTS.length}</Text>
-          <Pressable style={styles.sort} onPress={handleSortPress}>
-            <Text variant="subheadlineEmphasized">가격 낮은 순</Text>
+          <Pressable style={styles.sort} onPress={() => setSortSheetOpen(true)}>
+            <Text variant="subheadlineEmphasized">{sortLabel}</Text>
             <Icon name="chevron-down" size="medium" />
           </Pressable>
         </View>
       </View>
       {hasResults ? (
         <FlatList
-          data={MOCK_RESTAURANTS}
+          data={sortedRestaurants}
           keyExtractor={(item) => item.id}
           contentContainerStyle={styles.list}
           renderItem={({ item }) => (
@@ -145,6 +162,13 @@ export default function RecommendScreen() {
       <View style={{ paddingBottom: insets.bottom }}>
         <NavBar active="recommend" onChange={handleNavChange} />
       </View>
+      <SortSheet
+        visible={isSortSheetOpen}
+        options={SORT_OPTIONS}
+        selectedValue={sortValue}
+        onSelect={setSortValue}
+        onClose={() => setSortSheetOpen(false)}
+      />
     </View>
   );
 }
