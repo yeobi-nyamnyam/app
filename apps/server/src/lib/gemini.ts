@@ -13,4 +13,4 @@ export function getGeminiClient() {
   return new GoogleGenerativeAI(apiKey);
 }
 
-export const GEMINI_CHAT_MODEL = "gemini-2.0-flash";
+export const GEMINI_CHAT_MODEL = "gemini-3.6-flash";
