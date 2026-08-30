@@ -1,0 +1,26 @@
+mutation UpdateMealLog(
+  $mealLogId: UUID!
+  $amount: Int!
+  $storeName: String
+  $storeAddress: String
+  $memo: String
+) {
+  update_meal_log(
+    p_meal_log_id: $mealLogId
+    p_amount: $amount
+    p_store_name: $storeName
+    p_store_address: $storeAddress
+    p_memo: $memo
+  ) {
+    id
+    trip_id
+    meal_slot_id
+    category
+    amount
+    store_name
+    store_address
+    memo
+    source
+    created_at
+  }
+}
