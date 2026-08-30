@@ -28,7 +28,7 @@ API라, **키 노출 방지 + 요청 제어**를 위해 서버 경유가 필요�
 
 - [x] **`region_cache` 성격** — TourAPI 호출로 채우는 캐시가 아니라 **팀이 준비한 정적 데이터셋(엑셀 등)을 배포 시 시드로 삽입**하는 마스터 테이블로 확정. 지원하지 않는 지역이면 API 폴백 없이 "조회할 수 없는 지역입니다" 에러 처리 (`docs/schema-design.md` §11 참고)
 - [x] **AI 채팅 호출 방식** — 서버 경유로 결정. 지연시간 체감을 줄이기 위해 서버→클라이언트 구간은 SSE로 LLM 응답을 스트리밍 릴레이
-- [x] **AI 채팅 LLM provider** — **Google Gemini(`gemini-2.0-flash`)로 확정**. 카드 등록 없이 쓸 수 있는 무료 티어(분당/일별 요청 한도만 있음)라 팀 예산 부담 없이 바로 시작 가능. `apps/server/.env.example`의 `AI_CHAT_PROVIDER=gemini`, `GEMINI_API_KEY` 반영
+- [x] **AI 채팅 LLM provider** — **Google Gemini(`gemini-3.6-flash`)로 확정**. 카드 등록 없이 쓸 수 있는 무료 티어(분당/일별 요청 한도만 있음)라 팀 예산 부담 없이 바로 시작 가능. `apps/server/.env.example`의 `AI_CHAT_PROVIDER=gemini`, `GEMINI_API_KEY` 반영
 - [ ] `apps/server` 프레임워크 — Express 기준으로 세팅 가이드에 명시되어 있음, 유지할지 확인
 - [ ] 서버 배포 방식 (개발 중엔 로컬로 충분하지만, 발표/시연 전엔 배포 필요 — 이번 세션 범위는 아님)
 - [x] **식당 데이터 캐싱 방식** — 착한가격업소+TourAPI를 `restaurants` 테이블에 24시간 배치로 통합 캐싱 확정. 착한가격업소는 위치검색 파라미터가 없어 전량 수집 + 주소 파싱 + Geocoding 좌표 보강 필요 (`docs/schema-design.md` §12, `docs/business-logic-notes.md` §8 참고)
