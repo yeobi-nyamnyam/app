@@ -23,7 +23,7 @@ import {
 } from "@repo/ui";
 
 import { MEAL_TYPES, MEAL_TYPE_LABEL, type MealType } from "@/lib/budget";
-import { formatDigitsForDisplay, parseDigits } from "@/lib/format";
+import { formatDigitsForDisplay, parseDigits, todayDate } from "@/lib/format";
 
 import { ReceiptUploadBox } from "../ReceiptUploadBox";
 import { StoreSearchModal, type StoreSearchResult } from "../StoreSearchModal";
@@ -37,8 +37,6 @@ const MEAL_TYPE_OPTIONS: DropdownOption[] = MEAL_TYPES.map((mealType) => ({
   value: mealType,
   label: MEAL_TYPE_LABEL[mealType],
 }));
-
-const todayDate = () => new Date().toISOString().slice(0, 10);
 
 // 아직 오지 않은 날짜는 방문 기록 대상이 아니므로 드롭다운에 노출하지 않는다.
 // 일차 번호는 여행 전체 기간 기준으로 매겨야 해서 필터링 전에 index를 먼저 계산한다.

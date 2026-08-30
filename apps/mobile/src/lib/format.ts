@@ -25,3 +25,11 @@ export const formatDateTime = (isoDateTime: string): string => {
   const pad = (n: number) => String(n).padStart(2, "0");
   return `${date.getFullYear()}.${pad(date.getMonth() + 1)}.${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}`;
 };
+
+// 오늘 날짜(YYYY-MM-DD)를 로컬 타임존 기준으로 반환한다. toISOString()은 UTC라
+// 한국 시간 새벽(UTC+9 자정~오전 9시)에는 실제와 다른 전날을 가리키는 버그가 있었다.
+export const todayDate = (): string => {
+  const date = new Date();
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+};
