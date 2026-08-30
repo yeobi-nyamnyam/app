@@ -1,6 +1,6 @@
-import { useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Alert, Modal, Pressable, ScrollView, StyleSheet, View } from "react-native";
-import { Redirect, router } from "expo-router";
+import { Redirect, router, useFocusEffect } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useMutation, useQuery } from "@apollo/client/react";
 import {
@@ -66,11 +66,20 @@ const handleNavChange = (key: NavBarItemKey) => {
  */
 export default function ChatConversationScreen() {
   const { session } = useSession();
-  const { data, loading } = useQuery(ActiveTripDocument, {
+  const { data, loading, refetch } = useQuery(ActiveTripDocument, {
     variables: { userId: session?.user.id ?? "" },
     skip: !session,
     fetchPolicy: "cache-and-network",
   });
+
+  // 기록 화면(F6-1 chat 경로)에서 실제로 소비를 저장하고 돌아왔을 때 오늘 남은 식비를
+  // 최신 값으로 다시 받아오기 위함 — F6-4(캐스케이드) 전까지는 식비 저장 자체가 막혀
+  // 있어 지금은 값이 바뀔 일이 없지만, 풀리면 이 refetch만으로 자동으로 반영된다.
+  useFocusEffect(
+    useCallback(() => {
+      if (session) void refetch();
+    }, [session, refetch]),
+  );
 
   if (loading && !data) {
     return (
@@ -150,6 +159,25 @@ function ActiveConversation({
     setMessages((prev) => [...prev, message]);
   };
 
+  // "새 추천 보기" 카드는 실제로 오늘 남은 식비가 줄었을 때만 띄운다. 파싱 직후가
+  // 아니라, 기록 화면에서 실제로 저장하고 돌아와 remaining이 진짜로 감소했을 때만
+  // (부모의 useFocusEffect가 refetch → 이 값이 갱신됨) 반응한다.
+  const previousRemainingRef = useRef(remaining);
+  useEffect(() => {
+    if (remaining < previousRemainingRef.current) {
+      appendMessage({
+        id: `ai-recommend-${Date.now()}`,
+        sender: "ai",
+        variant: "cta",
+        title: formatWon(remaining),
+        description: "오늘 남은 식비가 줄었어요. 추천에서 다시 골라보세요.",
+        buttonLabel: "새 추천 보기",
+        onButtonPress: () => Alert.alert("준비 중", "추천 화면은 아직 준비 중이에요."),
+      });
+    }
+    previousRemainingRef.current = remaining;
+  }, [remaining]);
+
   // 끼니 소비(식비)는 슬롯 연결·캐스케이드 확정(F6-4)이 아직 없어 RecordForm에서도
   // 저장을 막아둔 상태라, 채팅에서 확정하지 않고 기록 화면(F6-1 chat 경로)으로 보낸다.
   const goToRecordScreen = (amount?: string) => {
@@ -203,6 +231,9 @@ function ActiveConversation({
     }
 
     if (result.category === "식비") {
+      // "새 추천 보기" 카드는 여기서 바로 띄우지 않는다 — 사용자가 기록 화면에서
+      // 실제로 저장하고 돌아와 오늘 남은 식비가 진짜로 줄었을 때만
+      // (위 useFocusEffect + useEffect가 감지) 뜨도록 분리했다.
       appendMessage({
         id: `ai-cta-${Date.now()}`,
         sender: "ai",
@@ -210,16 +241,6 @@ function ActiveConversation({
         description: `${formatWon(result.amount)} 썼군요! 끼니 소비는 채팅에서 바로 저장할 수 없어서, 기록 화면에서 확인하고 남겨주세요.`,
         buttonLabel: "메뉴 기록",
         onButtonPress: () => goToRecordScreen(String(result.amount)),
-      });
-      // 추천(F3) 화면이 아직 없어서 실제 이동은 못 시키고, 어디로 이어질지만 보여준다.
-      appendMessage({
-        id: `ai-recommend-${Date.now()}`,
-        sender: "ai",
-        variant: "cta",
-        title: formatWon(remaining),
-        description: "오늘 남은 식비가 줄었어요. 추천에서 다시 골라보세요.",
-        buttonLabel: "새 추천 보기",
-        onButtonPress: () => Alert.alert("준비 중", "추천 화면은 아직 준비 중이에요."),
       });
       return;
     }
@@ -231,8 +252,9 @@ function ActiveConversation({
     const text = inputValue.trim();
     if (!text) return;
     setInputValue("");
+    const waitingId = `ai-${Date.now()}`;
     appendMessage({ id: `user-${Date.now()}`, sender: "user", text });
-    appendMessage({ id: "waiting", sender: "ai", variant: "waiting" });
+    appendMessage({ id: waitingId, sender: "ai", variant: "waiting" });
 
     await streamChatReply({
       tripName,
@@ -242,14 +264,14 @@ function ActiveConversation({
       history,
       onToken: (accumulated) => {
         setMessages((prev) =>
-          prev.map((item) => (item.id === "waiting" ? { ...item, variant: "text", text: accumulated } : item)),
+          prev.map((item) => (item.id === waitingId ? { ...item, variant: "text", text: accumulated } : item)),
         );
       },
       onDone: (result) => {
         void handleParsedResult(text, result);
       },
       onError: (error) => {
-        setMessages((prev) => prev.filter((item) => item.id !== "waiting"));
+        setMessages((prev) => prev.filter((item) => item.id !== waitingId));
         appendMessage({ id: `ai-error-${Date.now()}`, sender: "ai", text: error.message });
       },
     });
