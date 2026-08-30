@@ -1,0 +1,19 @@
+query TripMealLogs($tripId: UUID!) {
+  meal_logsCollection(
+    filter: { trip_id: { eq: $tripId } }
+    orderBy: [{ created_at: DescNullsLast }]
+  ) {
+    edges {
+      node {
+        id
+        meal_slot_id
+        category
+        amount
+        store_name
+        memo
+        source
+        created_at
+      }
+    }
+  }
+}
