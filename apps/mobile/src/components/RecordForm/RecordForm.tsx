@@ -47,6 +47,7 @@ function buildTripDayOptions(dates: string[]): DropdownOption[] {
 }
 
 export interface RecordFormMealSlot {
+  id: string;
   date: string;
   mealType: MealType;
   isRecorded: boolean;
@@ -58,6 +59,7 @@ export interface RecordFormValues {
   storeName: string;
   storeAddress: string;
   memo: string;
+  mealSlotId: string | null;
 }
 
 /**
@@ -65,8 +67,9 @@ export interface RecordFormValues {
  * '식비'가 아닌 값으로 주어지면 끼니 소비 토글이 꺼진 채로 시작한다
  * @param submitting 저장 요청 진행 중 여부 (optional, 기본값 false)
  * @param tripDates 여행 기간 내 날짜 목록(YYYY-MM-DD 오름차순), 방문 날짜 드롭다운 옵션으로 사용
- * @param mealSlots 여행의 전체 끼니 슬롯(날짜/끼니때/기록 여부) — 끼니 때 드롭다운에서
- * 선택한 날짜에 이미 기록된 끼니를 제외하는 데 사용
+ * @param mealSlots 여행의 전체 끼니 슬롯(id/날짜/끼니때/기록 여부) — 끼니 때 드롭다운에서
+ * 선택한 날짜에 이미 기록된 끼니를 제외하고, 선택된 날짜+끼니때에 해당하는 슬롯 id를
+ * 찾아 onSubmit의 mealSlotId로 전달하는 데 사용
  * @param onSubmit 저장 버튼을 눌렀을 때 폼 값을 전달하는 콜백
  */
 export interface RecordFormProps {
@@ -165,13 +168,17 @@ export const RecordForm = ({
 
   const amountValue = Number(amount);
   const isAmountValid = amount.length > 0 && Number.isFinite(amountValue) && amountValue > 0;
-  // 끼니 소비(식비) 기록은 끼니 슬롯 연결·캐스케이드 확정(F6-4)이 붙기 전까지
-  // 저장할 수 없다 — 슬롯 없이 저장하면 배지/재분배 로직이 깨진다.
-  const canSubmit = isAmountValid && category.length > 0 && !isMeal && !submitting;
+  // 끼니 소비(식비)는 방문 날짜+끼니 때로 특정된 meal_slot에 연결되어야만 저장 가능
+  // (F6-4 캐스케이드 확정 RPC가 이 slot id를 필요로 함).
+  const mealSlotId = isMeal
+    ? (mealSlots.find((slot) => slot.date === visitDate && slot.mealType === mealType)?.id ?? null)
+    : null;
+  const isMealSelectionValid = !isMeal || mealSlotId != null;
+  const canSubmit = isAmountValid && category.length > 0 && isMealSelectionValid && !submitting;
 
   const handleSubmit = () => {
     if (!category) return;
-    onSubmit({ category, amount, storeName, storeAddress, memo });
+    onSubmit({ category, amount, storeName, storeAddress, memo, mealSlotId });
   };
 
   return (
