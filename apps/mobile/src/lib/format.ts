@@ -16,3 +16,12 @@ export const parseDigits = (text: string): number => {
  */
 export const formatDigitsForDisplay = (digitsText: string): string =>
   digitsText ? Number(digitsText).toLocaleString("ko-KR") : "";
+
+/**
+ * @param isoDateTime ISO timestamptz 문자열 (예: meal_logs.created_at)
+ */
+export const formatDateTime = (isoDateTime: string): string => {
+  const date = new Date(isoDateTime);
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${date.getFullYear()}.${pad(date.getMonth() + 1)}.${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}`;
+};
