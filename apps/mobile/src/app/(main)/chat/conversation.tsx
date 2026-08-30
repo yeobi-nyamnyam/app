@@ -187,8 +187,15 @@ function ActiveConversation({
     router.push(`/record/new?${params.toString()}`);
   };
 
-  const handleParsedResult = async (userText: string, result: ChatParsedResult) => {
+  const handleParsedResult = async (userText: string, result: ChatParsedResult, waitingId: string) => {
     const isNonMealExpense = result.hasExpense && result.category != null && result.category !== "식비";
+    // 소비로 파싱되면(끼니든 아니든) 그 다음 뜨는 CTA 카드/기록 시트가 이미 같은 내용을
+    // 담고 있어서, Gemini의 대화체 reply 버블은 굳이 같이 안 보여준다. 파싱 안 된
+    // 일반 대화·재질문일 때만 스트리밍된 텍스트 버블을 그대로 남겨둔다.
+    const willShowStructuredUi = result.hasExpense && result.category != null && result.amount != null;
+    if (willShowStructuredUi) {
+      setMessages((prev) => prev.filter((item) => item.id !== waitingId));
+    }
 
     let userMessageId: string | null = null;
     try {
@@ -268,7 +275,7 @@ function ActiveConversation({
         );
       },
       onDone: (result) => {
-        void handleParsedResult(text, result);
+        void handleParsedResult(text, result, waitingId);
       },
       onError: (error) => {
         setMessages((prev) => prev.filter((item) => item.id !== waitingId));
