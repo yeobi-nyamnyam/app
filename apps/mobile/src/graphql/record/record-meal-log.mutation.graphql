@@ -1,0 +1,30 @@
+mutation RecordMealLog(
+  $tripId: UUID!
+  $mealSlotId: UUID!
+  $amount: Int!
+  $storeName: String
+  $storeAddress: String
+  $memo: String
+  $source: String!
+) {
+  record_meal_log(
+    p_trip_id: $tripId
+    p_meal_slot_id: $mealSlotId
+    p_amount: $amount
+    p_store_name: $storeName
+    p_store_address: $storeAddress
+    p_memo: $memo
+    p_source: $source
+  ) {
+    id
+    trip_id
+    meal_slot_id
+    category
+    amount
+    store_name
+    store_address
+    memo
+    source
+    created_at
+  }
+}
