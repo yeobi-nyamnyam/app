@@ -113,7 +113,17 @@ export const RecordForm = ({
   onSubmit,
 }: RecordFormProps) => {
   const initialCategory = initialValues?.category;
-  const [isMeal, setIsMeal] = useState(!initialCategory || initialCategory === "식비");
+  // 오늘 아침/점심/저녁이 전부 기록(캐스케이드 확정 포함)됐으면 더 이상 끼니
+  // 소비로 기록할 대상이 없다 — 새 기록은 기타소비로 시작하고, 끼니 쪽으로
+  // 돌리려 하면 안내만 하고 막는다.
+  const isTodayMealComplete = MEAL_TYPES.every((mealType) =>
+    mealSlots.some(
+      (slot) => slot.date === todayDate() && slot.mealType === mealType && slot.isRecorded,
+    ),
+  );
+  const [isMeal, setIsMeal] = useState(
+    (!initialCategory || initialCategory === "식비") && !isTodayMealComplete,
+  );
   const [category, setCategory] = useState<MealLogCategory | "">(
     initialCategory ?? (isMeal ? "식비" : ""),
   );
@@ -145,6 +155,13 @@ export const RecordForm = ({
   };
 
   const handleToggleMeal = () => {
+    if (!isMeal && isTodayMealComplete) {
+      Alert.alert(
+        "오늘 끼니 기록이 완료됐어요",
+        "끼니 기록을 수정하거나 삭제하려면 기록보기 화면에서 진행해주세요.",
+      );
+      return;
+    }
     setIsMeal((prev) => {
       const next = !prev;
       setCategory(next ? "식비" : "");
