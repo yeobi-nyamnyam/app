@@ -5,6 +5,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useMutation } from "@apollo/client/react";
 import {
   Button,
+  Chip,
   DataCardRow,
   FormField,
   Header,
@@ -22,12 +23,12 @@ import { DeleteMealLogDocument, UpdateMealLogDocument } from "@repo/types";
 import { formatDateTime, formatDigitsForDisplay, formatWon, parseDigits } from "@/lib/format";
 import type { MealLogCategory } from "@/components/RecordForm";
 
+const OTHER_CATEGORY_OPTIONS: MealLogCategory[] = ["교통", "숙박", "기념품", "기타"];
+
 /**
  * 소비 기록 상세/수정/삭제 화면 (F6-5, F6-6, Figma "meal-detail"/"spent-detail-delete").
- * record/index.tsx의 "기록보기" 목록에서 항목을 눌러 진입한다. 방문 날짜/끼니때/카테고리는
- * 불변이라 매장/금액/메모만 수정 가능하다.
- * TODO(F6-6): 기타소비 카테고리 수정은 update_meal_log의 p_category 파라미터가
- * 실제 DB에 적용되고 codegen된 이후 추가한다 (Figma node-id=786-25468).
+ * record/index.tsx의 "기록보기" 목록에서 항목을 눌러 진입한다. 방문 날짜/끼니때는
+ * 불변이고, 끼니 소비는 매장/금액/메모만, 기타소비는 카테고리까지 수정 가능하다.
  */
 export default function RecordEditScreen() {
   const insets = useSafeAreaInsets();
@@ -47,6 +48,7 @@ export default function RecordEditScreen() {
   const isMeal = params.category === "식비";
   const canDelete = params.canDelete === "true";
 
+  const [category, setCategory] = useState<MealLogCategory>(params.category);
   const [amount, setAmount] = useState(params.amount);
   const [storeName, setStoreName] = useState(params.storeName ?? "");
   const [memo, setMemo] = useState(params.memo ?? "");
@@ -58,7 +60,7 @@ export default function RecordEditScreen() {
   const amountValue = Number(amount);
   const isAmountValid = amount.length > 0 && Number.isFinite(amountValue) && amountValue > 0;
   const isDirty =
-    amount !== params.amount || storeName !== (params.storeName ?? "") || memo !== (params.memo ?? "");
+    category !== params.category || amount !== params.amount || storeName !== (params.storeName ?? "") || memo !== (params.memo ?? "");
   const canSave = isAmountValid && isDirty && !updating;
 
   const deleteWarning = isMeal
@@ -79,6 +81,7 @@ export default function RecordEditScreen() {
           storeName: storeName || null,
           storeAddress: params.storeAddress || null,
           memo: memo || null,
+          category: isMeal ? null : category,
         },
       });
       router.back();
@@ -117,6 +120,21 @@ export default function RecordEditScreen() {
 
         <View style={styles.section}>
           <Text variant="title3Emphasized">수정 가능한 항목</Text>
+
+          {!isMeal ? (
+            <FormField label="카테고리">
+              <View style={styles.categoryRow}>
+                {OTHER_CATEGORY_OPTIONS.map((option) => (
+                  <Chip
+                    key={option}
+                    text={option}
+                    active={category === option}
+                    onPress={() => setCategory(option)}
+                  />
+                ))}
+              </View>
+            </FormField>
+          ) : null}
 
           <FormField label={isMeal ? "매장 이름" : "이용 내역"}>
             <TextField value={storeName} onChangeText={setStoreName} placeholder="예: 북구네 돼지국밥" />
@@ -197,6 +215,10 @@ const styles = StyleSheet.create({
     borderRadius: radius[23],
     paddingHorizontal: spacing[16],
     paddingVertical: spacing[4],
+  },
+  categoryRow: {
+    flexDirection: "row",
+    gap: spacing[10],
   },
   buttonRow: {
     flexDirection: "row",
