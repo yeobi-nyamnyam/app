@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { Alert, ScrollView, StyleSheet, View } from "react-native";
-import { router } from "expo-router";
+import { router, useFocusEffect } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useQuery } from "@apollo/client/react";
 import {
@@ -32,7 +32,7 @@ export default function RecordWriteScreen() {
   const insets = useSafeAreaInsets();
   const [activeTab, setActiveTab] = useState(0);
   const { session } = useSession();
-  const { data, loading } = useQuery(ActiveTripDocument, {
+  const { data, loading, refetch: refetchActiveTrip } = useQuery(ActiveTripDocument, {
     variables: { userId: session?.user.id ?? "" },
     skip: !session,
     fetchPolicy: "cache-and-network",
@@ -40,11 +40,27 @@ export default function RecordWriteScreen() {
   const tripNode = data?.tripsCollection.edges[0]?.node;
   const tripId = tripNode?.id;
 
-  const { data: mealLogsData, loading: mealLogsLoading } = useQuery(TripMealLogsDocument, {
-    variables: { tripId: tripId ?? "" },
-    skip: !tripId,
-    fetchPolicy: "cache-and-network",
-  });
+  const { data: mealLogsData, loading: mealLogsLoading, refetch: refetchMealLogs } = useQuery(
+    TripMealLogsDocument,
+    {
+      variables: { tripId: tripId ?? "" },
+      skip: !tripId,
+      fetchPolicy: "cache-and-network",
+    },
+  );
+
+  // record/new, record/edit에서 저장/삭제 후 돌아왔을 때 이 화면이 그대로 마운트되어
+  // 있어서 cache-and-network만으로는 재조회가 안 된다 — 포커스를 다시 받을 때마다
+  // 명시적으로 refetch한다.
+  useFocusEffect(
+    useCallback(() => {
+      refetchActiveTrip();
+      if (tripId) {
+        refetchMealLogs();
+      }
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [tripId]),
+  );
   const mealSlots = (tripNode?.meal_slotsCollection?.edges ?? []).map((edge) => ({
     id: edge.node.id,
     date: edge.node.date,
