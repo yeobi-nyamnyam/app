@@ -60,6 +60,10 @@ registry.registerPath({
       description: "AI 응답을 받아오지 못했거나 검증에 실패함",
       content: { "application/json": { schema: ErrorResponseSchema } },
     },
+    500: {
+      description: "AI 채팅 서비스를 사용할 수 없음 (GEMINI_API_KEY 미설정 등)",
+      content: { "application/json": { schema: ErrorResponseSchema } },
+    },
   },
 });
 
@@ -109,23 +113,29 @@ chatRouter.post("/chat", async (req, res) => {
   }
   const { tripName, todayBudget, todayConsumed, message, history } = parseResult.data;
 
-  const model = getGeminiClient().getGenerativeModel({
-    model: GEMINI_CHAT_MODEL,
-    systemInstruction: buildSystemInstruction({ tripName, todayBudget, todayConsumed }),
-    generationConfig: {
-      responseMimeType: "application/json",
-      responseSchema: {
-        type: SchemaType.OBJECT,
-        properties: {
-          reply: { type: SchemaType.STRING },
-          hasExpense: { type: SchemaType.BOOLEAN },
-          amount: { type: SchemaType.INTEGER, nullable: true },
-          category: { type: SchemaType.STRING, format: "enum", enum: [...EXPENSE_CATEGORIES], nullable: true },
+  let model: ReturnType<ReturnType<typeof getGeminiClient>["getGenerativeModel"]>;
+  try {
+    model = getGeminiClient().getGenerativeModel({
+      model: GEMINI_CHAT_MODEL,
+      systemInstruction: buildSystemInstruction({ tripName, todayBudget, todayConsumed }),
+      generationConfig: {
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: SchemaType.OBJECT,
+          properties: {
+            reply: { type: SchemaType.STRING },
+            hasExpense: { type: SchemaType.BOOLEAN },
+            amount: { type: SchemaType.INTEGER, nullable: true },
+            category: { type: SchemaType.STRING, format: "enum", enum: [...EXPENSE_CATEGORIES], nullable: true },
+          },
+          required: ["reply", "hasExpense"],
         },
-        required: ["reply", "hasExpense"],
       },
-    },
-  });
+    });
+  } catch {
+    const body: z.infer<typeof ErrorResponseSchema> = { message: "AI 채팅 서비스를 사용할 수 없습니다." };
+    return res.status(500).json(body);
+  }
 
   const contents = [
     ...(history ?? []).map((item) => ({
