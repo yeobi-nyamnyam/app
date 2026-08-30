@@ -3,13 +3,16 @@ import express from "express";
 import swaggerUi from "swagger-ui-express";
 import { generateOpenApiDocument } from "./openapi/document";
 import { authRouter } from "./routes/auth";
+import { chatRouter } from "./routes/chat";
 import { healthRouter } from "./routes/health";
 
 const app = express();
 const port = process.env.PORT ?? 4000;
 
+app.use(express.json());
 app.use(healthRouter);
 app.use(authRouter);
+app.use(chatRouter);
 
 const openApiDocument = generateOpenApiDocument();
 app.get("/openapi.json", (_req, res) => res.json(openApiDocument));
