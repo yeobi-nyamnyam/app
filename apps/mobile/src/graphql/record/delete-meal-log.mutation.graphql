@@ -1,0 +1,3 @@
+mutation DeleteMealLog($mealLogId: UUID!) {
+  delete_meal_log(p_meal_log_id: $mealLogId)
+}
