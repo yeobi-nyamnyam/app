@@ -49,7 +49,20 @@ const config: StorybookConfig = {
       optimizeDeps: {
         esbuildOptions: {
           resolveExtensions: webExtensions,
+          // RN ecosystem packages (e.g. expo-blur's BlurView.web.js) ship JSX
+          // inside plain .js files; esbuild's default loader for .js is "js",
+          // which rejects JSX syntax. "automatic" avoids needing a `React` import
+          // in scope (those files don't have one) by using the new JSX runtime.
+          loader: { ".js": "jsx" },
+          jsx: "automatic",
         },
+      },
+      // Same JSX settings for the dev-server's own transform pipeline (separate
+      // from optimizeDeps' pre-bundling scan above) — without this, expo-blur's
+      // web file gets re-transformed on request with the old classic JSX runtime
+      // and throws "React is not defined".
+      esbuild: {
+        jsx: "automatic",
       },
     });
   },
