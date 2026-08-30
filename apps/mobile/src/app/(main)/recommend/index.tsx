@@ -99,7 +99,6 @@ const MOCK_MAP_MARKERS: RecommendMapMarker[] = [
     top: 199 / 522,
   },
 ];
-const DEFAULT_SELECTED_MARKER_ID = "m3";
 
 // TODO(F2/F3 데이터 연동): 끼니명 + 예산 상한은 예산 산정(F2) 결과로 교체.
 // 가격보기(Figma node 733:15526)는 "저녁 18,000원 이하", 지도보기(node 733:15646)는
@@ -151,7 +150,8 @@ export default function RecommendScreen() {
   const [viewMode, setViewMode] = useState<0 | 1>(0);
   const [sortValue, setSortValue] = useState(DEFAULT_SORT_VALUE);
   const [isSortSheetOpen, setSortSheetOpen] = useState(false);
-  const [selectedMarkerId, setSelectedMarkerId] = useState(DEFAULT_SELECTED_MARKER_ID);
+  // 마커를 눌러야 선택되는 상태 — 지도보기 진입 시 기본값은 미선택(Preview 미표시)
+  const [selectedMarkerId, setSelectedMarkerId] = useState<string | undefined>(undefined);
 
   const hasResults = MOCK_RESTAURANTS.length > 0;
   const sortedRestaurants = sortByValue(MOCK_RESTAURANTS, sortValue);
