@@ -1,10 +1,19 @@
 import { useMemo, useState } from "react";
-import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import {
+  Alert,
+  Modal as RNModal,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
 import {
   Button,
   Chip,
   FormField,
   Icon,
+  Modal,
   Switch,
   TextField,
   colors,
@@ -136,6 +145,7 @@ export const RecordForm = ({
   const [visitDate, setVisitDate] = useState("");
   const [mealType, setMealType] = useState("");
   const [isStoreSearchVisible, setIsStoreSearchVisible] = useState(false);
+  const [isTodayMealCompleteNoticeVisible, setIsTodayMealCompleteNoticeVisible] = useState(false);
 
   const tripDayOptions = useMemo(() => buildTripDayOptions(tripDates), [tripDates]);
   const availableMealTypeOptions = useMemo(() => {
@@ -156,10 +166,7 @@ export const RecordForm = ({
 
   const handleToggleMeal = () => {
     if (!isMeal && isTodayMealComplete) {
-      Alert.alert(
-        "오늘 끼니 기록이 완료됐어요",
-        "끼니 기록을 수정하거나 삭제하려면 기록보기 화면에서 진행해주세요.",
-      );
+      setIsTodayMealCompleteNoticeVisible(true);
       return;
     }
     setIsMeal((prev) => {
@@ -290,6 +297,26 @@ export const RecordForm = ({
         onClose={() => setIsStoreSearchVisible(false)}
         onSelect={handleSelectStore}
       />
+
+      <RNModal
+        visible={isTodayMealCompleteNoticeVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setIsTodayMealCompleteNoticeVisible(false)}
+      >
+        <Pressable
+          style={styles.backdrop}
+          onPress={() => setIsTodayMealCompleteNoticeVisible(false)}
+        />
+        <View style={styles.modalCenter}>
+          <Modal
+            title="오늘 끼니 기록이 완료됐어요"
+            content="끼니 기록을 수정하거나 삭제하려면 기록보기 화면에서 진행해주세요."
+            confirmLabel="확인"
+            onConfirm={() => setIsTodayMealCompleteNoticeVisible(false)}
+          />
+        </View>
+      </RNModal>
     </View>
   );
 };
@@ -329,5 +356,15 @@ const styles = StyleSheet.create({
     width: "100%",
     paddingHorizontal: spacing[16],
     paddingVertical: spacing[12],
+  },
+  backdrop: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: colors.surface.neutral.alpha["inverse-alpha-30"],
+  },
+  modalCenter: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: spacing[24],
   },
 });

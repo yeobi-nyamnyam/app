@@ -87,16 +87,7 @@ export default function RecordEditScreen() {
     }
   };
 
-  const handleDeletePress = () => {
-    if (!canDelete) {
-      Alert.alert(
-        "지금은 삭제할 수 없어요",
-        "바로 다음 끼니가 이미 기록되어 있어요. 그 기록부터 먼저 삭제해주세요.",
-      );
-      return;
-    }
-    setIsDeleteConfirmVisible(true);
-  };
+  const handleDeletePress = () => setIsDeleteConfirmVisible(true);
 
   const handleDelete = async () => {
     setIsDeleteConfirmVisible(false);
@@ -110,14 +101,7 @@ export default function RecordEditScreen() {
 
   return (
     <View style={styles.screen}>
-      <Header
-        title={params.title}
-        tailing="text"
-        tailingText="삭제"
-        onBackPress={() => router.back()}
-        onTailingPress={handleDeletePress}
-        topInset={insets.top}
-      />
+      <Header title={params.title} onBackPress={() => router.back()} topInset={insets.top} />
       <ScrollView contentContainerStyle={styles.content}>
         <View style={styles.section}>
           <Text variant="title3Emphasized">기록 상세</Text>
@@ -168,7 +152,7 @@ export default function RecordEditScreen() {
             <Button label={updating ? "저장 중..." : "수정 저장"} disabled={!canSave} onPress={handleSave} />
           </View>
           <View style={styles.buttonFlex}>
-            <Button label="기록 삭제" variant="outline" onPress={handleDeletePress} />
+            <Button label="기록 삭제" variant="outline" disabled={!canDelete} onPress={handleDeletePress} />
           </View>
         </View>
       </ScrollView>

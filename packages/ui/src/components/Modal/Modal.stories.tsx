@@ -27,3 +27,12 @@ export const CustomLabels: Story = {
     confirmLabel: '종료하기',
   },
 }
+
+export const SingleButton: Story = {
+  args: {
+    title: '오늘 끼니 기록이 완료됐어요',
+    content: '끼니 기록을 수정하거나 삭제하려면 기록보기 화면에서 진행해주세요.',
+    confirmLabel: '확인',
+    onCancel: undefined,
+  },
+}
