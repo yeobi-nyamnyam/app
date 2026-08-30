@@ -6,48 +6,48 @@ import { useQuery } from "@apollo/client/react";
 import {
   CTACard,
   EmptyTripPrompt,
-  ListRow,
   NavBar,
+  RecordCard,
   Text,
   UnderlineTabs,
   colors,
   spacing,
   type NavBarItemKey,
 } from "@repo/ui";
-import { ActiveTripDocument, TripMealLogsDocument } from "@repo/types";
+import { ActiveTripDocument, UserTripsDocument } from "@repo/types";
 
 import { useSession } from "@/hooks/useSession";
-import { formatWon } from "@/lib/format";
-import { MEAL_TYPES, MEAL_TYPE_LABEL, type MealType } from "@/lib/budget";
 
 const TABS = ["기록 작성하기", "기록보기"];
 
 /**
- * 기록 탭 진입 화면 (Figma "write"). 소비 기록/여행 일기 작성 진입점 + 기록보기 탭.
- * 일기(D0~D3)는 기록 기능 개발이 끝난 뒤 별도로 작업하므로 여기서는 진입 버튼만 둔다.
- * "기록보기"(F6-8/F6-9)는 여행 전체 소비 기록을 최신순으로 보여주는 최소 목록만 우선
- * 구현했다 — 수정/삭제(F6-5/F6-6) 진입은 별도 이슈에서 이어서 붙인다.
+ * 기록 탭 진입 화면 (Figma "write"/"trip-list"). 소비 기록/여행 일기 작성 진입점 +
+ * 기록보기 탭. 일기(D0~D3)는 기록 기능 개발이 끝난 뒤 별도로 작업하므로 여기서는
+ * 진입 버튼만 둔다. "기록보기"(F6-8)는 여행 목록을 진행 중/완료됨으로 묶어 보여주고,
+ * 항목을 누르면 그 여행의 소비 기록 목록(`record/history.tsx`, F6-9)으로 이동한다.
  */
 export default function RecordWriteScreen() {
   const insets = useSafeAreaInsets();
   const [activeTab, setActiveTab] = useState(0);
   const { session } = useSession();
+  const userId = session?.user.id ?? "";
+
   const { data, loading, refetch: refetchActiveTrip } = useQuery(ActiveTripDocument, {
-    variables: { userId: session?.user.id ?? "" },
+    variables: { userId },
     skip: !session,
     fetchPolicy: "cache-and-network",
   });
-  const tripNode = data?.tripsCollection.edges[0]?.node;
-  const tripId = tripNode?.id;
+  const tripId = data?.tripsCollection.edges[0]?.node.id;
 
-  const { data: mealLogsData, loading: mealLogsLoading, refetch: refetchMealLogs } = useQuery(
-    TripMealLogsDocument,
-    {
-      variables: { tripId: tripId ?? "" },
-      skip: !tripId,
-      fetchPolicy: "cache-and-network",
-    },
-  );
+  const {
+    data: tripsData,
+    loading: tripsLoading,
+    refetch: refetchTrips,
+  } = useQuery(UserTripsDocument, {
+    variables: { userId },
+    skip: !session,
+    fetchPolicy: "cache-and-network",
+  });
 
   // record/new, record/edit에서 저장/삭제 후 돌아왔을 때 이 화면이 그대로 마운트되어
   // 있어서 cache-and-network만으로는 재조회가 안 된다 — 포커스를 다시 받을 때마다
@@ -55,31 +55,14 @@ export default function RecordWriteScreen() {
   useFocusEffect(
     useCallback(() => {
       refetchActiveTrip();
-      if (tripId) {
-        refetchMealLogs();
-      }
+      refetchTrips();
       // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [tripId]),
+    }, []),
   );
-  const mealSlots = (tripNode?.meal_slotsCollection?.edges ?? []).map((edge) => ({
-    id: edge.node.id,
-    date: edge.node.date,
-    mealType: edge.node.meal_type as MealType,
-    isRecorded: edge.node.is_recorded,
-  }));
-  const mealSlotById = new Map(mealSlots.map((slot) => [slot.id, slot]));
-  // record_meal_log/delete_meal_log와 동일한 정렬 기준(날짜 → 아침/점심/저녁)
-  const sortedMealSlots = [...mealSlots].sort((a, b) => {
-    if (a.date !== b.date) return a.date < b.date ? -1 : 1;
-    return MEAL_TYPES.indexOf(a.mealType) - MEAL_TYPES.indexOf(b.mealType);
-  });
-  // F6-5: 바로 다음 끼니가 이미 기록되어 있으면 삭제 불가
-  const isMealSlotDeletable = (mealSlotId: string) => {
-    const index = sortedMealSlots.findIndex((slot) => slot.id === mealSlotId);
-    const nextSlot = sortedMealSlots[index + 1];
-    return !nextSlot || !nextSlot.isRecorded;
-  };
-  const mealLogs = mealLogsData?.meal_logsCollection.edges ?? [];
+
+  const trips = (tripsData?.tripsCollection.edges ?? []).map((edge) => edge.node);
+  const ongoingTrips = trips.filter((trip) => trip.status !== "completed");
+  const completedTrips = trips.filter((trip) => trip.status === "completed");
 
   const handleRecordPress = () => router.push(`/record/new?tripId=${tripId}`);
 
@@ -103,6 +86,12 @@ export default function RecordWriteScreen() {
     }
     Alert.alert("준비 중", "아직 구현되지 않은 탭이에요.");
   };
+
+  const goToTripHistory = (tripHistoryId: string, tripName: string) =>
+    router.push({
+      pathname: "/record/history",
+      params: { tripId: tripHistoryId, tripName },
+    });
 
   return (
     <View style={[styles.screen, { paddingTop: insets.top }]}>
@@ -138,48 +127,45 @@ export default function RecordWriteScreen() {
             />
           </View>
         )
-      ) : mealLogsLoading && !mealLogsData ? (
+      ) : tripsLoading && !tripsData ? (
         <View style={styles.emptyState}>
-          <Text color="subtlest">기록 불러오는 중...</Text>
+          <Text color="subtlest">여행 목록 불러오는 중...</Text>
         </View>
-      ) : mealLogs.length === 0 ? (
+      ) : trips.length === 0 ? (
         <View style={styles.emptyState}>
-          <Text color="subtlest">아직 기록이 없어요.</Text>
+          <Text color="subtlest">아직 여행이 없어요.</Text>
         </View>
       ) : (
         <ScrollView contentContainerStyle={styles.content}>
-          {mealLogs.map(({ node }) => {
-            const slot = node.meal_slot_id ? mealSlotById.get(node.meal_slot_id) : undefined;
-            const title = slot
-              ? `${MEAL_TYPE_LABEL[slot.mealType]} · ${node.store_name ?? node.memo ?? "식비"}`
-              : `${node.category} · ${node.store_name ?? node.memo ?? ""}`;
-            return (
-              <ListRow
-                key={node.id}
-                title={title}
-                tailing={formatWon(node.amount)}
-                onPress={() =>
-                  router.push({
-                    pathname: "/record/edit",
-                    params: {
-                      logId: node.id,
-                      title: node.store_name || (slot ? MEAL_TYPE_LABEL[slot.mealType] : node.category),
-                      category: node.category,
-                      mealTypeLabel: slot ? MEAL_TYPE_LABEL[slot.mealType] : "",
-                      createdAt: node.created_at,
-                      amount: String(node.amount),
-                      storeName: node.store_name ?? "",
-                      storeAddress: node.store_address ?? "",
-                      memo: node.memo ?? "",
-                      canDelete: node.meal_slot_id
-                        ? String(isMealSlotDeletable(node.meal_slot_id))
-                        : "true",
-                    },
-                  })
-                }
-              />
-            );
-          })}
+          {ongoingTrips.length > 0 ? (
+            <View style={styles.section}>
+              <Text variant="title3Emphasized">진행 중</Text>
+              {ongoingTrips.map((trip) => (
+                <RecordCard
+                  key={trip.id}
+                  title={trip.name}
+                  period={`${trip.start_date} - ${trip.end_date}`}
+                  showBudget={false}
+                  onPress={() => goToTripHistory(trip.id, trip.name)}
+                />
+              ))}
+            </View>
+          ) : null}
+
+          {completedTrips.length > 0 ? (
+            <View style={styles.section}>
+              <Text variant="title3Emphasized">완료됨</Text>
+              {completedTrips.map((trip) => (
+                <RecordCard
+                  key={trip.id}
+                  title={trip.name}
+                  period={`${trip.start_date} - ${trip.end_date}`}
+                  showBudget={false}
+                  onPress={() => goToTripHistory(trip.id, trip.name)}
+                />
+              ))}
+            </View>
+          ) : null}
         </ScrollView>
       )}
       <View style={{ paddingBottom: insets.bottom }}>
@@ -196,7 +182,10 @@ const styles = StyleSheet.create({
   },
   content: {
     padding: spacing[16],
-    gap: spacing[12],
+    gap: spacing[20],
+  },
+  section: {
+    gap: spacing[8],
   },
   emptyState: {
     flex: 1,
