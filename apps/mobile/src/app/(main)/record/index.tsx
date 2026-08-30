@@ -18,7 +18,7 @@ import { ActiveTripDocument, TripMealLogsDocument } from "@repo/types";
 
 import { useSession } from "@/hooks/useSession";
 import { formatWon } from "@/lib/format";
-import { MEAL_TYPE_LABEL, type MealType } from "@/lib/budget";
+import { MEAL_TYPES, MEAL_TYPE_LABEL, type MealType } from "@/lib/budget";
 
 const TABS = ["기록 작성하기", "기록보기"];
 
@@ -43,13 +43,26 @@ export default function RecordWriteScreen() {
   const { data: mealLogsData, loading: mealLogsLoading } = useQuery(TripMealLogsDocument, {
     variables: { tripId: tripId ?? "" },
     skip: !tripId,
+    fetchPolicy: "cache-and-network",
   });
-  const mealSlotById = new Map(
-    (tripNode?.meal_slotsCollection?.edges ?? []).map((edge) => [
-      edge.node.id,
-      { date: edge.node.date, mealType: edge.node.meal_type as MealType },
-    ]),
-  );
+  const mealSlots = (tripNode?.meal_slotsCollection?.edges ?? []).map((edge) => ({
+    id: edge.node.id,
+    date: edge.node.date,
+    mealType: edge.node.meal_type as MealType,
+    isRecorded: edge.node.is_recorded,
+  }));
+  const mealSlotById = new Map(mealSlots.map((slot) => [slot.id, slot]));
+  // record_meal_log/delete_meal_log와 동일한 정렬 기준(날짜 → 아침/점심/저녁)
+  const sortedMealSlots = [...mealSlots].sort((a, b) => {
+    if (a.date !== b.date) return a.date < b.date ? -1 : 1;
+    return MEAL_TYPES.indexOf(a.mealType) - MEAL_TYPES.indexOf(b.mealType);
+  });
+  // F6-5: 바로 다음 끼니가 이미 기록되어 있으면 삭제 불가
+  const isMealSlotDeletable = (mealSlotId: string) => {
+    const index = sortedMealSlots.findIndex((slot) => slot.id === mealSlotId);
+    const nextSlot = sortedMealSlots[index + 1];
+    return !nextSlot || !nextSlot.isRecorded;
+  };
   const mealLogs = mealLogsData?.meal_logsCollection.edges ?? [];
 
   const handleRecordPress = () => router.push(`/record/new?tripId=${tripId}`);
@@ -124,7 +137,32 @@ export default function RecordWriteScreen() {
             const title = slot
               ? `${MEAL_TYPE_LABEL[slot.mealType]} · ${node.store_name ?? node.memo ?? "식비"}`
               : `${node.category} · ${node.store_name ?? node.memo ?? ""}`;
-            return <ListRow key={node.id} title={title} tailing={formatWon(node.amount)} />;
+            return (
+              <ListRow
+                key={node.id}
+                title={title}
+                tailing={formatWon(node.amount)}
+                onPress={() =>
+                  router.push({
+                    pathname: "/record/edit",
+                    params: {
+                      logId: node.id,
+                      title: node.store_name || (slot ? MEAL_TYPE_LABEL[slot.mealType] : node.category),
+                      category: node.category,
+                      mealTypeLabel: slot ? MEAL_TYPE_LABEL[slot.mealType] : "",
+                      createdAt: node.created_at,
+                      amount: String(node.amount),
+                      storeName: node.store_name ?? "",
+                      storeAddress: node.store_address ?? "",
+                      memo: node.memo ?? "",
+                      canDelete: node.meal_slot_id
+                        ? String(isMealSlotDeletable(node.meal_slot_id))
+                        : "true",
+                    },
+                  })
+                }
+              />
+            );
           })}
         </ScrollView>
       )}
