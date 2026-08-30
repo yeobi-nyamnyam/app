@@ -1,5 +1,5 @@
-import { useMemo, useState } from "react";
-import { FlatList, Modal, Pressable, StyleSheet, Text, View } from "react-native";
+import { useEffect, useState } from "react";
+import { ActivityIndicator, FlatList, Modal, Pressable, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
   TextField,
@@ -12,10 +12,14 @@ import {
   typography,
 } from "@repo/ui";
 
+import { searchPlaces } from "@/lib/places";
+
 export interface StoreSearchResult {
   name: string;
   address: string;
 }
+
+const SEARCH_DEBOUNCE_MS = 300;
 
 /**
  * @param visible 모달이 열려있는지: true | false
@@ -30,36 +34,44 @@ export interface StoreSearchModalProps {
 
 const MODE_TABS = ["매장명으로 찾기", "주소로 찾기"];
 
-// TODO(F6-10): 네이버/카카오 지도 검색 API 연동 전까지의 자리표시 목데이터.
-// 실제 API가 붙으면 이 배열과 아래 필터링 로직을 API 호출로 교체한다.
-const MOCK_RESULTS: StoreSearchResult[] = [
-  { name: "제주 흑돼지 본가", address: "제주특별자치도 제주시 노형동 123-4" },
-  { name: "우진해장국", address: "제주특별자치도 제주시 삼도이동 55-1" },
-  { name: "만장굴 매점", address: "제주특별자치도 제주시 구좌읍 만장굴길 182" },
-  { name: "성산일출봉 분식", address: "제주특별자치도 서귀포시 성산읍 일출로 284" },
-  { name: "협재해수욕장 카페", address: "제주특별자치도 제주시 한림읍 협재리 2497" },
-  { name: "동문시장 야시장", address: "제주특별자치도 제주시 이도이동 20-8" },
-];
-
 /**
- * 매장 이름/주소 자동완성 검색 바텀시트 (F6-10 자리표시 프로토타입). 매장명으로
- * 검색하거나 도로명 주소로 검색하는 두 가지 진입 방식을 탭으로 나눠 보여주고,
- * 결과를 고르면 이름·주소를 함께 채운다. 실제 카카오/네이버 지도 검색 API가
- * 붙기 전까지는 목데이터를 클라이언트에서 필터링한다.
+ * 매장 이름/주소 자동완성 검색 바텀시트 (F6-10, 네이버 지역 검색 API 경유). 매장명으로
+ * 검색하거나 도로명 주소로 검색하는 두 가지 진입 방식을 탭으로 나눠 보여주지만, 실제로는
+ * 같은 검색 API가 매장명/주소 텍스트를 모두 매칭해줘서 동일한 엔드포인트를 호출한다.
+ * 타이핑마다 바로 호출하지 않도록 디바운스를 둔다.
  */
 export const StoreSearchModal = ({ visible, onClose, onSelect }: StoreSearchModalProps) => {
   const insets = useSafeAreaInsets();
   const [modeIndex, setModeIndex] = useState(0);
   const [query, setQuery] = useState("");
+  const [results, setResults] = useState<StoreSearchResult[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [hasError, setHasError] = useState(false);
 
-  const results = useMemo(() => {
-    if (!query) return [];
-    const keyword = query.trim().toLowerCase();
-    return MOCK_RESULTS.filter((result) => {
-      const target = modeIndex === 0 ? result.name : result.address;
-      return target.toLowerCase().includes(keyword);
-    });
-  }, [query, modeIndex]);
+  useEffect(() => {
+    const trimmed = query.trim();
+    if (!trimmed) {
+      setResults([]);
+      setHasError(false);
+      return;
+    }
+
+    setIsSearching(true);
+    setHasError(false);
+    const timeoutId = setTimeout(async () => {
+      try {
+        const nextResults = await searchPlaces(trimmed);
+        setResults(nextResults);
+      } catch {
+        setResults([]);
+        setHasError(true);
+      } finally {
+        setIsSearching(false);
+      }
+    }, SEARCH_DEBOUNCE_MS);
+
+    return () => clearTimeout(timeoutId);
+  }, [query]);
 
   const handleSelect = (result: StoreSearchResult) => {
     onSelect(result);
@@ -91,11 +103,17 @@ export const StoreSearchModal = ({ visible, onClose, onSelect }: StoreSearchModa
             </Pressable>
           )}
           ListEmptyComponent={
-            <Text style={styles.emptyText}>
-              {query.length === 0
-                ? "매장명 또는 도로명 주소로 검색해보세요"
-                : "검색 결과가 없어요"}
-            </Text>
+            isSearching ? (
+              <ActivityIndicator style={styles.emptyText} color={colors.content.neutral.subtlest} />
+            ) : (
+              <Text style={styles.emptyText}>
+                {query.trim().length === 0
+                  ? "매장명 또는 도로명 주소로 검색해보세요"
+                  : hasError
+                    ? "검색에 실패했어요. 잠시 후 다시 시도해주세요"
+                    : "검색 결과가 없어요"}
+              </Text>
+            )
           }
         />
       </View>
