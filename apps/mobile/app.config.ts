@@ -21,6 +21,9 @@ const withNaverMapAuthWorkaround: ConfigPlugin<{ clientId: string }> = (
   { clientId },
 ) => {
   config = withGradleProperties(config, (config) => {
+    config.modResults = config.modResults.filter(
+      (item) => !(item.type === "property" && item.key === "NaverMap_sdkVersion"),
+    );
     config.modResults.push({
       type: "property",
       key: "NaverMap_sdkVersion",
@@ -67,6 +70,12 @@ const config: ExpoConfig = {
     [
       "@mj-studio/react-native-naver-map",
       { client_id: process.env.NAVER_MAP_CLIENT_ID ?? "" },
+    ],
+    [
+      "expo-location",
+      {
+        locationWhenInUsePermission: "지도에서 현재 위치를 보여주기 위해 위치 권한이 필요해요.",
+      },
     ],
     [
       "expo-build-properties",

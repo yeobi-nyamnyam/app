@@ -1,5 +1,11 @@
-import { StyleSheet, View } from "react-native";
-import { NaverMapMarkerOverlay, NaverMapView } from "@mj-studio/react-native-naver-map";
+import { useRef } from "react";
+import { Pressable, StyleSheet, View } from "react-native";
+import * as Location from "expo-location";
+import {
+  NaverMapMarkerOverlay,
+  NaverMapView,
+  type NaverMapViewRef,
+} from "@mj-studio/react-native-naver-map";
 import { Icon, Preview, Text, colors, radius, spacing } from "@repo/ui";
 
 // Figma "color/info"(#2A8ADF)와 그 테두리(#E0F3FF)는 아직 packages/tokens에 없는
@@ -64,18 +70,31 @@ export const RecommendMapView = ({
   onPressDetail,
 }: RecommendMapViewProps) => {
   const selectedMarker = markers.find((marker) => marker.id === selectedMarkerId);
+  const mapRef = useRef<NaverMapViewRef>(null);
+
+  const handlePressLocate = async () => {
+    const { status } = await Location.requestForegroundPermissionsAsync();
+    if (status !== Location.PermissionStatus.GRANTED) return;
+    mapRef.current?.setLocationTrackingMode("Follow");
+  };
 
   return (
     <View style={styles.container}>
       <View style={styles.mapArea}>
         <NaverMapView
+          ref={mapRef}
           style={StyleSheet.absoluteFill}
+          isUseTextureViewAndroid
           mapType="Basic"
           initialCamera={{
             latitude: currentLocation.latitude,
             longitude: currentLocation.longitude,
             zoom: 15,
           }}
+          logoAlign="TopRight"
+          isShowZoomControls={false}
+          isShowScaleBar={false}
+          isShowLocationButton={false}
         >
           <NaverMapMarkerOverlay
             latitude={currentLocation.latitude}
@@ -124,6 +143,9 @@ export const RecommendMapView = ({
           <LegendItem color={colors.surface.primary.bold} label="착한가격업소" />
           <LegendItem color={colors.surface.primary.default} label="일반 업소" />
         </View>
+        <Pressable style={styles.locateButton} onPress={handlePressLocate}>
+          <Icon name="locate" size="medium" color={colors.content.neutral.default} />
+        </Pressable>
       </View>
       {selectedMarker ? (
         <Preview
@@ -168,6 +190,22 @@ const styles = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: radius.full,
+  },
+  locateButton: {
+    position: "absolute",
+    right: spacing[10],
+    bottom: spacing[10],
+    width: 44,
+    height: 44,
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: radius[10],
+    backgroundColor: colors.surface.neutral.default,
+    shadowColor: colors.surface.neutral.inverse,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
   },
   currentLocationMarker: {
     width: 16,
