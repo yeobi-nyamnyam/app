@@ -26,7 +26,7 @@ import {
 
 import { useSession } from "@/hooks/useSession";
 import { getTripDates } from "@/lib/budget";
-import { isLocalToday, todayDate } from "@/lib/format";
+import { todayDate } from "@/lib/format";
 import { generateDiaryDraft, type MealLogSummary } from "@/lib/diary";
 import { DiaryTextArea } from "@/components/DiaryTextArea";
 
@@ -70,9 +70,7 @@ export default function DiaryWriteScreen() {
   });
   const todayMealLogs: MealLogSummary[] = (mealLogsData?.meal_logsCollection.edges ?? [])
     .map((edge) => edge.node)
-    // 끼니 소비는 늦은 밤에 기록해도 meal_slots.date(방문 날짜 기준)로 판단하고,
-    // meal_slot이 없는 기타소비만 created_at의 로컬 날짜로 판단한다.
-    .filter((log) => (log.meal_slots ? log.meal_slots.date === todayDate() : isLocalToday(log.created_at)))
+    .filter((log) => log.visit_date === todayDate())
     .map((log) => ({
       storeName: log.store_name ?? null,
       amount: log.amount,
