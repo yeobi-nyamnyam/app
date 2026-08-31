@@ -25,6 +25,7 @@ mutation RecordMealLog(
     store_address
     memo
     source
+    visit_date
     created_at
   }
 }

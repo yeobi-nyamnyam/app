@@ -87,6 +87,7 @@ export default function RecordNewScreen() {
             storeAddress: values.storeAddress || null,
             memo: values.memo || null,
             source,
+            visitDate: values.visitDate,
           },
         });
         mealLogId = createData?.insertIntomeal_logsCollection?.records[0]?.id;

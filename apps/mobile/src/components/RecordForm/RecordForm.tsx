@@ -69,6 +69,7 @@ export interface RecordFormValues {
   storeAddress: string
   memo: string
   mealSlotId: string | null
+  visitDate: string
   receiptImageUrl: string | null
   ocrRaw: unknown
 }
@@ -226,7 +227,9 @@ export const RecordForm = ({
     ? (mealSlots.find((slot) => slot.date === visitDate && slot.mealType === mealType)?.id ?? null)
     : null
   const isMealSelectionValid = !isMeal || mealSlotId != null
-  const canSubmit = isAmountValid && category.length > 0 && isMealSelectionValid && !submitting
+  const isVisitDateValid = isMeal || visitDate.length > 0
+  const canSubmit =
+    isAmountValid && category.length > 0 && isMealSelectionValid && isVisitDateValid && !submitting
 
   const handleSubmit = () => {
     if (!category) return
@@ -237,6 +240,7 @@ export const RecordForm = ({
       storeAddress,
       memo,
       mealSlotId,
+      visitDate,
       receiptImageUrl,
       ocrRaw,
     })
