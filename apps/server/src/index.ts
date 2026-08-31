@@ -5,6 +5,7 @@ import { generateOpenApiDocument } from "./openapi/document";
 import { authRouter } from "./routes/auth";
 import { chatRouter } from "./routes/chat";
 import { healthRouter } from "./routes/health";
+import { ocrRouter } from "./routes/ocr";
 import { recordRouter } from "./routes/record";
 
 const app = express();
@@ -14,6 +15,7 @@ app.use(express.json());
 app.use(healthRouter);
 app.use(authRouter);
 app.use(recordRouter);
+app.use(ocrRouter);
 app.use(chatRouter);
 
 const openApiDocument = generateOpenApiDocument();
