@@ -34,6 +34,13 @@ export const todayDate = (): string => {
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
 };
 
+// isoDateTime을 로컬 타임존 기준 YYYY-MM-DD로 변환해 todayDate()와 비교할 수 있게 한다.
+export const isLocalToday = (isoDateTime: string): boolean => {
+  const date = new Date(isoDateTime);
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}` === todayDate();
+};
+
 /**
  * @param isoDateTime ISO timestamptz 문자열
  */

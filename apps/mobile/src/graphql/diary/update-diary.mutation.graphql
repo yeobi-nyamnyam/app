@@ -1,0 +1,8 @@
+mutation UpdateDiary($diaryId: UUID!, $mode: String!, $title: String, $content: String!) {
+  updatediariesCollection(
+    set: { mode: $mode, title: $title, content: $content }
+    filter: { id: { eq: $diaryId } }
+  ) {
+    affectedCount
+  }
+}

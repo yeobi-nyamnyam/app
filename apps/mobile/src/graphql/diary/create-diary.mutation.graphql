@@ -1,0 +1,9 @@
+mutation CreateDiary($tripId: UUID!, $date: Date!, $mode: String!, $title: String, $content: String!) {
+  insertIntodiariesCollection(
+    objects: [{ trip_id: $tripId, date: $date, mode: $mode, title: $title, content: $content }]
+  ) {
+    records {
+      id
+    }
+  }
+}
