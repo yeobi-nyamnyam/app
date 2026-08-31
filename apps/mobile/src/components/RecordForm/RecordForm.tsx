@@ -7,6 +7,7 @@ import {
   Text,
   View,
 } from 'react-native'
+import { router } from 'expo-router'
 import {
   Button,
   Chip,
@@ -24,8 +25,8 @@ import {
 import { MEAL_TYPES, MEAL_TYPE_LABEL, type MealType } from '@/lib/budget'
 import { formatDigitsForDisplay, parseDigits, todayDate } from '@/lib/format'
 import { pickReceiptImage } from '@/lib/receipts'
+import { setReceiptOcrResolver, type ReceiptOcrFillResult } from '@/lib/receiptOcrBridge'
 
-import { ReceiptOcrModal, type ReceiptOcrFillResult } from '../ReceiptOcrModal'
 import { ReceiptUploadBox } from '../ReceiptUploadBox'
 import { StoreSearchModal, type StoreSearchResult } from '../StoreSearchModal'
 import { DropdownField, type DropdownOption } from '../DropdownField'
@@ -151,7 +152,6 @@ export const RecordForm = ({
   const [isStoreSearchVisible, setIsStoreSearchVisible] = useState(false)
   const [isTodayMealCompleteNoticeVisible, setIsTodayMealCompleteNoticeVisible] = useState(false)
   const [isReceiptSourceVisible, setIsReceiptSourceVisible] = useState(false)
-  const [ocrLocalUri, setOcrLocalUri] = useState<string | null>(null)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [receiptImageUrl, setReceiptImageUrl] = useState<string | null>(null)
   const [ocrRaw, setOcrRaw] = useState<unknown>(null)
@@ -190,23 +190,26 @@ export const RecordForm = ({
 
   const handleReceiptUpload = () => setIsReceiptSourceVisible(true)
 
-  const handlePickReceipt = async (source: 'camera' | 'library') => {
-    setIsReceiptSourceVisible(false)
-    try {
-      const uri = await pickReceiptImage(source)
-      if (!uri) return
-      setOcrLocalUri(uri)
-    } catch (error) {
-      setErrorMessage(error instanceof Error ? error.message : '잠시 후 다시 시도해주세요.')
-    }
-  }
-
   const handleReceiptFilled = (result: ReceiptOcrFillResult) => {
     setStoreName(result.storeName)
     setAmount(String(result.amount))
     setReceiptImageUrl(result.receiptImageUrl)
     setOcrRaw(result.ocrRaw)
-    setOcrLocalUri(null)
+  }
+
+  const handlePickReceipt = async (source: 'camera' | 'library') => {
+    setIsReceiptSourceVisible(false)
+    try {
+      const uri = await pickReceiptImage(source)
+      if (!uri) return
+      setReceiptOcrResolver(handleReceiptFilled)
+      router.push({
+        pathname: '/record/ocr-review',
+        params: { tripId, localUri: encodeURIComponent(uri) },
+      })
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : '잠시 후 다시 시도해주세요.')
+    }
   }
 
   const handleSelectStore = (result: StoreSearchResult) => {
@@ -332,15 +335,6 @@ export const RecordForm = ({
         onSelect={handleSelectStore}
       />
 
-      {ocrLocalUri ? (
-        <ReceiptOcrModal
-          visible
-          localUri={ocrLocalUri}
-          tripId={tripId}
-          onClose={() => setOcrLocalUri(null)}
-          onFilled={handleReceiptFilled}
-        />
-      ) : null}
 
       <RNModal
         visible={isReceiptSourceVisible}
