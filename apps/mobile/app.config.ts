@@ -17,6 +17,13 @@ const config: ExpoConfig = {
   plugins: [
     "expo-router",
     "expo-font",
+    [
+      "expo-image-picker",
+      {
+        cameraPermission: "영수증 촬영을 위해 카메라 접근 권한이 필요해요.",
+        photosPermission: "영수증 사진 선택을 위해 사진 라이브러리 접근 권한이 필요해요.",
+      },
+    ],
     "@react-native-google-signin/google-signin",
     [
       "@react-native-seoul/kakao-login",
