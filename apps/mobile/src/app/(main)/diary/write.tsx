@@ -99,6 +99,8 @@ export default function DiaryWriteScreen() {
     }
   }, [existingDiaryData]);
 
+  const [selectedTone, setSelectedTone] = useState<"shorter" | "emotional" | "regenerate" | null>(null);
+
   const runGenerate = async (tone?: "shorter" | "emotional") => {
     if (!session || !tripNode) return;
     setGenerating(true);
@@ -199,9 +201,30 @@ export default function DiaryWriteScreen() {
           toneActions={
             mode === "ai"
               ? [
-                  { label: "더 짧게", onPress: () => runGenerate("shorter") },
-                  { label: "감성적으로", onPress: () => runGenerate("emotional") },
-                  { label: "다시 생성", onPress: () => runGenerate() },
+                  {
+                    label: "더 짧게",
+                    active: selectedTone === "shorter",
+                    onPress: () => {
+                      setSelectedTone("shorter");
+                      runGenerate("shorter");
+                    },
+                  },
+                  {
+                    label: "감성적으로",
+                    active: selectedTone === "emotional",
+                    onPress: () => {
+                      setSelectedTone("emotional");
+                      runGenerate("emotional");
+                    },
+                  },
+                  {
+                    label: "다시 생성",
+                    active: selectedTone === "regenerate",
+                    onPress: () => {
+                      setSelectedTone("regenerate");
+                      runGenerate();
+                    },
+                  },
                 ]
               : undefined
           }

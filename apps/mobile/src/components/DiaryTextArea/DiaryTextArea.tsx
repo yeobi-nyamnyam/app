@@ -3,6 +3,7 @@ import { Badge, Chip, Text, colors, getFontFamily, radius, spacing, stroke, typo
 
 export interface DiaryToneAction {
   label: string;
+  active?: boolean;
   onPress: () => void;
 }
 
@@ -56,7 +57,7 @@ export const DiaryTextArea = ({
       {toneActions && toneActions.length > 0 ? (
         <View style={styles.toneRow}>
           {toneActions.map((action) => (
-            <Chip key={action.label} text={action.label} onPress={action.onPress} />
+            <Chip key={action.label} text={action.label} active={action.active} onPress={action.onPress} />
           ))}
         </View>
       ) : null}
