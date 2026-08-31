@@ -7,6 +7,7 @@ import {
   Button,
   FormField,
   Header,
+  LoadingOverlay,
   Modal,
   NavBar,
   SegmentedControl,
@@ -256,6 +257,8 @@ export default function DiaryWriteScreen() {
           <Modal title="오류" content={errorMessage ?? ""} confirmLabel="확인" onConfirm={() => setErrorMessage(null)} />
         </View>
       </RNModal>
+
+      {generating || saving ? <LoadingOverlay label={generating ? "생성 중..." : "저장 중..."} /> : null}
     </View>
   );
 }
