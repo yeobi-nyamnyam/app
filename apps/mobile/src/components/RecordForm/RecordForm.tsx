@@ -151,6 +151,7 @@ export const RecordForm = ({
   const [mealType, setMealType] = useState("");
   const [isStoreSearchVisible, setIsStoreSearchVisible] = useState(false);
   const [isTodayMealCompleteNoticeVisible, setIsTodayMealCompleteNoticeVisible] = useState(false);
+  const [isReceiptSourceVisible, setIsReceiptSourceVisible] = useState(false);
   const [ocrLocalUri, setOcrLocalUri] = useState<string | null>(null);
   const [receiptImageUrl, setReceiptImageUrl] = useState<string | null>(null);
   const [ocrRaw, setOcrRaw] = useState<unknown>(null);
@@ -189,15 +190,10 @@ export const RecordForm = ({
     setAmount(digits > 0 ? String(digits) : "");
   };
 
-  const handleReceiptUpload = () => {
-    Alert.alert("영수증 자동 채우기", "영수증을 어떻게 가져올까요?", [
-      { text: "취소", style: "cancel" },
-      { text: "촬영하기", onPress: () => handlePickReceipt("camera") },
-      { text: "갤러리에서 선택", onPress: () => handlePickReceipt("library") },
-    ]);
-  };
+  const handleReceiptUpload = () => setIsReceiptSourceVisible(true);
 
   const handlePickReceipt = async (source: "camera" | "library") => {
+    setIsReceiptSourceVisible(false);
     try {
       const uri = await pickReceiptImage(source);
       if (!uri) return;
@@ -338,6 +334,25 @@ export const RecordForm = ({
           onFilled={handleReceiptFilled}
         />
       ) : null}
+
+      <RNModal
+        visible={isReceiptSourceVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setIsReceiptSourceVisible(false)}
+      >
+        <Pressable style={styles.backdrop} onPress={() => setIsReceiptSourceVisible(false)} />
+        <View style={styles.modalCenter}>
+          <Modal
+            title="영수증 자동 채우기"
+            content="영수증을 어떻게 가져올까요?"
+            cancelLabel="촬영하기"
+            confirmLabel="갤러리에서 선택"
+            onCancel={() => handlePickReceipt("camera")}
+            onConfirm={() => handlePickReceipt("library")}
+          />
+        </View>
+      </RNModal>
 
       <RNModal
         visible={isTodayMealCompleteNoticeVisible}
