@@ -91,5 +91,7 @@ export { FloatingButton } from "./components/FloatingButton";
 export type { FloatingButtonProps } from "./components/FloatingButton";
 export { RecordCard } from "./components/RecordCard";
 export type { RecordCardProps } from "./components/RecordCard";
+export { LoadingOverlay } from "./components/LoadingOverlay";
+export type { LoadingOverlayProps } from "./components/LoadingOverlay";
 export { colors, typography, spacing, radius, stroke, icon } from "@repo/tokens";
 export { getFontFamily } from "./typography/getFontFamily";

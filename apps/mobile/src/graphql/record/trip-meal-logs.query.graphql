@@ -15,9 +15,6 @@ query TripMealLogs($tripId: UUID!) {
         source
         visit_date
         created_at
-        meal_slots {
-          date
-        }
       }
     }
   }

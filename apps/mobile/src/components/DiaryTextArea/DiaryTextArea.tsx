@@ -3,6 +3,7 @@ import { Badge, Chip, Text, colors, getFontFamily, radius, spacing, stroke, typo
 
 export interface DiaryToneAction {
   label: string;
+  active?: boolean;
   onPress: () => void;
 }
 
@@ -11,6 +12,9 @@ export interface DiaryToneAction {
  * @param onChangeText 본문이 바뀔 때 발생하는 event 명시
  * @param maxLength 본문 최대 글자 수 (optional, 기본값 300)
  * @param editable 입력 가능 여부: true | false (optional, 기본값 true — AI 초안 생성 중엔 false로 잠금)
+ * @param generating AI 초안을 생성하는 중인지: true | false (optional, 기본값 false —
+ * 톤/재생성 칩을 비활성화해 재클릭으로 인한 중복 요청을 막는다. 전체 화면 스피너는
+ * 화면(diary/write.tsx)에서 LoadingOverlay로 별도 처리)
  * @param badgeLabel 상단에 표시할 안내 배지 텍스트 (optional, AI 초안 모드에서만 사용)
  * @param toneActions 하단에 표시할 톤/재생성 칩 목록 (optional, AI 초안 모드에서만 사용)
  */
@@ -19,6 +23,7 @@ export interface DiaryTextAreaProps {
   onChangeText: (text: string) => void;
   maxLength?: number;
   editable?: boolean;
+  generating?: boolean;
   badgeLabel?: string;
   toneActions?: DiaryToneAction[];
 }
@@ -32,6 +37,7 @@ export const DiaryTextArea = ({
   onChangeText,
   maxLength = 300,
   editable = true,
+  generating = false,
   badgeLabel,
   toneActions,
 }: DiaryTextAreaProps) => {
@@ -56,7 +62,13 @@ export const DiaryTextArea = ({
       {toneActions && toneActions.length > 0 ? (
         <View style={styles.toneRow}>
           {toneActions.map((action) => (
-            <Chip key={action.label} text={action.label} onPress={action.onPress} />
+            <Chip
+              key={action.label}
+              text={action.label}
+              active={action.active}
+              disabled={generating}
+              onPress={action.onPress}
+            />
           ))}
         </View>
       ) : null}
@@ -91,6 +103,7 @@ const styles = StyleSheet.create({
   toneRow: {
     flexDirection: "row",
     flexWrap: "wrap",
+    alignItems: "center",
     gap: spacing[6],
   },
 });
