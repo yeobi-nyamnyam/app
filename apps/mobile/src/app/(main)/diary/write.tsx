@@ -197,6 +197,7 @@ export default function DiaryWriteScreen() {
           onChangeText={setContent}
           maxLength={MAX_CONTENT_LENGTH}
           editable={!generating}
+          generating={generating}
           badgeLabel={mode === "ai" ? "AI 초안이에요. 직접 수정 후 저장할 수 있어요." : undefined}
           toneActions={
             mode === "ai"
