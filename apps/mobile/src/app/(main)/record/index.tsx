@@ -65,6 +65,7 @@ export default function RecordWriteScreen() {
   const completedTrips = trips.filter((trip) => trip.status === "completed");
 
   const handleRecordPress = () => router.push(`/record/new?tripId=${tripId}`);
+  const handleDiaryPress = () => router.push(`/diary/write?tripId=${tripId}`);
 
   const handleNavChange = (key: NavBarItemKey) => {
     if (key === "record") return;
@@ -114,7 +115,7 @@ export default function RecordWriteScreen() {
               title="여행 일기 작성"
               description="오늘 하루의 여행을 글로 남겨보세요"
               buttonLabel="작성하기"
-              onPress={() => Alert.alert("준비 중", "일기 기능은 기록 개발 완료 후 추가돼요.")}
+              onPress={handleDiaryPress}
             />
           </ScrollView>
         ) : (
