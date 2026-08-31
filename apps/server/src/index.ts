@@ -4,6 +4,7 @@ import swaggerUi from "swagger-ui-express";
 import { generateOpenApiDocument } from "./openapi/document";
 import { authRouter } from "./routes/auth";
 import { chatRouter } from "./routes/chat";
+import { diaryRouter } from "./routes/diary";
 import { healthRouter } from "./routes/health";
 import { ocrRouter } from "./routes/ocr";
 import { recordRouter } from "./routes/record";
@@ -17,6 +18,7 @@ app.use(authRouter);
 app.use(recordRouter);
 app.use(ocrRouter);
 app.use(chatRouter);
+app.use(diaryRouter);
 
 const openApiDocument = generateOpenApiDocument();
 app.get("/openapi.json", (_req, res) => res.json(openApiDocument));
