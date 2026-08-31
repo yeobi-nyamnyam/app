@@ -276,18 +276,30 @@ export const RecordForm = ({
           </FormField>
         ) : null}
 
-        <FormField label="매장 이름">
-          <PickerField
-            value={storeName}
-            placeholder="매장 검색하기"
-            showChevron={false}
-            onPress={() => setIsStoreSearchVisible(true)}
-          />
-        </FormField>
+        {isMeal ? (
+          <>
+            <FormField label="매장 이름">
+              <PickerField
+                value={storeName}
+                placeholder="매장 검색하기 (선택)"
+                showChevron={false}
+                onPress={() => setIsStoreSearchVisible(true)}
+              />
+            </FormField>
 
-        <FormField label="주소">
-          <TextField value={storeAddress} onChangeText={() => {}} disabled />
-        </FormField>
+            <FormField label="주소">
+              <TextField value={storeAddress} onChangeText={() => {}} disabled />
+            </FormField>
+          </>
+        ) : (
+          <FormField label="이용 내역">
+            <TextField
+              value={storeName}
+              onChangeText={setStoreName}
+              placeholder="예: 택시, 고속버스터미널 (선택)"
+            />
+          </FormField>
+        )}
 
         <FormField label="카테고리">
           <ScrollView
