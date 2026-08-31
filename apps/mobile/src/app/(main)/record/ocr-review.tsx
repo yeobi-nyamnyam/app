@@ -226,12 +226,14 @@ export default function RecordOcrReviewScreen() {
               </View>
             </View>
 
-            <View style={styles.budgetPreview}>
-              <Text>오늘 남은 식비</Text>
-              <RNText style={styles.budgetAmount}>
-                {formatWon(Math.max(remainingNow, 0))} → {formatWon(Math.max(remainingAfter, 0))}
-              </RNText>
-            </View>
+            {result?.amount !== null && result?.amount !== undefined ? (
+              <View style={styles.budgetPreview}>
+                <Text>오늘 남은 식비</Text>
+                <RNText style={styles.budgetAmount}>
+                  {formatWon(Math.max(remainingNow, 0))} → {formatWon(Math.max(remainingAfter, 0))}
+                </RNText>
+              </View>
+            ) : null}
           </>
         )}
       </ScrollView>
