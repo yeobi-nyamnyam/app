@@ -86,6 +86,7 @@ export default function RecordHistoryScreen() {
         category: node.category,
         mealTypeLabel: slot ? MEAL_TYPE_LABEL[slot.mealType] : "",
         createdAt: node.created_at,
+        visitDate: node.visit_date,
         amount: String(node.amount),
         storeName: node.store_name ?? "",
         storeAddress: node.store_address ?? "",

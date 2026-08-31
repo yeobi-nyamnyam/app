@@ -7,6 +7,7 @@ mutation CreateMealLog(
   $storeAddress: String
   $memo: String
   $source: String!
+  $visitDate: Date!
 ) {
   insertIntomeal_logsCollection(
     objects: [
@@ -19,6 +20,7 @@ mutation CreateMealLog(
         store_address: $storeAddress
         memo: $memo
         source: $source
+        visit_date: $visitDate
       }
     ]
   ) {
@@ -33,6 +35,7 @@ mutation CreateMealLog(
       store_address
       memo
       source
+      visit_date
       created_at
     }
   }

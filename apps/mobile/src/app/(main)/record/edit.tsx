@@ -40,6 +40,7 @@ export default function RecordEditScreen() {
     category: MealLogCategory;
     mealTypeLabel?: string;
     createdAt: string;
+    visitDate: string;
     amount: string;
     storeName?: string;
     storeAddress?: string;
@@ -136,7 +137,8 @@ export default function RecordEditScreen() {
           <Text variant="title3Emphasized">기록 상세</Text>
           <View style={styles.card}>
             <DataCardRow label={isMeal ? "끼니 유형" : "카테고리"} value={isMeal ? params.mealTypeLabel : params.category} />
-            <DataCardRow label="날짜 및 시각" value={formatDateTime(params.createdAt)} />
+            <DataCardRow label="소비일자" value={params.visitDate.replace(/-/g, ".")} />
+            <DataCardRow label="작성일자" value={formatDateTime(params.createdAt)} />
             <DataCardRow label={isMeal ? "방문 매장" : "이용 내역"} value={params.storeName || "-"} />
             {isMeal && params.storeAddress ? <DataCardRow label="주소" value={params.storeAddress} /> : null}
             <DataCardRow label="금액" value={formatWon(Number(params.amount))} />

@@ -23,7 +23,7 @@ import {
 } from "@repo/types";
 import type { MealLogCategory } from "@/components/RecordForm";
 
-import { formatWon } from "@/lib/format";
+import { formatWon, todayDate } from "@/lib/format";
 import {
   formatChatTime,
   streamChatReply,
@@ -40,8 +40,6 @@ const CATEGORY_OPTIONS: { label: string; value: MealLogCategory }[] = [
   { label: "기념품", value: "기념품" },
   { label: "기타", value: "기타" },
 ];
-
-const todayDate = () => new Date().toISOString().slice(0, 10);
 
 const handleNavChange = (key: NavBarItemKey) => {
   if (key === "chat") return;
@@ -304,6 +302,7 @@ function ActiveConversation({
           storeAddress: null,
           memo: null,
           source: "chat",
+          visitDate: todayDate(),
         },
       });
       if (pendingExpense.chatMessageId) {
