@@ -14,6 +14,9 @@ query TripMealLogs($tripId: UUID!) {
         memo
         source
         created_at
+        meal_slots {
+          date
+        }
       }
     }
   }
