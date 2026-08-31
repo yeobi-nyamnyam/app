@@ -77,10 +77,13 @@ export const ReceiptOcrModal = ({ visible, localUri, tripId, onClose, onFilled }
   const [editStoreName, setEditStoreName] = useState("");
   const [editAmount, setEditAmount] = useState("");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  // 수동반영을 거쳤는지 — 기록에 "사용자 확인으로 반영됨" 표시를 남기기 위해 ocrRaw에 함께 저장한다.
+  const [wasManuallyEdited, setWasManuallyEdited] = useState(false);
 
   const runOcr = async (uri: string) => {
     setProcessing(true);
     setResult(null);
+    setWasManuallyEdited(false);
     try {
       const path = await uploadReceiptImage(tripId, uri);
       setStoragePath(path);
@@ -145,7 +148,7 @@ export const ReceiptOcrModal = ({ visible, localUri, tripId, onClose, onFilled }
       storeName: result.storeName,
       amount: result.amount,
       receiptImageUrl: storagePath,
-      ocrRaw: result,
+      ocrRaw: { ...result, manuallyConfirmed: wasManuallyEdited },
     });
   };
 
@@ -157,14 +160,20 @@ export const ReceiptOcrModal = ({ visible, localUri, tripId, onClose, onFilled }
   const editAmountValue = Number(editAmount);
   const canSubmitEdit = editStoreName.trim().length > 0 && editAmount.length > 0 && editAmountValue > 0;
 
+  // 수동반영은 바로 저장하지 않고 인식 결과 확인 화면(성공 상태, Figma 781:22432)으로
+  // 되돌아가 사용자가 입력한 값을 보여준다. 사업자번호는 수동 입력 항목이 아니지만,
+  // 사용자가 직접 확인한 값이라는 의미로 확인됨으로 처리한다.
   const handleManualApply = () => {
     if (!canSubmitEdit) return;
-    onFilled({
+    setResult((prev) => ({
+      recognized: true,
       storeName: editStoreName,
+      storeAddress: prev?.storeAddress ?? null,
       amount: editAmountValue,
-      receiptImageUrl: storagePath,
-      ocrRaw: result,
-    });
+      bizNumRecognized: true,
+    }));
+    setWasManuallyEdited(true);
+    setStep("review");
   };
 
   const renderFieldValue = (value: string | null) =>
