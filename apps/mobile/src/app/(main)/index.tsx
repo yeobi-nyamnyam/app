@@ -18,7 +18,6 @@ import {
 import { ActiveTripDocument, UpdateMealSlotWeightDocument } from "@repo/types";
 
 import { formatWon, todayDate } from "@/lib/format";
-import { pickReceiptImage } from "@/lib/receipts";
 import {
   MEAL_TYPES,
   MEAL_TYPE_LABEL,
@@ -32,7 +31,6 @@ import {
 import { useSession } from "@/hooks/useSession";
 
 interface ActiveTrip {
-  id: string;
   name: string;
   startDate: string;
   endDate: string;
@@ -99,7 +97,6 @@ export default function HomeScreen() {
   }
 
   const trip: ActiveTrip = {
-    id: tripNode.id,
     name: tripNode.name,
     startDate: tripNode.start_date,
     endDate: tripNode.end_date,
@@ -234,27 +231,11 @@ function ActiveTripHome({
 
   const [, month, day] = today.split("-");
 
-  const handleMealPress = (slot: ActiveMealSlot) => {
-    if (slot.isRecorded) return;
-
-    Alert.alert(`${MEAL_TYPE_LABEL[slot.mealType]} 영수증`, "영수증을 어떻게 가져올까요?", [
-      { text: "취소", style: "cancel" },
-      { text: "촬영하기", onPress: () => startReceiptCapture(slot.id, "camera") },
-      { text: "갤러리에서 선택", onPress: () => startReceiptCapture(slot.id, "library") },
-    ]);
-  };
-
-  const startReceiptCapture = async (mealSlotId: string, source: "camera" | "library") => {
-    try {
-      const uri = await pickReceiptImage(source);
-      if (!uri) return;
-      router.push({
-        pathname: "/record/ocr-review",
-        params: { tripId: trip.id, mealSlotId, localUri: encodeURIComponent(uri) },
-      });
-    } catch (error) {
-      Alert.alert("오류", error instanceof Error ? error.message : "잠시 후 다시 시도해주세요.");
-    }
+  const handleMealPress = (mealType: MealType) => {
+    Alert.alert(
+      `${MEAL_TYPE_LABEL[mealType]} 소비 기록`,
+      "소비 기록 화면은 아직 준비 중이에요. 곧 여기서 바로 기록할 수 있게 연결될 예정입니다.",
+    );
   };
 
   const handleChangeWeight = async (mealKey: string, weightLabel: string) => {
@@ -331,7 +312,7 @@ function ActiveTripHome({
           {todaySlots.map((slot, index) => (
             <Pressable
               key={slot.id}
-              onPress={() => handleMealPress(slot)}
+              onPress={() => handleMealPress(slot.mealType)}
             >
               <MealCard
                 meal={MEAL_TYPE_LABEL[slot.mealType]}

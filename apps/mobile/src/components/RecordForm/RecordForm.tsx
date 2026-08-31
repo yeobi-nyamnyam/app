@@ -24,7 +24,9 @@ import {
 
 import { MEAL_TYPES, MEAL_TYPE_LABEL, type MealType } from "@/lib/budget";
 import { formatDigitsForDisplay, parseDigits, todayDate } from "@/lib/format";
+import { pickReceiptImage } from "@/lib/receipts";
 
+import { ReceiptOcrModal, type ReceiptOcrFillResult } from "../ReceiptOcrModal";
 import { ReceiptUploadBox } from "../ReceiptUploadBox";
 import { StoreSearchModal, type StoreSearchResult } from "../StoreSearchModal";
 import { DropdownField, type DropdownOption } from "../DropdownField";
@@ -67,6 +69,8 @@ export interface RecordFormValues {
   storeAddress: string;
   memo: string;
   mealSlotId: string | null;
+  receiptImageUrl: string | null;
+  ocrRaw: unknown;
 }
 
 /**
@@ -78,6 +82,7 @@ export interface RecordFormValues {
  * 선택한 날짜에 이미 기록된 끼니를 제외하고, 선택된 날짜+끼니때에 해당하는 슬롯 id를
  * 찾아 onSubmit의 mealSlotId로 전달하는 데 사용
  * @param onSubmit 저장 버튼을 눌렀을 때 폼 값을 전달하는 콜백
+ * @param tripId 영수증 이미지 Storage 업로드 경로({trip_id}/{uuid}.jpg)에 쓸 여행 id
  */
 export interface RecordFormProps {
   initialValues?: Partial<RecordFormValues>;
@@ -85,6 +90,7 @@ export interface RecordFormProps {
   tripDates: string[];
   mealSlots: RecordFormMealSlot[];
   onSubmit: (values: RecordFormValues) => void;
+  tripId: string;
 }
 
 // 값을 직접 타이핑하지 않고, 눌렀을 때 별도 선택 UI(바텀시트/검색 모달)를 여는
@@ -118,6 +124,7 @@ export const RecordForm = ({
   tripDates,
   mealSlots,
   onSubmit,
+  tripId,
 }: RecordFormProps) => {
   const initialCategory = initialValues?.category;
   // 오늘 아침/점심/저녁이 전부 기록(캐스케이드 확정 포함)됐으면 더 이상 끼니
@@ -144,6 +151,9 @@ export const RecordForm = ({
   const [mealType, setMealType] = useState("");
   const [isStoreSearchVisible, setIsStoreSearchVisible] = useState(false);
   const [isTodayMealCompleteNoticeVisible, setIsTodayMealCompleteNoticeVisible] = useState(false);
+  const [ocrLocalUri, setOcrLocalUri] = useState<string | null>(null);
+  const [receiptImageUrl, setReceiptImageUrl] = useState<string | null>(null);
+  const [ocrRaw, setOcrRaw] = useState<unknown>(null);
 
   const tripDayOptions = useMemo(() => buildTripDayOptions(tripDates), [tripDates]);
   const availableMealTypeOptions = useMemo(() => {
@@ -179,8 +189,31 @@ export const RecordForm = ({
     setAmount(digits > 0 ? String(digits) : "");
   };
 
-  const handleReceiptUpload = () =>
-    Alert.alert("준비 중", "영수증 OCR 자동 채우기는 별도 이슈에서 진행돼요.");
+  const handleReceiptUpload = () => {
+    Alert.alert("영수증 자동 채우기", "영수증을 어떻게 가져올까요?", [
+      { text: "취소", style: "cancel" },
+      { text: "촬영하기", onPress: () => handlePickReceipt("camera") },
+      { text: "갤러리에서 선택", onPress: () => handlePickReceipt("library") },
+    ]);
+  };
+
+  const handlePickReceipt = async (source: "camera" | "library") => {
+    try {
+      const uri = await pickReceiptImage(source);
+      if (!uri) return;
+      setOcrLocalUri(uri);
+    } catch (error) {
+      Alert.alert("오류", error instanceof Error ? error.message : "잠시 후 다시 시도해주세요.");
+    }
+  };
+
+  const handleReceiptFilled = (result: ReceiptOcrFillResult) => {
+    setStoreName(result.storeName);
+    setAmount(String(result.amount));
+    setReceiptImageUrl(result.receiptImageUrl);
+    setOcrRaw(result.ocrRaw);
+    setOcrLocalUri(null);
+  };
 
   const handleSelectStore = (result: StoreSearchResult) => {
     setStoreName(result.name);
@@ -200,7 +233,7 @@ export const RecordForm = ({
 
   const handleSubmit = () => {
     if (!category) return;
-    onSubmit({ category, amount, storeName, storeAddress, memo, mealSlotId });
+    onSubmit({ category, amount, storeName, storeAddress, memo, mealSlotId, receiptImageUrl, ocrRaw });
   };
 
   return (
@@ -295,6 +328,16 @@ export const RecordForm = ({
         onClose={() => setIsStoreSearchVisible(false)}
         onSelect={handleSelectStore}
       />
+
+      {ocrLocalUri ? (
+        <ReceiptOcrModal
+          visible
+          localUri={ocrLocalUri}
+          tripId={tripId}
+          onClose={() => setOcrLocalUri(null)}
+          onFilled={handleReceiptFilled}
+        />
+      ) : null}
 
       <RNModal
         visible={isTodayMealCompleteNoticeVisible}
