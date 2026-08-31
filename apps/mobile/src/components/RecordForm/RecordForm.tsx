@@ -1,13 +1,12 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState } from 'react'
 import {
-  Alert,
   Modal as RNModal,
   Pressable,
   ScrollView,
   StyleSheet,
   Text,
   View,
-} from "react-native";
+} from 'react-native'
 import {
   Button,
   Chip,
@@ -20,57 +19,57 @@ import {
   getFontFamily,
   spacing,
   typography,
-} from "@repo/ui";
+} from '@repo/ui'
 
-import { MEAL_TYPES, MEAL_TYPE_LABEL, type MealType } from "@/lib/budget";
-import { formatDigitsForDisplay, parseDigits, todayDate } from "@/lib/format";
-import { pickReceiptImage } from "@/lib/receipts";
+import { MEAL_TYPES, MEAL_TYPE_LABEL, type MealType } from '@/lib/budget'
+import { formatDigitsForDisplay, parseDigits, todayDate } from '@/lib/format'
+import { pickReceiptImage } from '@/lib/receipts'
 
-import { ReceiptOcrModal, type ReceiptOcrFillResult } from "../ReceiptOcrModal";
-import { ReceiptUploadBox } from "../ReceiptUploadBox";
-import { StoreSearchModal, type StoreSearchResult } from "../StoreSearchModal";
-import { DropdownField, type DropdownOption } from "../DropdownField";
+import { ReceiptOcrModal, type ReceiptOcrFillResult } from '../ReceiptOcrModal'
+import { ReceiptUploadBox } from '../ReceiptUploadBox'
+import { StoreSearchModal, type StoreSearchResult } from '../StoreSearchModal'
+import { DropdownField, type DropdownOption } from '../DropdownField'
 
-export type MealLogCategory = "식비" | "교통" | "숙박" | "기념품" | "기타";
+export type MealLogCategory = '식비' | '교통' | '숙박' | '기념품' | '기타'
 
-const CATEGORY_OPTIONS: MealLogCategory[] = ["식비", "교통", "숙박", "기념품", "기타"];
+const CATEGORY_OPTIONS: MealLogCategory[] = ['식비', '교통', '숙박', '기념품', '기타']
 
 const MEAL_TYPE_OPTIONS: DropdownOption[] = MEAL_TYPES.map((mealType) => ({
   value: mealType,
   label: MEAL_TYPE_LABEL[mealType],
-}));
+}))
 
 // 아직 오지 않은 날짜는 방문 기록 대상이 아니므로 드롭다운에 노출하지 않는다.
 // 일차 번호는 여행 전체 기간 기준으로 매겨야 해서 필터링 전에 index를 먼저 계산한다.
 function buildTripDayOptions(dates: string[]): DropdownOption[] {
-  const today = todayDate();
+  const today = todayDate()
   return dates
     .map((date, index) => {
-      const [, month, day] = date.split("-");
+      const [, month, day] = date.split('-')
       return {
         value: date,
         label: `${index + 1}일차 | ${month}.${day}`,
-      };
+      }
     })
-    .filter((option) => option.value <= today);
+    .filter((option) => option.value <= today)
 }
 
 export interface RecordFormMealSlot {
-  id: string;
-  date: string;
-  mealType: MealType;
-  isRecorded: boolean;
+  id: string
+  date: string
+  mealType: MealType
+  isRecorded: boolean
 }
 
 export interface RecordFormValues {
-  category: MealLogCategory | "";
-  amount: string;
-  storeName: string;
-  storeAddress: string;
-  memo: string;
-  mealSlotId: string | null;
-  receiptImageUrl: string | null;
-  ocrRaw: unknown;
+  category: MealLogCategory | ''
+  amount: string
+  storeName: string
+  storeAddress: string
+  memo: string
+  mealSlotId: string | null
+  receiptImageUrl: string | null
+  ocrRaw: unknown
 }
 
 /**
@@ -85,12 +84,12 @@ export interface RecordFormValues {
  * @param tripId 영수증 이미지 Storage 업로드 경로({trip_id}/{uuid}.jpg)에 쓸 여행 id
  */
 export interface RecordFormProps {
-  initialValues?: Partial<RecordFormValues>;
-  submitting?: boolean;
-  tripDates: string[];
-  mealSlots: RecordFormMealSlot[];
-  onSubmit: (values: RecordFormValues) => void;
-  tripId: string;
+  initialValues?: Partial<RecordFormValues>
+  submitting?: boolean
+  tripDates: string[]
+  mealSlots: RecordFormMealSlot[]
+  onSubmit: (values: RecordFormValues) => void
+  tripId: string
 }
 
 // 값을 직접 타이핑하지 않고, 눌렀을 때 별도 선택 UI(바텀시트/검색 모달)를 여는
@@ -101,10 +100,10 @@ const PickerField = ({
   onPress,
   showChevron = true,
 }: {
-  value: string;
-  placeholder: string;
-  onPress: () => void;
-  showChevron?: boolean;
+  value: string
+  placeholder: string
+  onPress: () => void
+  showChevron?: boolean
 }) => (
   <Pressable onPress={onPress}>
     <View pointerEvents="none">
@@ -116,7 +115,7 @@ const PickerField = ({
       />
     </View>
   </Pressable>
-);
+)
 
 export const RecordForm = ({
   initialValues,
@@ -126,7 +125,7 @@ export const RecordForm = ({
   onSubmit,
   tripId,
 }: RecordFormProps) => {
-  const initialCategory = initialValues?.category;
+  const initialCategory = initialValues?.category
   // 오늘 아침/점심/저녁이 전부 기록(캐스케이드 확정 포함)됐으면 더 이상 끼니
   // 소비로 기록할 대상이 없다 — 새 기록은 기타소비로 시작하고, 끼니 쪽으로
   // 돌리려 하면 안내만 하고 막는다.
@@ -134,103 +133,111 @@ export const RecordForm = ({
     mealSlots.some(
       (slot) => slot.date === todayDate() && slot.mealType === mealType && slot.isRecorded,
     ),
-  );
+  )
   const [isMeal, setIsMeal] = useState(
-    (!initialCategory || initialCategory === "식비") && !isTodayMealComplete,
-  );
-  const [category, setCategory] = useState<MealLogCategory | "">(
-    initialCategory ?? (isMeal ? "식비" : ""),
-  );
-  const [amount, setAmount] = useState(initialValues?.amount ?? "");
-  const [storeName, setStoreName] = useState(initialValues?.storeName ?? "");
+    (!initialCategory || initialCategory === '식비') && !isTodayMealComplete,
+  )
+  const [category, setCategory] = useState<MealLogCategory | ''>(
+    initialCategory ?? (isMeal ? '식비' : ''),
+  )
+  const [amount, setAmount] = useState(initialValues?.amount ?? '')
+  const [storeName, setStoreName] = useState(initialValues?.storeName ?? '')
   // 주소는 매장 검색 결과 선택으로만 채워진다 (F6-10) — 사용자가 직접 타이핑하지
   // 않으므로 항상 disabled 상태의 TextField로만 보여준다.
-  const [storeAddress, setStoreAddress] = useState(initialValues?.storeAddress ?? "");
-  const [memo, setMemo] = useState(initialValues?.memo ?? "");
-  const [visitDate, setVisitDate] = useState("");
-  const [mealType, setMealType] = useState("");
-  const [isStoreSearchVisible, setIsStoreSearchVisible] = useState(false);
-  const [isTodayMealCompleteNoticeVisible, setIsTodayMealCompleteNoticeVisible] = useState(false);
-  const [isReceiptSourceVisible, setIsReceiptSourceVisible] = useState(false);
-  const [ocrLocalUri, setOcrLocalUri] = useState<string | null>(null);
-  const [receiptImageUrl, setReceiptImageUrl] = useState<string | null>(null);
-  const [ocrRaw, setOcrRaw] = useState<unknown>(null);
+  const [storeAddress, setStoreAddress] = useState(initialValues?.storeAddress ?? '')
+  const [memo, setMemo] = useState(initialValues?.memo ?? '')
+  const [visitDate, setVisitDate] = useState('')
+  const [mealType, setMealType] = useState('')
+  const [isStoreSearchVisible, setIsStoreSearchVisible] = useState(false)
+  const [isTodayMealCompleteNoticeVisible, setIsTodayMealCompleteNoticeVisible] = useState(false)
+  const [isReceiptSourceVisible, setIsReceiptSourceVisible] = useState(false)
+  const [ocrLocalUri, setOcrLocalUri] = useState<string | null>(null)
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
+  const [receiptImageUrl, setReceiptImageUrl] = useState<string | null>(null)
+  const [ocrRaw, setOcrRaw] = useState<unknown>(null)
 
-  const tripDayOptions = useMemo(() => buildTripDayOptions(tripDates), [tripDates]);
+  const tripDayOptions = useMemo(() => buildTripDayOptions(tripDates), [tripDates])
   const availableMealTypeOptions = useMemo(() => {
     const recordedMealTypes = new Set(
       mealSlots
         .filter((slot) => slot.date === visitDate && slot.isRecorded)
         .map((slot) => slot.mealType),
-    );
-    return MEAL_TYPE_OPTIONS.filter(
-      (option) => !recordedMealTypes.has(option.value as MealType),
-    );
-  }, [mealSlots, visitDate]);
+    )
+    return MEAL_TYPE_OPTIONS.filter((option) => !recordedMealTypes.has(option.value as MealType))
+  }, [mealSlots, visitDate])
 
   const handleVisitDateChange = (nextDate: string) => {
-    setVisitDate(nextDate);
-    setMealType("");
-  };
+    setVisitDate(nextDate)
+    setMealType('')
+  }
 
   const handleToggleMeal = () => {
     if (!isMeal && isTodayMealComplete) {
-      setIsTodayMealCompleteNoticeVisible(true);
-      return;
+      setIsTodayMealCompleteNoticeVisible(true)
+      return
     }
     setIsMeal((prev) => {
-      const next = !prev;
-      setCategory(next ? "식비" : "");
-      return next;
-    });
-  };
+      const next = !prev
+      setCategory(next ? '식비' : '')
+      return next
+    })
+  }
 
   const handleAmountChange = (text: string) => {
-    const digits = parseDigits(text);
-    setAmount(digits > 0 ? String(digits) : "");
-  };
+    const digits = parseDigits(text)
+    setAmount(digits > 0 ? String(digits) : '')
+  }
 
-  const handleReceiptUpload = () => setIsReceiptSourceVisible(true);
+  const handleReceiptUpload = () => setIsReceiptSourceVisible(true)
 
-  const handlePickReceipt = async (source: "camera" | "library") => {
-    setIsReceiptSourceVisible(false);
+  const handlePickReceipt = async (source: 'camera' | 'library') => {
+    setIsReceiptSourceVisible(false)
     try {
-      const uri = await pickReceiptImage(source);
-      if (!uri) return;
-      setOcrLocalUri(uri);
+      const uri = await pickReceiptImage(source)
+      if (!uri) return
+      setOcrLocalUri(uri)
     } catch (error) {
-      Alert.alert("오류", error instanceof Error ? error.message : "잠시 후 다시 시도해주세요.");
+      setErrorMessage(error instanceof Error ? error.message : '잠시 후 다시 시도해주세요.')
     }
-  };
+  }
 
   const handleReceiptFilled = (result: ReceiptOcrFillResult) => {
-    setStoreName(result.storeName);
-    setAmount(String(result.amount));
-    setReceiptImageUrl(result.receiptImageUrl);
-    setOcrRaw(result.ocrRaw);
-    setOcrLocalUri(null);
-  };
+    setStoreName(result.storeName)
+    setAmount(String(result.amount))
+    setReceiptImageUrl(result.receiptImageUrl)
+    setOcrRaw(result.ocrRaw)
+    setOcrLocalUri(null)
+  }
 
   const handleSelectStore = (result: StoreSearchResult) => {
-    setStoreName(result.name);
-    setStoreAddress(result.address);
-    setIsStoreSearchVisible(false);
-  };
+    setStoreName(result.name)
+    setStoreAddress(result.address)
+    setIsStoreSearchVisible(false)
+  }
 
-  const amountValue = Number(amount);
-  const isAmountValid = amount.length > 0 && Number.isFinite(amountValue) && amountValue > 0;
+  const amountValue = Number(amount)
+  const isAmountValid = amount.length > 0 && Number.isFinite(amountValue) && amountValue > 0
   // 끼니 소비(식비)는 방문 날짜+끼니 때로 특정된 meal_slot에 연결되어야만 저장 가능
   // (F6-4 캐스케이드 확정 RPC가 이 slot id를 필요로 함).
   const mealSlotId = isMeal
     ? (mealSlots.find((slot) => slot.date === visitDate && slot.mealType === mealType)?.id ?? null)
-    : null;
-  const isMealSelectionValid = !isMeal || mealSlotId != null;
-  const canSubmit = isAmountValid && category.length > 0 && isMealSelectionValid && !submitting;
+    : null
+  const isMealSelectionValid = !isMeal || mealSlotId != null
+  const canSubmit = isAmountValid && category.length > 0 && isMealSelectionValid && !submitting
 
   const handleSubmit = () => {
-    if (!category) return;
-    onSubmit({ category, amount, storeName, storeAddress, memo, mealSlotId, receiptImageUrl, ocrRaw });
-  };
+    if (!category) return
+    onSubmit({
+      category,
+      amount,
+      storeName,
+      storeAddress,
+      memo,
+      mealSlotId,
+      receiptImageUrl,
+      ocrRaw,
+    })
+  }
 
   return (
     <View style={styles.container}>
@@ -282,7 +289,7 @@ export const RecordForm = ({
             contentContainerStyle={styles.categoryRow}
           >
             {CATEGORY_OPTIONS.map((option) => {
-              const disabled = isMeal ? option !== "식비" : option === "식비";
+              const disabled = isMeal ? option !== '식비' : option === '식비'
               return (
                 <Chip
                   key={option}
@@ -291,7 +298,7 @@ export const RecordForm = ({
                   disabled={disabled}
                   onPress={() => setCategory(option)}
                 />
-              );
+              )
             })}
           </ScrollView>
         </FormField>
@@ -313,7 +320,7 @@ export const RecordForm = ({
 
       <View style={styles.footer}>
         <Button
-          label={submitting ? "저장 중..." : "저장하기"}
+          label={submitting ? '저장 중...' : '저장하기'}
           disabled={!canSubmit}
           onPress={handleSubmit}
         />
@@ -347,9 +354,9 @@ export const RecordForm = ({
             title="영수증 자동 채우기"
             content="영수증을 어떻게 가져올까요?"
             cancelLabel="촬영하기"
-            confirmLabel="갤러리에서 선택"
-            onCancel={() => handlePickReceipt("camera")}
-            onConfirm={() => handlePickReceipt("library")}
+            confirmLabel="사진 선택"
+            onCancel={() => handlePickReceipt('camera')}
+            onConfirm={() => handlePickReceipt('library')}
           />
         </View>
       </RNModal>
@@ -373,9 +380,26 @@ export const RecordForm = ({
           />
         </View>
       </RNModal>
+
+      <RNModal
+        visible={errorMessage !== null}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setErrorMessage(null)}
+      >
+        <Pressable style={styles.backdrop} onPress={() => setErrorMessage(null)} />
+        <View style={styles.modalCenter}>
+          <Modal
+            title="오류"
+            content={errorMessage ?? ''}
+            confirmLabel="확인"
+            onConfirm={() => setErrorMessage(null)}
+          />
+        </View>
+      </RNModal>
     </View>
-  );
-};
+  )
+}
 
 const styles = StyleSheet.create({
   container: {
@@ -391,10 +415,10 @@ const styles = StyleSheet.create({
     paddingBottom: spacing[16],
   },
   toggleRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    width: "100%",
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    width: '100%',
   },
   toggleLabel: {
     fontFamily: getFontFamily(typography.title3Emphasized.fontWeight),
@@ -405,22 +429,22 @@ const styles = StyleSheet.create({
     color: colors.content.neutral.default,
   },
   categoryRow: {
-    flexDirection: "row",
+    flexDirection: 'row',
     gap: spacing[10],
   },
   footer: {
-    width: "100%",
+    width: '100%',
     paddingHorizontal: spacing[16],
     paddingVertical: spacing[12],
   },
   backdrop: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: colors.surface.neutral.alpha["inverse-alpha-30"],
+    backgroundColor: colors.surface.neutral.alpha['inverse-alpha-30'],
   },
   modalCenter: {
     flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
+    alignItems: 'center',
+    justifyContent: 'center',
     paddingHorizontal: spacing[24],
   },
-});
+})

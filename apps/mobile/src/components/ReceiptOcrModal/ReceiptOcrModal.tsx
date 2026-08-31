@@ -1,15 +1,30 @@
 import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
-  Alert,
   Image,
   Modal as RNModal,
+  Pressable,
   ScrollView,
   StyleSheet,
   View,
 } from "react-native";
+import { router } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Button, FormField, Header, Icon, Text, TextField, colors, radius, spacing, stroke } from "@repo/ui";
+import {
+  Button,
+  FormField,
+  Header,
+  Icon,
+  Modal as DialogModal,
+  NavBar,
+  Text,
+  TextField,
+  colors,
+  radius,
+  spacing,
+  stroke,
+  type NavBarItemKey,
+} from "@repo/ui";
 
 import { formatDigitsForDisplay, formatWon, parseDigits } from "@/lib/format";
 import {
@@ -61,6 +76,7 @@ export const ReceiptOcrModal = ({ visible, localUri, tripId, onClose, onFilled }
 
   const [editStoreName, setEditStoreName] = useState("");
   const [editAmount, setEditAmount] = useState("");
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const runOcr = async (uri: string) => {
     setProcessing(true);
@@ -74,7 +90,7 @@ export const ReceiptOcrModal = ({ visible, localUri, tripId, onClose, onFilled }
       setEditStoreName(ocrResult.storeName ?? "");
       setEditAmount(ocrResult.amount ? String(ocrResult.amount) : "");
     } catch (error) {
-      Alert.alert("인식 실패", error instanceof Error ? error.message : "잠시 후 다시 시도해주세요.");
+      setErrorMessage(error instanceof Error ? error.message : "잠시 후 다시 시도해주세요.");
       setResult({ recognized: false, storeName: null, storeAddress: null, amount: null, bizNumRecognized: false });
     } finally {
       setProcessing(false);
@@ -96,7 +112,30 @@ export const ReceiptOcrModal = ({ visible, localUri, tripId, onClose, onFilled }
       setCurrentUri(uri);
       await runOcr(uri);
     } catch (error) {
-      Alert.alert("오류", error instanceof Error ? error.message : "잠시 후 다시 시도해주세요.");
+      setErrorMessage(error instanceof Error ? error.message : "잠시 후 다시 시도해주세요.");
+    }
+  };
+
+  const handleNavChange = (key: NavBarItemKey) => {
+    onClose();
+    if (key === "home") {
+      router.push("/");
+      return;
+    }
+    if (key === "recommend") {
+      router.push("/recommend");
+      return;
+    }
+    if (key === "chat") {
+      router.push("/chat");
+      return;
+    }
+    if (key === "record") {
+      router.push("/record");
+      return;
+    }
+    if (key === "profile") {
+      router.push("/mypage");
     }
   };
 
@@ -156,7 +195,7 @@ export const ReceiptOcrModal = ({ visible, localUri, tripId, onClose, onFilled }
                   <Button label="다시 촬영" variant="outline" onPress={() => handleRepick("camera")} />
                 </View>
                 <View style={styles.buttonFlex}>
-                  <Button label="갤러리에서 선택" variant="outline" onPress={() => handleRepick("library")} />
+                  <Button label="사진 선택" variant="outline" onPress={() => handleRepick("library")} />
                 </View>
               </View>
 
@@ -167,7 +206,7 @@ export const ReceiptOcrModal = ({ visible, localUri, tripId, onClose, onFilled }
                 </View>
               ) : (
                 <View style={styles.card}>
-                  <View style={styles.row}>
+                  <View style={[styles.row, styles.rowBorder]}>
                     <Text variant="bodyRegular">상호명</Text>
                     {renderFieldValue(result?.storeName ?? null)}
                   </View>
@@ -196,6 +235,9 @@ export const ReceiptOcrModal = ({ visible, localUri, tripId, onClose, onFilled }
               <View style={styles.buttonFlex}>
                 <Button label="확인" disabled={!result?.recognized || processing} onPress={handleConfirm} />
               </View>
+            </View>
+            <View style={{ paddingBottom: insets.bottom }}>
+              <NavBar active="record" onChange={handleNavChange} />
             </View>
           </>
         ) : (
@@ -244,9 +286,29 @@ export const ReceiptOcrModal = ({ visible, localUri, tripId, onClose, onFilled }
             <View style={styles.editFooter}>
               <Button label="수동반영" disabled={!canSubmitEdit} onPress={handleManualApply} />
             </View>
+            <View style={{ paddingBottom: insets.bottom }}>
+              <NavBar active="record" onChange={handleNavChange} />
+            </View>
           </>
         )}
       </View>
+
+      <RNModal
+        visible={errorMessage !== null}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setErrorMessage(null)}
+      >
+        <Pressable style={styles.backdrop} onPress={() => setErrorMessage(null)} />
+        <View style={styles.dialogCenter}>
+          <DialogModal
+            title="오류"
+            content={errorMessage ?? ""}
+            confirmLabel="확인"
+            onConfirm={() => setErrorMessage(null)}
+          />
+        </View>
+      </RNModal>
     </RNModal>
   );
 };
@@ -317,5 +379,15 @@ const styles = StyleSheet.create({
   editFooter: {
     paddingHorizontal: spacing[16],
     paddingVertical: spacing[12],
+  },
+  backdrop: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: colors.surface.neutral.alpha["inverse-alpha-30"],
+  },
+  dialogCenter: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: spacing[24],
   },
 });
