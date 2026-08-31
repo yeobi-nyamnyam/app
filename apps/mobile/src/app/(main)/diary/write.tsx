@@ -121,15 +121,17 @@ export default function DiaryWriteScreen() {
 
   useEffect(() => {
     // 기존 저장된 일기가 없고, AI 탭이 기본 선택된 첫 진입에서만 자동 생성한다.
-    if (existingDiaryId || content || !session || !tripNode || mode !== "ai") return;
+    // mealLogsData가 아직 로딩 중일 때 생성하면 빈 목록으로 초안을 만들어버리므로
+    // 쿼리가 끝날 때까지 기다린다.
+    if (existingDiaryId || content || !session || !tripNode || !mealLogsData || mode !== "ai") return;
     runGenerate();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [session, tripNode, mode]);
+  }, [session, tripNode, mode, mealLogsData]);
 
   const handleModeChange = (index: 0 | 1) => {
     const nextMode: DiaryMode = index === 0 ? "ai" : "manual";
     setMode(nextMode);
-    if (nextMode === "ai" && !content && !generating) {
+    if (nextMode === "ai" && !content && !generating && mealLogsData) {
       runGenerate();
     }
   };
