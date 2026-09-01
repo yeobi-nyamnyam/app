@@ -1,12 +1,15 @@
-import { View } from "react-native";
+import { Alert, View } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
+import { useQuery } from "@apollo/client/react";
 import { Text } from "@repo/ui";
+import { ActiveTripDocument } from "@repo/types";
 
 import {
   RestaurantDetailView,
   type RestaurantDetailBudgetSummary,
   type RestaurantDetailData,
 } from "@/components/RestaurantDetailView";
+import { useSession } from "@/hooks/useSession";
 
 // TODO(F2/F3-3 데이터 연동): 저녁 예산 상한은 예산 산정(F2)/추천 기준 산정(F3-3)
 // 결과로 교체. 지금은 recommend/index.tsx의 MEAL_BUDGET_LABEL("18,000원 이하")과
@@ -162,6 +165,14 @@ export default function RestaurantDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const restaurant = id ? MOCK_RESTAURANT_DETAILS[id] : undefined;
 
+  const { session } = useSession();
+  const { data } = useQuery(ActiveTripDocument, {
+    variables: { userId: session?.user.id ?? "" },
+    skip: !session,
+    fetchPolicy: "cache-and-network",
+  });
+  const tripId = data?.tripsCollection.edges[0]?.node.id;
+
   if (!restaurant) {
     return (
       <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
@@ -172,13 +183,29 @@ export default function RestaurantDetailScreen() {
     );
   }
 
+  const handlePressCTA = () => {
+    if (!tripId) {
+      Alert.alert("진행 중인 여행이 없어요", "여행을 먼저 만들어주세요.");
+      return;
+    }
+    const params = new URLSearchParams({
+      tripId,
+      source: "recommend",
+      presetCategory: "식비",
+      presetStoreName: restaurant.name,
+      presetStoreAddress: restaurant.address,
+    });
+    if (restaurant.budgetSummary) {
+      params.set("presetAmount", String(parsePrice(restaurant.budgetSummary.price)));
+    }
+    router.push(`/record/new?${params.toString()}`);
+  };
+
   return (
     <RestaurantDetailView
       restaurant={restaurant}
       onBackPress={() => router.back()}
-      onPressCTA={() => {
-        // TODO(F6 연동): "기록" 플로우로 이동. 이 이슈(F3-2) 범위 밖.
-      }}
+      onPressCTA={handlePressCTA}
     />
   );
 }
