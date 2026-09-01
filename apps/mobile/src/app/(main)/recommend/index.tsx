@@ -16,7 +16,12 @@ import {
   spacing,
   type NavBarItemKey,
 } from "@repo/ui";
-import { ActiveTripDocument, GoodPriceRestaurantsDocument, RegionNameDocument } from "@repo/types";
+import {
+  ActiveTripDocument,
+  GoodPriceRestaurantsDocument,
+  RegionNameDocument,
+  TourApiRestaurantsDocument,
+} from "@repo/types";
 
 import { RecommendMapView, type RecommendMapMarker } from "@/components/RecommendMapView";
 import { SortSheet, type SortOption } from "@/components/SortSheet";
@@ -29,7 +34,7 @@ import {
   getRecommendBudgetAmount,
   type MealType,
 } from "@/lib/budget";
-import { getCheapestMenuPrice, parsePriceMenus } from "@/lib/restaurant";
+import { getCheapestMenuPrice, parseCoordinate, parsePriceMenus } from "@/lib/restaurant";
 
 // 위치 권한이 없거나 측위 실패 시 지도 초기 카메라로 쓸 최후 폴백(서울시청).
 const FALLBACK_LOCATION = { latitude: 37.5665, longitude: 126.978 };
@@ -163,17 +168,11 @@ export default function RecommendScreen() {
 
   // F3-1: 지도보기는 가격보기와 달리 예산과 무관하게, 좌표가 있는 착한가격업소를
   // 전부 마커로 띄운다 (좌표 없는 업소는 지오코딩 실패분이라 지도에 표시 불가).
-  // TODO(F3-1 2단계): 일반 업소(source=tour_api) 마커는 아직 연동 전.
   const goodPriceMapMarkers: RecommendMapMarker[] = (restaurantsData?.restaurantsCollection.edges ?? [])
     .map((edge) => {
-      // pg_graphql은 BigFloat(numeric 컬럼) 값을 정밀도 손실 방지를 위해 JSON
-      // 문자열로 내려준다 — codegen 타입은 number라 적혀 있지만 실제로는
-      // 문자열이라, 네이버 지도 네이티브 마커에 그대로 넘기면
-      // "latitude cannot be cast from String to double" 오류가 난다.
-      const latitude = Number(edge.node.latitude);
-      const longitude = Number(edge.node.longitude);
-      if (edge.node.latitude == null || edge.node.longitude == null) return null;
-      if (Number.isNaN(latitude) || Number.isNaN(longitude)) return null;
+      const latitude = parseCoordinate(edge.node.latitude);
+      const longitude = parseCoordinate(edge.node.longitude);
+      if (latitude == null || longitude == null) return null;
 
       const cheapestPrice = getCheapestMenuPrice(parsePriceMenus(edge.node.price_menus));
       const marker: RecommendMapMarker = {
@@ -190,6 +189,35 @@ export default function RecommendScreen() {
       return marker;
     })
     .filter((marker): marker is RecommendMapMarker => marker !== null);
+
+  // F3-1 2단계: 일반 업소(source=tour_api, TourAPI contentTypeId=39)도 가격과
+  // 무관하게 좌표가 있는 것 전부 마커로 띄운다.
+  const { data: tourApiData } = useQuery(TourApiRestaurantsDocument, {
+    variables: { regionSido: regionSido ?? "" },
+    skip: !regionSido,
+    fetchPolicy: "cache-and-network",
+  });
+  const tourApiMapMarkers: RecommendMapMarker[] = (tourApiData?.restaurantsCollection.edges ?? [])
+    .map((edge) => {
+      const latitude = parseCoordinate(edge.node.latitude);
+      const longitude = parseCoordinate(edge.node.longitude);
+      if (latitude == null || longitude == null) return null;
+
+      const marker: RecommendMapMarker = {
+        id: edge.node.id,
+        source: "tour_api",
+        name: edge.node.name,
+        category: edge.node.category ?? "",
+        distance: "-",
+        latitude,
+        longitude,
+      };
+      return marker;
+    })
+    .filter((marker): marker is RecommendMapMarker => marker !== null);
+
+  const mapMarkers = [...goodPriceMapMarkers, ...tourApiMapMarkers];
+
   // 지도 초기 카메라는 마커 좌표가 아니라 사용자의 실제 현재 위치를 기준으로 삼는다
   // (권한 거부/측위 실패 시에만 FALLBACK_LOCATION으로 대체).
   const deviceLocation = useCurrentLocation();
@@ -292,7 +320,7 @@ export default function RecommendScreen() {
         </>
       ) : (
         <RecommendMapView
-          markers={goodPriceMapMarkers}
+          markers={mapMarkers}
           currentLocation={mapCurrentLocation}
           selectedMarkerId={selectedMarkerId}
           onSelectMarker={setSelectedMarkerId}
