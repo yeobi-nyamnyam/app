@@ -190,6 +190,7 @@ export default function RecommendScreen() {
                   address={item.address}
                   category={item.category}
                   budgetLabel={item.budgetLabel}
+                  onPress={() => router.push(`/recommend/${item.id}`)}
                 />
               )}
             />
@@ -219,6 +220,10 @@ export default function RecommendScreen() {
           currentLocation={CURRENT_LOCATION}
           selectedMarkerId={selectedMarkerId}
           onSelectMarker={setSelectedMarkerId}
+          onPressDetail={() => {
+            if (!selectedMarkerId) return;
+            router.push(`/recommend/${selectedMarkerId}`);
+          }}
         />
       )}
       <View style={{ paddingBottom: insets.bottom }}>

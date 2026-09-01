@@ -27,6 +27,7 @@ const meta: Meta<typeof Icon> = {
         'search',
         'restaurant',
         'locate',
+        'share',
       ],
     },
     size: { control: 'select', options: ['xsmall', 'small', 'medium', 'large', 'xlarge'] },
@@ -110,6 +111,10 @@ export const Restaurant: Story = {
 
 export const Locate: Story = {
   args: { name: 'locate' },
+}
+
+export const Share: Story = {
+  args: { name: 'share' },
 }
 
 export const AllSizes: Story = {
