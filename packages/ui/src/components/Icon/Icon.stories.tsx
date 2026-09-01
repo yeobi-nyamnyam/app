@@ -13,6 +13,7 @@ const meta: Meta<typeof Icon> = {
         'link-horizontal',
         'puzzle',
         'chevron-left',
+        'chevron-left-lg',
         'chevron-down',
         'chevron-up',
         'home',
@@ -27,6 +28,7 @@ const meta: Meta<typeof Icon> = {
         'search',
         'restaurant',
         'locate',
+        'share',
       ],
     },
     size: { control: 'select', options: ['xsmall', 'small', 'medium', 'large', 'xlarge'] },
@@ -54,6 +56,10 @@ export const Puzzle: Story = {
 
 export const ChevronLeft: Story = {
   args: { name: 'chevron-left' },
+}
+
+export const ChevronLeftLg: Story = {
+  args: { name: 'chevron-left-lg' },
 }
 
 export const ChevronDown: Story = {
@@ -110,6 +116,10 @@ export const Restaurant: Story = {
 
 export const Locate: Story = {
   args: { name: 'locate' },
+}
+
+export const Share: Story = {
+  args: { name: 'share' },
 }
 
 export const AllSizes: Story = {

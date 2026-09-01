@@ -3,6 +3,7 @@ export type IconName =
   | 'link-horizontal'
   | 'puzzle'
   | 'chevron-left'
+  | 'chevron-left-lg'
   | 'chevron-down'
   | 'chevron-up'
   | 'home'
@@ -17,6 +18,7 @@ export type IconName =
   | 'search'
   | 'restaurant'
   | 'locate'
+  | 'share'
 
 export type IconDefinition = {
   width: number
@@ -52,6 +54,13 @@ export const icons: Record<IconName, IconDefinition> = {
     width: 24,
     height: 24,
     d: 'M14 16L10 12L14 8',
+  },
+  // Figma "Chevron_Left"(node 270:11874) 기준. 'chevron-left'(Chevron_Left_MD,
+  // node 270:11882)보다 꺾임 폭이 넓은 별도 glyph — size prop으로는 재현 안 됨
+  'chevron-left-lg': {
+    width: 24,
+    height: 24,
+    d: 'M15 19L8 12L15 5',
   },
   // chevron-left(꼭짓점 왼쪽 기준)을 중심(12,12) 기준으로 90도 회전한 좌표
   'chevron-down': {
@@ -129,5 +138,10 @@ export const icons: Record<IconName, IconDefinition> = {
     height: 24,
     d: 'M5 12A7 7 0 1 0 19 12A7 7 0 1 0 5 12M12 5L12 3M19 12L21 12M12 19L12 21M5 12L3 12',
     extra: [{ d: 'M9 12A3 3 0 1 0 15 12A3 3 0 1 0 9 12', fill: true }],
+  },
+  share: {
+    width: 24,
+    height: 24,
+    d: 'M15 6L12 3L9 6M12 3V13M7.00023 10C6.06835 10 5.60241 10 5.23486 10.1522C4.74481 10.3552 4.35523 10.7448 4.15224 11.2349C4 11.6024 4 12.0681 4 13V17.8C4 18.9201 4 19.4798 4.21799 19.9076C4.40973 20.2839 4.71547 20.5905 5.0918 20.7822C5.5192 21 6.07899 21 7.19691 21H16.8036C17.9215 21 18.4805 21 18.9079 20.7822C19.2842 20.5905 19.5905 20.2839 19.7822 19.9076C20 19.4802 20 18.921 20 17.8031V13C20 12.0681 19.9999 11.6024 19.8477 11.2349C19.6447 10.7448 19.2554 10.3552 18.7654 10.1522C18.3978 10 17.9319 10 17 10',
   },
 }
