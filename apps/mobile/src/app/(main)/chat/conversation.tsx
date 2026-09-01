@@ -24,6 +24,7 @@ import {
 import type { MealLogCategory } from "@/components/RecordForm";
 
 import { formatWon, todayDate } from "@/lib/format";
+import { MEAL_TYPES } from "@/lib/budget";
 import {
   formatChatTime,
   streamChatReply,
@@ -105,6 +106,9 @@ export default function ChatConversationScreen() {
     .filter((slot) => slot.date === today);
   const dayBudget = todaySlots.reduce((sum, slot) => sum + slot.budget_amount, 0);
   const consumed = todaySlots.reduce((sum, slot) => sum + (slot.recorded_amount ?? 0), 0);
+  // F6-4 캐스케이드 확정분(0원)도 is_recorded=true라 오늘 끼니가 전부 막혔는지 여기서 같이 판단된다.
+  const allMealsRecorded =
+    todaySlots.length === MEAL_TYPES.length && todaySlots.every((slot) => slot.is_recorded);
 
   return (
     <ActiveConversation
@@ -113,6 +117,7 @@ export default function ChatConversationScreen() {
       userId={session.user.id}
       dayBudget={dayBudget}
       consumed={consumed}
+      allMealsRecorded={allMealsRecorded}
     />
   );
 }
@@ -129,12 +134,14 @@ function ActiveConversation({
   userId,
   dayBudget,
   consumed,
+  allMealsRecorded,
 }: {
   tripId: string;
   tripName: string;
   userId: string;
   dayBudget: number;
   consumed: number;
+  allMealsRecorded: boolean;
 }) {
   const insets = useSafeAreaInsets();
   const scrollRef = useRef<ScrollView>(null);
@@ -240,6 +247,17 @@ function ActiveConversation({
     }
 
     if (result.category === "식비") {
+      // 오늘 끼니가 이미 전부 기록(캐스케이드 확정 포함)됐으면 새로 끼니를 끼워넣을
+      // 슬롯 자체가 없다 — 기록 화면으로 보내봤자 "끼니 때" 선택지가 없어 막히므로
+      // (RecordForm.tsx의 availableMealTypeOptions) 여기서 먼저 안내한다.
+      if (allMealsRecorded) {
+        appendMessage({
+          id: `ai-locked-${Date.now()}`,
+          sender: "ai",
+          text: "오늘 끼니 기록은 이미 다 끝났어요. 이 지출은 저장할 수 없어요 — 수정하려면 기록보기에서 오늘 기록을 삭제한 뒤 순서대로 다시 입력해주세요.",
+        });
+        return;
+      }
       // "새 추천 보기" 카드는 여기서 바로 띄우지 않는다 — 사용자가 기록 화면에서
       // 실제로 저장하고 돌아와 오늘 남은 식비가 진짜로 줄었을 때만
       // (위 useFocusEffect + useEffect가 감지) 뜨도록 분리했다.
