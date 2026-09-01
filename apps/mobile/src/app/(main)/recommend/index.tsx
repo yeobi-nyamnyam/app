@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { Alert, FlatList, Pressable, StyleSheet, View } from "react-native";
-import { router } from "expo-router";
+import { router, useFocusEffect } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useQuery } from "@apollo/client/react";
 import {
@@ -16,7 +16,7 @@ import {
   spacing,
   type NavBarItemKey,
 } from "@repo/ui";
-import { ActiveTripDocument } from "@repo/types";
+import { ActiveTripDocument, GoodPriceRestaurantsDocument, RegionNameDocument } from "@repo/types";
 
 import { RecommendMapView, type RecommendMapMarker } from "@/components/RecommendMapView";
 import { SortSheet, type SortOption } from "@/components/SortSheet";
@@ -28,37 +28,10 @@ import {
   getRecommendBudgetAmount,
   type MealType,
 } from "@/lib/budget";
+import { getCheapestMenuPrice, parsePriceMenus } from "@/lib/restaurant";
 
-// TODO(F3 데이터 연동): restaurants + F3-3(예산 기준 실시간 산정) GraphQL 쿼리로 교체.
-// 지금은 Figma "recommand-price" 화면(node 721:14702) 예시 그대로의 정적 mock.
-const MOCK_RESTAURANTS = [
-  {
-    id: "1",
-    name: "범물본가국수 팔달시장점",
-    price: "6,000원",
-    address: "대구광역시 북구 팔달로 135 1층",
-    category: "한식",
-    budgetLabel: "예산 0%",
-  },
-  {
-    id: "2",
-    name: "대명돼지국밥",
-    price: "6,500원",
-    address: "대구광역시 북구 호국로43길 27-12 대명돼지국밥",
-    category: "한식",
-    budgetLabel: "예산 0%",
-  },
-  {
-    id: "3",
-    name: "윤소인남산고단백장어죽집",
-    price: "15,000원",
-    address: "대구광역시 중구 동성로 19-11",
-    category: "한식",
-    budgetLabel: "예산 0%",
-  },
-];
-
-// TODO(F3-1 데이터 연동): restaurants GraphQL 쿼리(실제 latitude/longitude)로 교체.
+// TODO(F3-1/F3-2 데이터 연동): 지도보기·상세 화면은 이번 F3-5 범위에서 제외 —
+// restaurants GraphQL 쿼리(실제 latitude/longitude, tour_api 포함)로 교체 예정.
 // 지금은 약수역(서울) 인근 좌표를 임의로 흩뿌린 정적 mock (Figma "recommand-map" 화면,
 // node 733:15646, 733:15879의 마커 배치 예시를 좌표로 옮김).
 const CURRENT_LOCATION = { latitude: 37.5544, longitude: 127.0098 };
@@ -110,13 +83,20 @@ const SORT_OPTIONS: SortOption[] = [
   { value: "price-desc", label: "가격 높은 순" },
 ];
 
-const parsePrice = (price: string) => Number(price.replace(/[^0-9]/g, ""));
+interface PriceListRestaurant {
+  id: string;
+  name: string;
+  address: string;
+  category: string;
+  priceAmount: number;
+  budgetPercent: number;
+}
 
-const sortByValue = (items: typeof MOCK_RESTAURANTS, sortValue: string) =>
+const sortByValue = (items: PriceListRestaurant[], sortValue: string) =>
   [...items].sort((a, b) =>
     sortValue === "price-desc"
-      ? parsePrice(b.price) - parsePrice(a.price)
-      : parsePrice(a.price) - parsePrice(b.price),
+      ? b.priceAmount - a.priceAmount
+      : a.priceAmount - b.priceAmount,
   );
 
 const handleNavChange = (key: NavBarItemKey) => {
@@ -152,12 +132,22 @@ export default function RecommendScreen() {
   const [selectedMarkerId, setSelectedMarkerId] = useState<string | undefined>(undefined);
 
   const { session } = useSession();
-  const { data, loading } = useQuery(ActiveTripDocument, {
+  const { data, loading, refetch: refetchActiveTrip } = useQuery(ActiveTripDocument, {
     variables: { userId: session?.user.id ?? "" },
     skip: !session,
     fetchPolicy: "cache-and-network",
   });
   const tripNode = data?.tripsCollection.edges[0]?.node;
+
+  // 소비 기록 작성(record/new) 후 이 화면으로 돌아왔을 때 끼니 기록 여부가 바뀌어도
+  // cache-and-network만으로는 재조회가 안 된다 — 포커스를 다시 받을 때마다 refetch해서
+  // 추천 기준(끼니/예산)이 최신 상태를 반영하게 한다.
+  useFocusEffect(
+    useCallback(() => {
+      refetchActiveTrip();
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []),
+  );
 
   const mealSlots = (tripNode?.meal_slotsCollection?.edges ?? []).map((edge) => ({
     date: edge.node.date,
@@ -168,14 +158,50 @@ export default function RecommendScreen() {
   }));
   // F3-3: 가장 이른 미기록 끼니 슬롯을 추천 기준(끼니명 + 예산 상한)으로 삼는다.
   const nextMealSlot = findNextUnrecordedMealSlot(mealSlots);
+  const mealBudgetAmount = nextMealSlot ? getRecommendBudgetAmount(nextMealSlot) : null;
   const sectionTitle = nextMealSlot
     ? viewMode === 0
-      ? `${MEAL_TYPE_LABEL[nextMealSlot.mealType]} ${formatWon(getRecommendBudgetAmount(nextMealSlot))} 이하`
+      ? `${MEAL_TYPE_LABEL[nextMealSlot.mealType]} ${formatWon(mealBudgetAmount ?? 0)} 이하`
       : MEAL_TYPE_LABEL[nextMealSlot.mealType]
     : "기록할 끼니가 없어요";
 
-  const hasResults = MOCK_RESTAURANTS.length > 0;
-  const sortedRestaurants = sortByValue(MOCK_RESTAURANTS, sortValue);
+  // F3-5: 여행의 region_code(예: "27") → restaurants.region_sido(예: "대구광역시")로
+  // 변환해 착한가격업소 목록을 조회한다.
+  const { data: regionData } = useQuery(RegionNameDocument, {
+    variables: { code: tripNode?.region_code ?? "" },
+    skip: !tripNode,
+  });
+  const regionSido = regionData?.region_cacheCollection.edges[0]?.node.region_name;
+
+  const { data: restaurantsData, loading: restaurantsLoading } = useQuery(
+    GoodPriceRestaurantsDocument,
+    {
+      variables: { regionSido: regionSido ?? "" },
+      skip: !regionSido,
+      fetchPolicy: "cache-and-network",
+    },
+  );
+  // F3: 여행 지역의 착한가격업소 중 현재 끼니 예산 이하인 것만 추천 목록에 노출한다.
+  const priceListRestaurants: PriceListRestaurant[] = mealBudgetAmount
+    ? (restaurantsData?.restaurantsCollection.edges ?? [])
+        .map((edge) => {
+          const cheapestPrice = getCheapestMenuPrice(parsePriceMenus(edge.node.price_menus));
+          if (cheapestPrice == null || cheapestPrice > mealBudgetAmount) return null;
+          return {
+            id: edge.node.id,
+            name: edge.node.name,
+            address: edge.node.address,
+            category: edge.node.category ?? "",
+            priceAmount: cheapestPrice,
+            budgetPercent:
+              mealBudgetAmount > 0 ? Math.round((cheapestPrice / mealBudgetAmount) * 100) : 0,
+          };
+        })
+        .filter((item): item is PriceListRestaurant => item !== null)
+    : [];
+
+  const hasResults = priceListRestaurants.length > 0;
+  const sortedRestaurants = sortByValue(priceListRestaurants, sortValue);
   const sortLabel = SORT_OPTIONS.find((option) => option.value === sortValue)?.label ?? "";
 
   if (loading && !data) {
@@ -226,14 +252,18 @@ export default function RecommendScreen() {
               가격으로 볼 후보, 착한 가격 업소만 정보를 제공하고 있어요.
             </Text>
             <View style={styles.sortRow}>
-              <Text variant="subheadlineEmphasized">조건에 맞는 곳 {MOCK_RESTAURANTS.length}</Text>
+              <Text variant="subheadlineEmphasized">조건에 맞는 곳 {priceListRestaurants.length}</Text>
               <Pressable style={styles.sort} onPress={() => setSortSheetOpen(true)}>
                 <Text variant="subheadlineEmphasized">{sortLabel}</Text>
                 <Icon name="chevron-down" size="medium" />
               </Pressable>
             </View>
           </View>
-          {hasResults ? (
+          {restaurantsLoading && !restaurantsData ? (
+            <View style={styles.emptyState}>
+              <Text color="subtlest">음식점 불러오는 중...</Text>
+            </View>
+          ) : hasResults ? (
             <FlatList
               data={sortedRestaurants}
               keyExtractor={(item) => item.id}
@@ -241,10 +271,10 @@ export default function RecommendScreen() {
               renderItem={({ item }) => (
                 <RestaurantCard
                   name={item.name}
-                  price={item.price}
+                  price={formatWon(item.priceAmount)}
                   address={item.address}
                   category={item.category}
-                  budgetLabel={item.budgetLabel}
+                  budgetLabel={`예산 ${item.budgetPercent}%`}
                   onPress={() => router.push(`/recommend/${item.id}`)}
                 />
               )}

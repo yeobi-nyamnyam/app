@@ -1,0 +1,15 @@
+query RestaurantById($id: UUID!) {
+  restaurantsCollection(filter: { id: { eq: $id } }, first: 1) {
+    edges {
+      node {
+        id
+        source
+        name
+        address
+        category
+        phone
+        price_menus
+      }
+    }
+  }
+}

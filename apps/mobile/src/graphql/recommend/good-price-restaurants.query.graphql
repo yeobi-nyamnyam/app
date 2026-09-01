@@ -1,0 +1,21 @@
+# TODO(F3-5 후속): pg_graphql이 first 미지정 시에도 프로젝트 max_rows(현재 30)로
+# 결과를 잘라서 응답한다. price_menus는 jsonb라 서버 측 가격 정렬/페이지네이션이
+# 안 되고, 지금은 이 30건(name 오름차순) 안에서만 클라이언트가 가격순 정렬한다.
+# 도시 전체 최저가 정확도가 필요해지면 restaurants에 최저가 컬럼(생성 컬럼 또는
+# 배치 계산)을 추가하는 마이그레이션이 필요하다.
+query GoodPriceRestaurants($regionSido: String!) {
+  restaurantsCollection(
+    filter: { source: { eq: "good_price" }, region_sido: { eq: $regionSido } }
+    orderBy: [{ name: AscNullsLast }]
+  ) {
+    edges {
+      node {
+        id
+        name
+        address
+        category
+        price_menus
+      }
+    }
+  }
+}
