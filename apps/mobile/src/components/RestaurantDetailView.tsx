@@ -57,6 +57,8 @@ export interface RestaurantDetailData {
   distance: string;
   phone: string;
   address: string;
+  /** tour_api 업소만 값이 있음 — 착한가격업소 API는 사진을 제공하지 않아 항상 없음 */
+  imageUrl?: string;
   /** tour_api 업소만 값이 있음 */
   hours?: string;
   /** tour_api 업소만 값이 있음 */
@@ -118,6 +120,9 @@ export const RestaurantDetailView = ({
 }: RestaurantDetailViewProps) => {
   const insets = useSafeAreaInsets();
   const isGoodPrice = restaurant.source === "good_price";
+  // 착한가격업소 API는 사진을 제공하지 않아 imageUrl이 항상 비어 있다 — 이 경우
+  // 빈 회색 히어로 박스 대신 히어로 영역 자체를 접어서 보여준다.
+  const hasHero = !!restaurant.imageUrl;
 
   const handleShare = () => {
     Share.share({ message: restaurant.name }).catch(() => {});
@@ -126,19 +131,22 @@ export const RestaurantDetailView = ({
   // 스크롤에 따라 상단 플로팅 버튼 줄 뒤 배경을 투명→흰색으로 전환 (Figma
   // "cuisine-detail (good-price) (middle)" node 743:20390). 히어로 사진이
   // 버튼 줄 뒤로 완전히 지나가는 스크롤 거리(HERO_HEIGHT - 버튼 줄 하단
-  // 위치)에 맞춰 페이드가 끝나도록 계산.
+  // 위치)에 맞춰 페이드가 끝나도록 계산. 히어로가 없으면 처음부터 흰 배경
+  // 고정이라 페이드/전환이 필요 없다.
   const scrollY = useRef(new Animated.Value(0)).current;
   const [floatingRowHeight, setFloatingRowHeight] = useState(0);
-  const [isHeaderSolid, setIsHeaderSolid] = useState(false);
+  const [isHeaderSolid, setIsHeaderSolid] = useState(!hasHero);
 
   const headerBackgroundHeight = spacing[16] + floatingRowHeight + spacing[12];
   const headerFadeDistance = Math.max(HERO_HEIGHT - (insets.top + headerBackgroundHeight), 1);
 
-  const headerBackgroundOpacity = scrollY.interpolate({
-    inputRange: [0, headerFadeDistance],
-    outputRange: [0, 1],
-    extrapolate: "clamp",
-  });
+  const headerBackgroundOpacity = hasHero
+    ? scrollY.interpolate({
+        inputRange: [0, headerFadeDistance],
+        outputRange: [0, 1],
+        extrapolate: "clamp",
+      })
+    : 1;
 
   const handleFloatingRowLayout = (event: LayoutChangeEvent) => {
     setFloatingRowHeight(event.nativeEvent.layout.height);
@@ -148,10 +156,12 @@ export const RestaurantDetailView = ({
     [{ nativeEvent: { contentOffset: { y: scrollY } } }],
     {
       useNativeDriver: true,
-      listener: (event: NativeSyntheticEvent<NativeScrollEvent>) => {
-        const solid = event.nativeEvent.contentOffset.y >= headerFadeDistance;
-        setIsHeaderSolid((prev) => (prev === solid ? prev : solid));
-      },
+      listener: hasHero
+        ? (event: NativeSyntheticEvent<NativeScrollEvent>) => {
+            const solid = event.nativeEvent.contentOffset.y >= headerFadeDistance;
+            setIsHeaderSolid((prev) => (prev === solid ? prev : solid));
+          }
+        : undefined,
     },
   );
 
@@ -159,9 +169,13 @@ export const RestaurantDetailView = ({
     <View style={styles.container}>
       <StatusBar style={isHeaderSolid ? "dark" : "light"} />
       <Animated.ScrollView style={styles.scroll} onScroll={handleScroll} scrollEventThrottle={16}>
-        <View style={styles.hero}>
-          <View style={styles.heroDim} />
-        </View>
+        {hasHero ? (
+          <View style={styles.hero}>
+            <View style={styles.heroDim} />
+          </View>
+        ) : (
+          <View style={{ height: insets.top + headerBackgroundHeight }} />
+        )}
         <View style={styles.body}>
           <View style={styles.nameRow}>
             <View style={styles.nameTextSlot}>
