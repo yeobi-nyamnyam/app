@@ -20,6 +20,7 @@ import { ActiveTripDocument, GoodPriceRestaurantsDocument, RegionNameDocument } 
 
 import { RecommendMapView, type RecommendMapMarker } from "@/components/RecommendMapView";
 import { SortSheet, type SortOption } from "@/components/SortSheet";
+import { useCurrentLocation } from "@/hooks/useCurrentLocation";
 import { useSession } from "@/hooks/useSession";
 import { formatWon } from "@/lib/format";
 import {
@@ -30,8 +31,7 @@ import {
 } from "@/lib/budget";
 import { getCheapestMenuPrice, parsePriceMenus } from "@/lib/restaurant";
 
-// 마커 좌표가 하나도 없을 때(지오코딩 실패 등) 지도 초기 카메라로 쓸 최후 폴백.
-// 실사용자 위치 기반 카메라 이동은 지도의 "현재 위치" 버튼(Location 권한)으로 처리한다.
+// 위치 권한이 없거나 측위 실패 시 지도 초기 카메라로 쓸 최후 폴백(서울시청).
 const FALLBACK_LOCATION = { latitude: 37.5665, longitude: 126.978 };
 
 const DEFAULT_SORT_VALUE = "price-asc";
@@ -190,10 +190,10 @@ export default function RecommendScreen() {
       return marker;
     })
     .filter((marker): marker is RecommendMapMarker => marker !== null);
-  const firstMapMarker = goodPriceMapMarkers[0];
-  const mapCurrentLocation = firstMapMarker
-    ? { latitude: firstMapMarker.latitude, longitude: firstMapMarker.longitude }
-    : FALLBACK_LOCATION;
+  // 지도 초기 카메라는 마커 좌표가 아니라 사용자의 실제 현재 위치를 기준으로 삼는다
+  // (권한 거부/측위 실패 시에만 FALLBACK_LOCATION으로 대체).
+  const deviceLocation = useCurrentLocation();
+  const mapCurrentLocation = deviceLocation ?? FALLBACK_LOCATION;
 
   if (loading && !data) {
     return (
