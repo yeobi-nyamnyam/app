@@ -38,11 +38,13 @@ export interface RestaurantDetailMenuItem {
  * 착한가격업소만 갖는 요약 정보 (대표 메뉴 가격 카드에 표시).
  *
  * @param price 대표 메뉴 가격 (예: "6,000원")
- * @param budgetPercent 저녁 예산 대비 비율 (예: 33)
+ * @param mealName 기준이 되는 끼니명 (예: "아침", "점심", "저녁")
+ * @param budgetPercent mealName 예산 대비 비율 (예: 33)
  * @param remainingLabel 이 메뉴를 먹고 남는 예산 텍스트 (예: "12,000원")
  */
 export interface RestaurantDetailBudgetSummary {
   price: string;
+  mealName: string;
   budgetPercent: number;
   remainingLabel: string;
 }
@@ -77,12 +79,17 @@ const FieldCard = ({ radiusValue, children }: { radiusValue: number; children: R
 /**
  * 착한가격업소 상세 화면 상단의 "대표 메뉴 가격" 요약 카드.
  */
-const BudgetSummaryCard = ({ price, budgetPercent, remainingLabel }: RestaurantDetailBudgetSummary) => (
+const BudgetSummaryCard = ({
+  price,
+  mealName,
+  budgetPercent,
+  remainingLabel,
+}: RestaurantDetailBudgetSummary) => (
   <View style={styles.summaryCard}>
     <RNText style={styles.summaryLabel}>대표 메뉴 가격</RNText>
     <RNText style={styles.summaryPrice}>{price}</RNText>
     <RNText style={styles.summaryDescription}>
-      저녁 예산의 {budgetPercent}% | 먹고 나면 {remainingLabel} 남아요
+      {mealName} 예산의 {budgetPercent}% | 먹고 나면 {remainingLabel} 남아요
     </RNText>
   </View>
 );

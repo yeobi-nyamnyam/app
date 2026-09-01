@@ -10,30 +10,47 @@ import {
   type RestaurantDetailData,
 } from "@/components/RestaurantDetailView";
 import { useSession } from "@/hooks/useSession";
-
-// TODO(F2/F3-3 데이터 연동): 저녁 예산 상한은 예산 산정(F2)/추천 기준 산정(F3-3)
-// 결과로 교체. 지금은 recommend/index.tsx의 MEAL_BUDGET_LABEL("18,000원 이하")과
-// 동일한 값을 하드코딩.
-const MEAL_BUDGET_AMOUNT = 18000;
+import {
+  MEAL_TYPE_LABEL,
+  findNextUnrecordedMealSlot,
+  getRecommendBudgetAmount,
+  type MealType,
+} from "@/lib/budget";
 
 const parsePrice = (price: string) => Number(price.replace(/[^0-9]/g, ""));
 
-const toBudgetSummary = (price: string): RestaurantDetailBudgetSummary => {
+// F3-3: 추천 기준 예산 상한(mealBudgetAmount) 대비 대표 메뉴 가격의 비율/잔여 예산.
+const toBudgetSummary = (
+  price: string,
+  mealType: MealType,
+  mealBudgetAmount: number,
+): RestaurantDetailBudgetSummary => {
   const priceNumber = parsePrice(price);
-  const remaining = MEAL_BUDGET_AMOUNT - priceNumber;
+  const remaining = mealBudgetAmount - priceNumber;
   return {
     price,
-    budgetPercent: Math.round((priceNumber / MEAL_BUDGET_AMOUNT) * 100),
+    mealName: MEAL_TYPE_LABEL[mealType],
+    budgetPercent: mealBudgetAmount > 0 ? Math.round((priceNumber / mealBudgetAmount) * 100) : 0,
     remainingLabel: `${remaining.toLocaleString("ko-KR")}원`,
   };
+};
+
+// good_price 업소(대표 메뉴 가격)만 값이 있음 — F3-3 예산 대비 비율 계산에 사용.
+const MOCK_RESTAURANT_PRICES: Record<string, string> = {
+  "1": "6,000원",
+  "2": "6,500원",
+  "3": "15,000원",
+  m1: "6,500원",
+  m2: "15,000원",
 };
 
 // TODO(F3 데이터 연동): restaurants GraphQL 쿼리(전화/주소/영업시간/메뉴 등)로 교체.
 // 지금은 recommend/index.tsx의 MOCK_RESTAURANTS(id: "1"~"3")·MOCK_MAP_MARKERS
 // (id: "m1"~"m4") 두 mock 목록에서 넘어오는 id를 모두 커버하는 정적 mock
 // (Figma "cuisine-detail (good-price)" node 733:15941, "cuisine-detail
-// (common)" node 733:16596 예시 그대로).
-const MOCK_RESTAURANT_DETAILS: Record<string, RestaurantDetailData> = {
+// (common)" node 733:16596 예시 그대로). budgetSummary는 화면에서 mealBudgetAmount로
+// 계산해 붙이므로 여기서는 넣지 않는다.
+const MOCK_RESTAURANT_DETAILS: Record<string, Omit<RestaurantDetailData, "budgetSummary">> = {
   "1": {
     id: "1",
     source: "good_price",
@@ -42,7 +59,6 @@ const MOCK_RESTAURANT_DETAILS: Record<string, RestaurantDetailData> = {
     distance: "0.4km",
     phone: "051-123-4567",
     address: "대구광역시 북구 팔달로 135 1층",
-    budgetSummary: toBudgetSummary("6,000원"),
     menu: [
       { name: "잔치국수", price: "6,000원" },
       { name: "비빔국수", price: "7,000원" },
@@ -59,7 +75,6 @@ const MOCK_RESTAURANT_DETAILS: Record<string, RestaurantDetailData> = {
     distance: "0.5km",
     phone: "053-123-4567",
     address: "대구광역시 북구 호국로43길 27-12",
-    budgetSummary: toBudgetSummary("6,500원"),
     menu: [
       { name: "돼지국밥", price: "6,500원" },
       { name: "순대국밥", price: "6,500원" },
@@ -84,7 +99,6 @@ const MOCK_RESTAURANT_DETAILS: Record<string, RestaurantDetailData> = {
     distance: "0.7km",
     phone: "053-234-5678",
     address: "대구광역시 중구 동성로 19-11",
-    budgetSummary: toBudgetSummary("15,000원"),
     menu: [
       { name: "장어덮밥", price: "15,000원" },
       { name: "장어구이", price: "20,000원" },
@@ -98,7 +112,6 @@ const MOCK_RESTAURANT_DETAILS: Record<string, RestaurantDetailData> = {
     distance: "0.5km",
     phone: "053-123-4567",
     address: "대구광역시 북구 호국로43길 27-12",
-    budgetSummary: toBudgetSummary("6,500원"),
     menu: [
       { name: "돼지국밥", price: "6,500원" },
       { name: "순대국밥", price: "6,500원" },
@@ -123,7 +136,6 @@ const MOCK_RESTAURANT_DETAILS: Record<string, RestaurantDetailData> = {
     distance: "0.8km",
     phone: "053-234-5678",
     address: "대구광역시 중구 동성로 19-11",
-    budgetSummary: toBudgetSummary("15,000원"),
     menu: [
       { name: "장어덮밥", price: "15,000원" },
       { name: "장어구이", price: "20,000원" },
@@ -163,7 +175,8 @@ const MOCK_RESTAURANT_DETAILS: Record<string, RestaurantDetailData> = {
  */
 export default function RestaurantDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const restaurant = id ? MOCK_RESTAURANT_DETAILS[id] : undefined;
+  const mockDetail = id ? MOCK_RESTAURANT_DETAILS[id] : undefined;
+  const mockPrice = id ? MOCK_RESTAURANT_PRICES[id] : undefined;
 
   const { session } = useSession();
   const { data } = useQuery(ActiveTripDocument, {
@@ -171,7 +184,28 @@ export default function RestaurantDetailScreen() {
     skip: !session,
     fetchPolicy: "cache-and-network",
   });
-  const tripId = data?.tripsCollection.edges[0]?.node.id;
+  const tripNode = data?.tripsCollection.edges[0]?.node;
+  const tripId = tripNode?.id;
+
+  const mealSlots = (tripNode?.meal_slotsCollection?.edges ?? []).map((edge) => ({
+    date: edge.node.date,
+    mealType: edge.node.meal_type as MealType,
+    budgetAmount: edge.node.budget_amount,
+    carriedOverAmount: edge.node.carried_over_amount,
+    isRecorded: edge.node.is_recorded,
+  }));
+  // F3-3: 가격보기와 동일하게 가장 이른 미기록 끼니 슬롯을 예산 상한 기준으로 삼는다.
+  const nextMealSlot = findNextUnrecordedMealSlot(mealSlots);
+
+  const restaurant: RestaurantDetailData | undefined = mockDetail
+    ? {
+        ...mockDetail,
+        budgetSummary:
+          mockPrice && nextMealSlot
+            ? toBudgetSummary(mockPrice, nextMealSlot.mealType, getRecommendBudgetAmount(nextMealSlot))
+            : undefined,
+      }
+    : undefined;
 
   if (!restaurant) {
     return (

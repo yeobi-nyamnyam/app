@@ -21,6 +21,13 @@ import { ActiveTripDocument } from "@repo/types";
 import { RecommendMapView, type RecommendMapMarker } from "@/components/RecommendMapView";
 import { SortSheet, type SortOption } from "@/components/SortSheet";
 import { useSession } from "@/hooks/useSession";
+import { formatWon } from "@/lib/format";
+import {
+  MEAL_TYPE_LABEL,
+  findNextUnrecordedMealSlot,
+  getRecommendBudgetAmount,
+  type MealType,
+} from "@/lib/budget";
 
 // TODO(F3 데이터 연동): restaurants + F3-3(예산 기준 실시간 산정) GraphQL 쿼리로 교체.
 // 지금은 Figma "recommand-price" 화면(node 721:14702) 예시 그대로의 정적 mock.
@@ -97,12 +104,6 @@ const MOCK_MAP_MARKERS: RecommendMapMarker[] = [
   },
 ];
 
-// TODO(F2/F3 데이터 연동): 끼니명 + 예산 상한은 예산 산정(F2) 결과로 교체.
-// 가격보기(Figma node 733:15526)는 "저녁 18,000원 이하", 지도보기(node 733:15646)는
-// "저녁"만 — 두 화면이 같은 SectionHeader를 쓰지만 타이틀 구성이 다르다.
-const MEAL_NAME = "저녁";
-const MEAL_BUDGET_LABEL = "18,000원 이하";
-
 const DEFAULT_SORT_VALUE = "price-asc";
 const SORT_OPTIONS: SortOption[] = [
   { value: DEFAULT_SORT_VALUE, label: "가격 낮은 순" },
@@ -158,6 +159,21 @@ export default function RecommendScreen() {
   });
   const tripNode = data?.tripsCollection.edges[0]?.node;
 
+  const mealSlots = (tripNode?.meal_slotsCollection?.edges ?? []).map((edge) => ({
+    date: edge.node.date,
+    mealType: edge.node.meal_type as MealType,
+    budgetAmount: edge.node.budget_amount,
+    carriedOverAmount: edge.node.carried_over_amount,
+    isRecorded: edge.node.is_recorded,
+  }));
+  // F3-3: 가장 이른 미기록 끼니 슬롯을 추천 기준(끼니명 + 예산 상한)으로 삼는다.
+  const nextMealSlot = findNextUnrecordedMealSlot(mealSlots);
+  const sectionTitle = nextMealSlot
+    ? viewMode === 0
+      ? `${MEAL_TYPE_LABEL[nextMealSlot.mealType]} ${formatWon(getRecommendBudgetAmount(nextMealSlot))} 이하`
+      : MEAL_TYPE_LABEL[nextMealSlot.mealType]
+    : "기록할 끼니가 없어요";
+
   const hasResults = MOCK_RESTAURANTS.length > 0;
   const sortedRestaurants = sortByValue(MOCK_RESTAURANTS, sortValue);
   const sortLabel = SORT_OPTIONS.find((option) => option.value === sortValue)?.label ?? "";
@@ -192,7 +208,7 @@ export default function RecommendScreen() {
   return (
     <View style={[styles.screen, { paddingTop: insets.top }]}>
       <SectionHeader
-        title={viewMode === 0 ? `${MEAL_NAME} ${MEAL_BUDGET_LABEL}` : MEAL_NAME}
+        title={sectionTitle}
         trailing={
           <View style={styles.segmentedControlSlot}>
             <SegmentedControl
