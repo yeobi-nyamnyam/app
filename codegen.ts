@@ -45,6 +45,7 @@ const config: CodegenConfig = {
           BigInt: 'string',
           Cursor: 'string',
           Opaque: 'unknown',
+          JSON: 'unknown',
         },
       },
     },

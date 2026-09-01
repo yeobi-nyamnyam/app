@@ -1,0 +1,11 @@
+-- =========================================
+-- update_meal_log 오버로드 충돌 수정
+-- 20260831010000이 p_category를 추가하며 create or replace를 썼지만, Postgres는
+-- 파라미터 "개수"가 늘어나면 기존 함수를 대체하지 않고 별도 오버로드로 추가한다
+-- (default 값 여부와 무관). 그 결과 기존 5-인자 시그니처와 새 6-인자 시그니처가
+-- 공존하게 되어 PostgREST가 5개 인자 호출 시 후보를 하나로 못 좁혀
+-- "Could not choose the best candidate function" 에러가 났다. 기존 5-인자
+-- 시그니처를 명시적으로 drop한다 (20260830020000/20260830030000의 record_meal_log
+-- 때와 같은 종류의 문제).
+-- =========================================
+drop function if exists public.update_meal_log(uuid, int, text, text, text);

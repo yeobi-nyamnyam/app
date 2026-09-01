@@ -6,12 +6,15 @@ import { getFontFamily } from '../../typography/getFontFamily'
 /**
  * 다이얼로그 카드 자체만 그리는 컴포넌트. 배경 오버레이/열림·닫힘 상태는 RN 기본
  * `Modal`(react-native)로 감싸서 처리한다 — 이 컴포넌트는 그 안에 들어가는 내용물.
+ * `onCancel`을 전달하지 않으면 취소 버튼 없이 확인 버튼 하나만 전체 너비로 표시된다
+ * (안내성 모달처럼 선택지가 하나뿐일 때 사용).
  *
  * @param title 다이얼로그 제목
  * @param content 다이얼로그 본문 텍스트
  * @param cancelLabel 취소 버튼 텍스트 (optional, 기본값 "취소")
  * @param confirmLabel 확인 버튼 텍스트 (optional, 기본값 "확인")
- * @param onCancel 취소 버튼을 클릭할 때 발생하는 event 명시 (optional)
+ * @param onCancel 취소 버튼을 클릭할 때 발생하는 event 명시 (optional, 전달하지 않으면
+ * 취소 버튼 자체가 렌더링되지 않고 확인 버튼 하나만 남는다)
  * @param onConfirm 확인 버튼을 클릭할 때 발생하는 event 명시 (optional)
  */
 export interface ModalProps {
@@ -38,9 +41,11 @@ export const Modal = ({
         <Text style={styles.content}>{content}</Text>
       </View>
       <View style={styles.btnRow}>
-        <View style={styles.btnFlex}>
-          <Button label={cancelLabel} variant="outline" onPress={onCancel} />
-        </View>
+        {onCancel ? (
+          <View style={styles.btnFlex}>
+            <Button label={cancelLabel} variant="outline" onPress={onCancel} />
+          </View>
+        ) : null}
         <View style={styles.btnFlex}>
           <Button label={confirmLabel} variant="primary" onPress={onConfirm} />
         </View>

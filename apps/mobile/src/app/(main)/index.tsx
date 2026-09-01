@@ -17,7 +17,7 @@ import {
 } from "@repo/ui";
 import { ActiveTripDocument, UpdateMealSlotWeightDocument } from "@repo/types";
 
-import { formatWon } from "@/lib/format";
+import { formatWon, todayDate } from "@/lib/format";
 import {
   MEAL_TYPES,
   MEAL_TYPE_LABEL,
@@ -45,8 +45,6 @@ interface ActiveMealSlot {
   isRecorded: boolean;
   recordedAmount: number | null;
 }
-
-const todayDate = () => new Date().toISOString().slice(0, 10);
 
 const handleNavChange = (key: NavBarItemKey) => {
   if (key === "home") return;

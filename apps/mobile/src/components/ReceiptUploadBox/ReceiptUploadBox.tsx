@@ -10,7 +10,7 @@ export interface ReceiptUploadBoxProps {
 
 /**
  * 소비 기록 폼(F6) 상단의 영수증 OCR 자동 채우기 안내 박스 (Figma "Receipt Box").
- * OCR 연동(F6-2/F6-3)이 붙기 전까지는 onPress로 안내만 띄운다.
+ * onPress는 RecordForm에서 카메라/갤러리 선택 후 record/ocr-review(F6-2/F6-3) 페이지를 연다.
  */
 export const ReceiptUploadBox = ({ onPress }: ReceiptUploadBoxProps) => {
   return (

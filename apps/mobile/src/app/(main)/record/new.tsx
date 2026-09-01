@@ -3,7 +3,12 @@ import { router, useLocalSearchParams } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useMutation, useQuery } from "@apollo/client/react";
 import { Header, NavBar, colors, type NavBarItemKey } from "@repo/ui";
-import { ActiveTripDocument, CreateMealLogDocument, RecordMealLogDocument } from "@repo/types";
+import {
+  ActiveTripDocument,
+  CreateMealLogDocument,
+  RecordMealLogDocument,
+  SetMealLogReceiptDocument,
+} from "@repo/types";
 
 import { RecordForm, type RecordFormValues, type MealLogCategory } from "@/components/RecordForm";
 import { useSession } from "@/hooks/useSession";
@@ -49,15 +54,17 @@ export default function RecordNewScreen() {
 
   const [createMealLog, { loading: creatingMealLog }] = useMutation(CreateMealLogDocument);
   const [recordMealLog, { loading: recordingMealLog }] = useMutation(RecordMealLogDocument);
+  const [setMealLogReceipt] = useMutation(SetMealLogReceiptDocument);
   const submitting = creatingMealLog || recordingMealLog;
 
   const handleSubmit = async (values: RecordFormValues) => {
     try {
+      let mealLogId: string | undefined;
       if (values.category === "식비") {
         if (!values.mealSlotId) {
           throw new Error("끼니를 선택해주세요.");
         }
-        await recordMealLog({
+        const { data: recordData } = await recordMealLog({
           variables: {
             tripId: params.tripId,
             mealSlotId: values.mealSlotId,
@@ -68,8 +75,9 @@ export default function RecordNewScreen() {
             source,
           },
         });
+        mealLogId = recordData?.record_meal_log?.id;
       } else {
-        await createMealLog({
+        const { data: createData } = await createMealLog({
           variables: {
             tripId: params.tripId,
             mealSlotId: null,
@@ -79,7 +87,14 @@ export default function RecordNewScreen() {
             storeAddress: values.storeAddress || null,
             memo: values.memo || null,
             source,
+            visitDate: values.visitDate,
           },
+        });
+        mealLogId = createData?.insertIntomeal_logsCollection?.records[0]?.id;
+      }
+      if (mealLogId && values.receiptImageUrl) {
+        await setMealLogReceipt({
+          variables: { mealLogId, receiptImageUrl: values.receiptImageUrl, ocrRaw: values.ocrRaw },
         });
       }
       router.back();
@@ -108,6 +123,7 @@ export default function RecordNewScreen() {
     <View style={styles.screen}>
       <Header title="소비 기록 작성" topInset={insets.top} onBackPress={() => router.back()} />
       <RecordForm
+        tripId={params.tripId}
         submitting={submitting}
         tripDates={tripDates}
         mealSlots={mealSlots}

@@ -10,8 +10,10 @@ query TripMealLogs($tripId: UUID!) {
         category
         amount
         store_name
+        store_address
         memo
         source
+        visit_date
         created_at
       }
     }
