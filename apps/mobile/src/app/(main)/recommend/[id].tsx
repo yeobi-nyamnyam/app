@@ -2,12 +2,13 @@ import { Alert, View } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import { useQuery } from "@apollo/client/react";
 import { Text } from "@repo/ui";
-import { ActiveTripDocument } from "@repo/types";
+import { ActiveTripDocument, RestaurantByIdDocument } from "@repo/types";
 
 import {
   RestaurantDetailView,
   type RestaurantDetailBudgetSummary,
   type RestaurantDetailData,
+  type RestaurantDetailSource,
 } from "@/components/RestaurantDetailView";
 import { useSession } from "@/hooks/useSession";
 import {
@@ -16,6 +17,8 @@ import {
   getRecommendBudgetAmount,
   type MealType,
 } from "@/lib/budget";
+import { formatWon } from "@/lib/format";
+import { getCheapestMenuPrice, parsePriceMenus } from "@/lib/restaurant";
 
 const parsePrice = (price: string) => Number(price.replace(/[^0-9]/g, ""));
 
@@ -37,73 +40,15 @@ const toBudgetSummary = (
 
 // good_price 업소(대표 메뉴 가격)만 값이 있음 — F3-3 예산 대비 비율 계산에 사용.
 const MOCK_RESTAURANT_PRICES: Record<string, string> = {
-  "1": "6,000원",
-  "2": "6,500원",
-  "3": "15,000원",
   m1: "6,500원",
   m2: "15,000원",
 };
 
-// TODO(F3 데이터 연동): restaurants GraphQL 쿼리(전화/주소/영업시간/메뉴 등)로 교체.
-// 지금은 recommend/index.tsx의 MOCK_RESTAURANTS(id: "1"~"3")·MOCK_MAP_MARKERS
-// (id: "m1"~"m4") 두 mock 목록에서 넘어오는 id를 모두 커버하는 정적 mock
-// (Figma "cuisine-detail (good-price)" node 733:15941, "cuisine-detail
-// (common)" node 733:16596 예시 그대로). budgetSummary는 화면에서 mealBudgetAmount로
-// 계산해 붙이므로 여기서는 넣지 않는다.
+// TODO(F3-1 데이터 연동): 지도보기(m1~m4)는 이번 F3-5 범위에서 제외해 mock 유지
+// (Figma "cuisine-detail (good-price)" node 733:15941, "cuisine-detail (common)"
+// node 733:16596 예시 그대로). 가격보기(실제 restaurants UUID)는 아래에서
+// RestaurantByIdDocument로 실 데이터를 조회한다.
 const MOCK_RESTAURANT_DETAILS: Record<string, Omit<RestaurantDetailData, "budgetSummary">> = {
-  "1": {
-    id: "1",
-    source: "good_price",
-    name: "범물본가국수 팔달시장점",
-    category: "한식",
-    distance: "0.4km",
-    phone: "051-123-4567",
-    address: "대구광역시 북구 팔달로 135 1층",
-    menu: [
-      { name: "잔치국수", price: "6,000원" },
-      { name: "비빔국수", price: "7,000원" },
-      { name: "들깨칼국수", price: "8,000원" },
-      { name: "만두국", price: "7,500원" },
-      { name: "비빔밥", price: "8,500원" },
-    ],
-  },
-  "2": {
-    id: "2",
-    source: "good_price",
-    name: "대명돼지국밥",
-    category: "한식",
-    distance: "0.5km",
-    phone: "053-123-4567",
-    address: "대구광역시 북구 호국로43길 27-12",
-    menu: [
-      { name: "돼지국밥", price: "6,500원" },
-      { name: "순대국밥", price: "6,500원" },
-      { name: "특국밥", price: "8,000원" },
-      { name: "머리고기국밥", price: "7,000원" },
-      { name: "내장국밥", price: "7,000원" },
-      { name: "섞어국밥", price: "7,500원" },
-      { name: "수육 (소)", price: "13,000원" },
-      { name: "수육 (대)", price: "20,000원" },
-      { name: "순대접시", price: "9,000원" },
-      { name: "머리고기접시", price: "10,000원" },
-      { name: "공기밥", price: "1,000원" },
-      { name: "소주", price: "5,000원" },
-      { name: "맥주", price: "5,000원" },
-    ],
-  },
-  "3": {
-    id: "3",
-    source: "good_price",
-    name: "윤소인남산고단백장어죽집",
-    category: "한식",
-    distance: "0.7km",
-    phone: "053-234-5678",
-    address: "대구광역시 중구 동성로 19-11",
-    menu: [
-      { name: "장어덮밥", price: "15,000원" },
-      { name: "장어구이", price: "20,000원" },
-    ],
-  },
   m1: {
     id: "m1",
     source: "good_price",
@@ -178,6 +123,14 @@ export default function RestaurantDetailScreen() {
   const mockDetail = id ? MOCK_RESTAURANT_DETAILS[id] : undefined;
   const mockPrice = id ? MOCK_RESTAURANT_PRICES[id] : undefined;
 
+  // F3-5: 가격보기는 이제 실제 restaurants UUID를 넘기므로, mock에 없는 id는
+  // 실 데이터로 조회한다 (지도보기의 m1~m4 mock id만 위 MOCK_RESTAURANT_DETAILS로 처리).
+  const { data: restaurantData, loading: restaurantLoading } = useQuery(RestaurantByIdDocument, {
+    variables: { id: id ?? "" },
+    skip: !id || !!mockDetail,
+  });
+  const restaurantNode = restaurantData?.restaurantsCollection.edges[0]?.node;
+
   const { session } = useSession();
   const { data } = useQuery(ActiveTripDocument, {
     variables: { userId: session?.user.id ?? "" },
@@ -197,17 +150,50 @@ export default function RestaurantDetailScreen() {
   // F3-3: 가격보기와 동일하게 가장 이른 미기록 끼니 슬롯을 예산 상한 기준으로 삼는다.
   const nextMealSlot = findNextUnrecordedMealSlot(mealSlots);
 
-  const restaurant: RestaurantDetailData | undefined = mockDetail
+  const detailFromRestaurant: Omit<RestaurantDetailData, "budgetSummary"> | undefined =
+    restaurantNode
+      ? {
+          id: restaurantNode.id,
+          source: restaurantNode.source as RestaurantDetailSource,
+          name: restaurantNode.name,
+          category: restaurantNode.category ?? "",
+          // TODO(F3 후속): 사용자 실시간 위치 기반 거리 계산은 별도 스코프.
+          distance: "-",
+          phone: restaurantNode.phone ?? "-",
+          address: restaurantNode.address,
+          menu: parsePriceMenus(restaurantNode.price_menus).map((menuItem) => ({
+            name: menuItem.name,
+            price: formatWon(menuItem.price),
+          })),
+        }
+      : undefined;
+  const restaurantCheapestPrice = restaurantNode
+    ? getCheapestMenuPrice(parsePriceMenus(restaurantNode.price_menus))
+    : null;
+  const restaurantPrice =
+    mockPrice ?? (restaurantCheapestPrice != null ? formatWon(restaurantCheapestPrice) : undefined);
+
+  const baseDetail = mockDetail ?? detailFromRestaurant;
+  const restaurant: RestaurantDetailData | undefined = baseDetail
     ? {
-        ...mockDetail,
+        ...baseDetail,
         budgetSummary:
-          mockPrice && nextMealSlot
-            ? toBudgetSummary(mockPrice, nextMealSlot.mealType, getRecommendBudgetAmount(nextMealSlot))
+          restaurantPrice && nextMealSlot
+            ? toBudgetSummary(restaurantPrice, nextMealSlot.mealType, getRecommendBudgetAmount(nextMealSlot))
             : undefined,
       }
     : undefined;
 
   if (!restaurant) {
+    if (restaurantLoading) {
+      return (
+        <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
+          <Text variant="bodyRegular" color="subtle">
+            불러오는 중...
+          </Text>
+        </View>
+      );
+    }
     return (
       <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
         <Text variant="bodyRegular" color="subtle">
