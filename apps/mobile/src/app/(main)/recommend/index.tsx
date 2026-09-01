@@ -30,52 +30,9 @@ import {
 } from "@/lib/budget";
 import { getCheapestMenuPrice, parsePriceMenus } from "@/lib/restaurant";
 
-// TODO(F3-1/F3-2 데이터 연동): 지도보기·상세 화면은 이번 F3-5 범위에서 제외 —
-// restaurants GraphQL 쿼리(실제 latitude/longitude, tour_api 포함)로 교체 예정.
-// 지금은 약수역(서울) 인근 좌표를 임의로 흩뿌린 정적 mock (Figma "recommand-map" 화면,
-// node 733:15646, 733:15879의 마커 배치 예시를 좌표로 옮김).
-const CURRENT_LOCATION = { latitude: 37.5544, longitude: 127.0098 };
-
-const MOCK_MAP_MARKERS: RecommendMapMarker[] = [
-  {
-    id: "m1",
-    source: "good_price",
-    name: "대명돼지국밥",
-    category: "한식",
-    distance: "0.5km",
-    price: "6,500원",
-    latitude: 37.5559,
-    longitude: 127.0083,
-  },
-  {
-    id: "m2",
-    source: "good_price",
-    name: "윤소인남산고단백장어죽집",
-    category: "한식",
-    distance: "0.8km",
-    price: "15,000원",
-    latitude: 37.5528,
-    longitude: 127.0117,
-  },
-  {
-    id: "m3",
-    source: "tour_api",
-    name: "가마솥 순대국밥",
-    category: "한식",
-    distance: "0.1km",
-    latitude: 37.5567,
-    longitude: 127.0106,
-  },
-  {
-    id: "m4",
-    source: "tour_api",
-    name: "둔산식당",
-    category: "한식",
-    distance: "0.6km",
-    latitude: 37.5519,
-    longitude: 127.0072,
-  },
-];
+// 마커 좌표가 하나도 없을 때(지오코딩 실패 등) 지도 초기 카메라로 쓸 최후 폴백.
+// 실사용자 위치 기반 카메라 이동은 지도의 "현재 위치" 버튼(Location 권한)으로 처리한다.
+const FALLBACK_LOCATION = { latitude: 37.5665, longitude: 126.978 };
 
 const DEFAULT_SORT_VALUE = "price-asc";
 const SORT_OPTIONS: SortOption[] = [
@@ -204,6 +161,40 @@ export default function RecommendScreen() {
   const sortedRestaurants = sortByValue(priceListRestaurants, sortValue);
   const sortLabel = SORT_OPTIONS.find((option) => option.value === sortValue)?.label ?? "";
 
+  // F3-1: 지도보기는 가격보기와 달리 예산과 무관하게, 좌표가 있는 착한가격업소를
+  // 전부 마커로 띄운다 (좌표 없는 업소는 지오코딩 실패분이라 지도에 표시 불가).
+  // TODO(F3-1 2단계): 일반 업소(source=tour_api) 마커는 아직 연동 전.
+  const goodPriceMapMarkers: RecommendMapMarker[] = (restaurantsData?.restaurantsCollection.edges ?? [])
+    .map((edge) => {
+      // pg_graphql은 BigFloat(numeric 컬럼) 값을 정밀도 손실 방지를 위해 JSON
+      // 문자열로 내려준다 — codegen 타입은 number라 적혀 있지만 실제로는
+      // 문자열이라, 네이버 지도 네이티브 마커에 그대로 넘기면
+      // "latitude cannot be cast from String to double" 오류가 난다.
+      const latitude = Number(edge.node.latitude);
+      const longitude = Number(edge.node.longitude);
+      if (edge.node.latitude == null || edge.node.longitude == null) return null;
+      if (Number.isNaN(latitude) || Number.isNaN(longitude)) return null;
+
+      const cheapestPrice = getCheapestMenuPrice(parsePriceMenus(edge.node.price_menus));
+      const marker: RecommendMapMarker = {
+        id: edge.node.id,
+        source: "good_price",
+        name: edge.node.name,
+        category: edge.node.category ?? "",
+        // TODO(F3 후속): 사용자 실시간 위치 기반 거리 계산은 별도 스코프.
+        distance: "-",
+        price: cheapestPrice != null ? formatWon(cheapestPrice) : undefined,
+        latitude,
+        longitude,
+      };
+      return marker;
+    })
+    .filter((marker): marker is RecommendMapMarker => marker !== null);
+  const firstMapMarker = goodPriceMapMarkers[0];
+  const mapCurrentLocation = firstMapMarker
+    ? { latitude: firstMapMarker.latitude, longitude: firstMapMarker.longitude }
+    : FALLBACK_LOCATION;
+
   if (loading && !data) {
     return (
       <View style={styles.screen}>
@@ -301,8 +292,8 @@ export default function RecommendScreen() {
         </>
       ) : (
         <RecommendMapView
-          markers={MOCK_MAP_MARKERS}
-          currentLocation={CURRENT_LOCATION}
+          markers={goodPriceMapMarkers}
+          currentLocation={mapCurrentLocation}
           selectedMarkerId={selectedMarkerId}
           onSelectMarker={setSelectedMarkerId}
           onPressDetail={() => {
