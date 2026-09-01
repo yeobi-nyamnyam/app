@@ -232,6 +232,12 @@ export default function RestaurantDetailScreen() {
     if (restaurant.budgetSummary) {
       params.set("presetAmount", String(parsePrice(restaurant.budgetSummary.price)));
     }
+    // F3-2/F3-3: 가격/예산 계산과 동일한 기준(가장 이른 미기록 끼니)의 날짜·끼니때를
+    // 방문 날짜/끼니 때 초깃값으로 그대로 넘긴다.
+    if (nextMealSlot) {
+      params.set("presetVisitDate", nextMealSlot.date);
+      params.set("presetMealType", nextMealSlot.mealType);
+    }
     router.push(`/record/new?${params.toString()}`);
   };
 

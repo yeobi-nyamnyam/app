@@ -76,7 +76,9 @@ export interface RecordFormValues {
 
 /**
  * @param initialValues 진입 경로(F6-1)에 따라 미리 채워진 값 (optional). category가
- * '식비'가 아닌 값으로 주어지면 끼니 소비 토글이 꺼진 채로 시작한다
+ * '식비'가 아닌 값으로 주어지면 끼니 소비 토글이 꺼진 채로 시작한다. mealType은
+ * RecordFormValues에는 없는 입력 전용 필드로, 초기 "끼니 때" 드롭다운 선택값에만
+ * 쓰인다(제출 값은 visitDate+mealType으로 찾은 mealSlotId)
  * @param submitting 저장 요청 진행 중 여부 (optional, 기본값 false)
  * @param tripDates 여행 기간 내 날짜 목록(YYYY-MM-DD 오름차순), 방문 날짜 드롭다운 옵션으로 사용
  * @param mealSlots 여행의 전체 끼니 슬롯(id/날짜/끼니때/기록 여부) — 끼니 때 드롭다운에서
@@ -86,7 +88,7 @@ export interface RecordFormValues {
  * @param tripId 영수증 이미지 Storage 업로드 경로({trip_id}/{uuid}.jpg)에 쓸 여행 id
  */
 export interface RecordFormProps {
-  initialValues?: Partial<RecordFormValues>
+  initialValues?: Partial<RecordFormValues> & { mealType?: MealType }
   submitting?: boolean
   tripDates: string[]
   mealSlots: RecordFormMealSlot[]
@@ -148,8 +150,8 @@ export const RecordForm = ({
   // 않으므로 항상 disabled 상태의 TextField로만 보여준다.
   const [storeAddress, setStoreAddress] = useState(initialValues?.storeAddress ?? '')
   const [memo, setMemo] = useState(initialValues?.memo ?? '')
-  const [visitDate, setVisitDate] = useState('')
-  const [mealType, setMealType] = useState('')
+  const [visitDate, setVisitDate] = useState(initialValues?.visitDate ?? '')
+  const [mealType, setMealType] = useState(initialValues?.mealType ?? '')
   const [isStoreSearchVisible, setIsStoreSearchVisible] = useState(false)
   const [isTodayMealCompleteNoticeVisible, setIsTodayMealCompleteNoticeVisible] = useState(false)
   const [isReceiptSourceVisible, setIsReceiptSourceVisible] = useState(false)
