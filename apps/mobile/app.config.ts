@@ -95,6 +95,7 @@ const config: ExpoConfig = {
     googleClientId: process.env.GOOGLE_CLIENT_ID,
     kakaoNativeAppKey: process.env.KAKAO_NATIVE_APP_KEY,
     naverMapClientId: process.env.NAVER_MAP_CLIENT_ID,
+    naverMapStyleId: process.env.NAVER_MAP_STYLE_ID,
   },
 };
 

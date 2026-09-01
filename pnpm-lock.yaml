@@ -6,7 +6,7 @@ settings:
 
 patchedDependencies:
   '@mj-studio/react-native-naver-map@1.5.10':
-    hash: lms5qidaxa3jey5eeswmskchwm
+    hash: 23fqvzlwkm43oip7273zyatqna
     path: patches/@mj-studio__react-native-naver-map@1.5.10.patch
   expo-modules-autolinking@2.0.8:
     hash: uwu3yewrupagpju5euxxjqt2r4
@@ -78,7 +78,7 @@ importers:
         version: 7.29.7
       '@mj-studio/react-native-naver-map':
         specifier: ^1.5.10
-        version: 1.5.10(patch_hash=lms5qidaxa3jey5eeswmskchwm)(react-native@0.76.9(@babel/core@7.29.7)(@babel/preset-env@7.29.7(@babel/core@7.29.7))(@types/react@18.3.31)(react@18.3.1))(react@18.3.1)
+        version: 1.5.10(patch_hash=23fqvzlwkm43oip7273zyatqna)(react-native@0.76.9(@babel/core@7.29.7)(@babel/preset-env@7.29.7(@babel/core@7.29.7))(@types/react@18.3.31)(react@18.3.1))(react@18.3.1)
       '@react-native-async-storage/async-storage':
         specifier: ^1.23.1
         version: 1.23.1(react-native@0.76.9(@babel/core@7.29.7)(@babel/preset-env@7.29.7(@babel/core@7.29.7))(@types/react@18.3.31)(react@18.3.1))
@@ -8846,7 +8846,7 @@ snapshots:
       '@types/react': 18.3.31
       react: 18.3.1
 
-  '@mj-studio/react-native-naver-map@1.5.10(patch_hash=lms5qidaxa3jey5eeswmskchwm)(react-native@0.76.9(@babel/core@7.29.7)(@babel/preset-env@7.29.7(@babel/core@7.29.7))(@types/react@18.3.31)(react@18.3.1))(react@18.3.1)':
+  '@mj-studio/react-native-naver-map@1.5.10(patch_hash=23fqvzlwkm43oip7273zyatqna)(react-native@0.76.9(@babel/core@7.29.7)(@babel/preset-env@7.29.7(@babel/core@7.29.7))(@types/react@18.3.31)(react@18.3.1))(react@18.3.1)':
     dependencies:
       object-hash: 3.0.0
       react: 18.3.1

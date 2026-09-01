@@ -10,10 +10,28 @@ index 29a238e8e30a5df165b378cef6e473fe7b28966b..f2a68440024f59c38ac3678ea9271f5d
 +NaverMap_sdkVersion=3.23.2
  NaverMap_locationServiceVersion=21.2.0
 diff --git a/android/src/main/java/com/mjstudio/reactnativenavermap/mapview/RNCNaverMapViewManager.kt b/android/src/main/java/com/mjstudio/reactnativenavermap/mapview/RNCNaverMapViewManager.kt
-index d833adf6266adeef0b55f954fe436d1da716e0f4..ea816c30be5a1996b5779b0ceab6fd1f3ac11f30 100644
+index d833adf6266adeef0b55f954fe436d1da716e0f4..4376a35ff45d8439731c0be583dbfcc502d8d3ee 100644
 --- a/android/src/main/java/com/mjstudio/reactnativenavermap/mapview/RNCNaverMapViewManager.kt
 +++ b/android/src/main/java/com/mjstudio/reactnativenavermap/mapview/RNCNaverMapViewManager.kt
-@@ -733,14 +733,20 @@ class RNCNaverMapViewManager : RNCNaverMapViewManagerSpec<RNCNaverMapViewWrapper
+@@ -185,6 +185,17 @@ class RNCNaverMapViewManager : RNCNaverMapViewManagerSpec<RNCNaverMapViewWrapper
+     }
+   }
+ 
++  // NCP Style Editor로 만든 커스텀 지도 스타일 적용용. 네이티브 map-sdk엔
++  // NaverMap.setCustomStyleId(String)가 이미 있는데 이 wrapper(1.5.10)가
++  // prop으로 노출을 안 해서 patch로 추가.
++  @ReactProp(name = "customStyleId")
++  override fun setCustomStyleId(
++    view: RNCNaverMapViewWrapper?,
++    value: String?,
++  ) = view.withMap {
++    it.setCustomStyleId(value ?: "")
++  }
++
+   @ReactProp(name = "layerGroups")
+   override fun setLayerGroups(
+     view: RNCNaverMapViewWrapper?,
+@@ -733,14 +744,20 @@ class RNCNaverMapViewManager : RNCNaverMapViewManagerSpec<RNCNaverMapViewWrapper
    override fun setLocationTrackingMode(
      view: RNCNaverMapViewWrapper?,
      mode: String?,
@@ -43,10 +61,22 @@ index d833adf6266adeef0b55f954fe436d1da716e0f4..ea816c30be5a1996b5779b0ceab6fd1f
  
    companion object {
 diff --git a/android/src/oldarch/RNCNaverMapViewManagerSpec.kt b/android/src/oldarch/RNCNaverMapViewManagerSpec.kt
-index cca7f2bc03698505c6d36332b7139265163b101b..a9a03dc396265249dd2da3de5b5ceee7cd5e6478 100644
+index cca7f2bc03698505c6d36332b7139265163b101b..e446c3154d8929abf48fb9e8a803bd84cc5c6386 100644
 --- a/android/src/oldarch/RNCNaverMapViewManagerSpec.kt
 +++ b/android/src/oldarch/RNCNaverMapViewManagerSpec.kt
-@@ -296,6 +296,11 @@ abstract class RNCNaverMapViewManagerSpec<T : ViewGroup> :
+@@ -12,6 +12,11 @@ internal interface RNCNaverMapViewManagerInterface<T : ViewGroup?> {
+     value: String?,
+   )
+ 
++  fun setCustomStyleId(
++    view: T,
++    value: String?,
++  )
++
+   fun setLayerGroups(
+     view: T,
+     value: Int,
+@@ -296,6 +301,11 @@ abstract class RNCNaverMapViewManagerSpec<T : ViewGroup> :
          )
  
        "cancelAnimation" -> cancelAnimation(view)
@@ -58,3 +88,69 @@ index cca7f2bc03698505c6d36332b7139265163b101b..a9a03dc396265249dd2da3de5b5ceee7
      }
    }
  }
+diff --git a/lib/typescript/src/component/NaverMapView.d.ts b/lib/typescript/src/component/NaverMapView.d.ts
+index d1779271e6efbeb6c6d0431d9e0b1d87c19a9a35..f876725a1443bf0b14d001337bf6b86e7679159f 100644
+--- a/lib/typescript/src/component/NaverMapView.d.ts
++++ b/lib/typescript/src/component/NaverMapView.d.ts
+@@ -24,6 +24,13 @@ export interface NaverMapViewProps extends ViewProps {
+      * @default Basic
+      */
+     mapType?: MapType;
++    /**
++     * NCP Style Editor(style-editor.map.naver.com)로 만든 커스텀 지도 스타일의
++     * ID를 지정하면 그 스타일이 적용됩니다.
++     *
++     * @group Map Look & Feel
++     */
++    customStyleId?: string;
+     /**
+      * 바닥 지도 위에 부가적인 정보를 나타내는 레이어 그룹을 노출할 수 있습니다.
+      *
+diff --git a/src/component/NaverMapView.tsx b/src/component/NaverMapView.tsx
+index b6e6d29c6605c31892394985d208b17d9eb2f072..9f0821b0b1b655f26a8409c65c4acaf52aa820b4 100644
+--- a/src/component/NaverMapView.tsx
++++ b/src/component/NaverMapView.tsx
+@@ -49,6 +49,14 @@ export interface NaverMapViewProps extends ViewProps {
+    */
+   mapType?: MapType;
+ 
++  /**
++   * NCP Style Editor(style-editor.map.naver.com)로 만든 커스텀 지도 스타일의
++   * ID를 지정하면 그 스타일이 적용됩니다.
++   *
++   * @group Map Look & Feel
++   */
++  customStyleId?: string;
++
+   /**
+    * 바닥 지도 위에 부가적인 정보를 나타내는 레이어 그룹을 노출할 수 있습니다.
+    *
+@@ -546,6 +554,7 @@ export const NaverMapView = forwardRef(
+       animationDuration = 0,
+       animationEasing = Const.DEFAULT_EASING,
+       mapType = 'Basic',
++      customStyleId,
+       layerGroups = {
+         BUILDING: true,
+         BICYCLE: false,
+@@ -864,6 +873,7 @@ export const NaverMapView = forwardRef(
+       <NativeNaverMapView
+         ref={innerRef}
+         mapType={mapType}
++        customStyleId={customStyleId}
+         layerGroups={
+           (layerGroups?.BUILDING ? 1 : 0) +
+           (layerGroups?.TRAFFIC ? 2 : 0) +
+diff --git a/src/spec/RNCNaverMapViewNativeComponent.ts b/src/spec/RNCNaverMapViewNativeComponent.ts
+index 93512a1a0dab526c2dda2594dc742a9ef471fe91..265a004d2f79da8eb7a4feaaafd2645ac312df7e 100644
+--- a/src/spec/RNCNaverMapViewNativeComponent.ts
++++ b/src/spec/RNCNaverMapViewNativeComponent.ts
+@@ -79,6 +79,8 @@ interface Props extends ViewProps {
+     'Basic'
+   >;
+ 
++  customStyleId?: string;
++
+   layerGroups: Int32;
+ 
+   initialCamera?: Readonly<Camera>;

@@ -1,5 +1,6 @@
 import { useRef, useState } from "react";
 import { type LayoutChangeEvent, Pressable, StyleSheet, View } from "react-native";
+import Constants from "expo-constants";
 import * as Location from "expo-location";
 import {
   NaverMapMarkerOverlay,
@@ -7,6 +8,9 @@ import {
   type NaverMapViewRef,
 } from "@mj-studio/react-native-naver-map";
 import { Icon, Preview, Text, colors, radius, spacing, stroke } from "@repo/ui";
+
+// NCP Style Editor로 만든 커스텀 지도 스타일 id (optional — 없으면 기본 스타일)
+const NAVER_MAP_STYLE_ID = Constants.expoConfig?.extra?.naverMapStyleId as string | undefined;
 
 export type RecommendMapMarkerSource = "good_price" | "tour_api";
 
@@ -89,6 +93,7 @@ export const RecommendMapView = ({
           style={StyleSheet.absoluteFill}
           isUseTextureViewAndroid
           mapType="Basic"
+          customStyleId={NAVER_MAP_STYLE_ID}
           initialCamera={{
             latitude: currentLocation.latitude,
             longitude: currentLocation.longitude,
