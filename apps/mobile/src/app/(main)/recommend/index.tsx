@@ -171,25 +171,24 @@ export default function RecommendScreen() {
       fetchPolicy: "cache-and-network",
     },
   );
-  const priceListRestaurants: PriceListRestaurant[] = (
-    restaurantsData?.restaurantsCollection.edges ?? []
-  )
-    .map((edge) => {
-      const cheapestPrice = getCheapestMenuPrice(parsePriceMenus(edge.node.price_menus));
-      if (cheapestPrice == null) return null;
-      return {
-        id: edge.node.id,
-        name: edge.node.name,
-        address: edge.node.address,
-        category: edge.node.category ?? "",
-        priceAmount: cheapestPrice,
-        budgetPercent:
-          mealBudgetAmount && mealBudgetAmount > 0
-            ? Math.round((cheapestPrice / mealBudgetAmount) * 100)
-            : 0,
-      };
-    })
-    .filter((item): item is PriceListRestaurant => item !== null);
+  // F3: 여행 지역의 착한가격업소 중 현재 끼니 예산 이하인 것만 추천 목록에 노출한다.
+  const priceListRestaurants: PriceListRestaurant[] = mealBudgetAmount
+    ? (restaurantsData?.restaurantsCollection.edges ?? [])
+        .map((edge) => {
+          const cheapestPrice = getCheapestMenuPrice(parsePriceMenus(edge.node.price_menus));
+          if (cheapestPrice == null || cheapestPrice > mealBudgetAmount) return null;
+          return {
+            id: edge.node.id,
+            name: edge.node.name,
+            address: edge.node.address,
+            category: edge.node.category ?? "",
+            priceAmount: cheapestPrice,
+            budgetPercent:
+              mealBudgetAmount > 0 ? Math.round((cheapestPrice / mealBudgetAmount) * 100) : 0,
+          };
+        })
+        .filter((item): item is PriceListRestaurant => item !== null)
+    : [];
 
   const hasResults = priceListRestaurants.length > 0;
   const sortedRestaurants = sortByValue(priceListRestaurants, sortValue);
