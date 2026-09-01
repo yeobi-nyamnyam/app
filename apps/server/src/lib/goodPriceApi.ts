@@ -5,6 +5,11 @@ const GOOD_PRICE_API_URL =
 
 const PAGE_SIZE = 1000;
 
+// 착한가격업소 API는 미용업/이용업/세탁업/목욕업/숙박업 등 식당이 아닌 업종도 함께
+// 내려온다. 여비냠냠은 식비 추천(F3)만 다루므로 음식점 업종만 남긴다
+// (docs/schema-design.md §12: "착한가격업소는 한식/일식/중식/양식/기타요식업 원본 그대로").
+const FOOD_CATEGORIES = new Set(["한식", "일식", "중식", "양식", "기타요식업"]);
+
 export interface GoodPriceStore {
   시도: string;
   시군: string;
@@ -64,8 +69,8 @@ export const fetchAllGoodPriceStores = async (regionSido?: string[]): Promise<Go
   let page = 1;
   while (true) {
     const response = await fetchPage(page, serviceKey);
-    stores.push(...response.data);
-    if (stores.length >= response.totalCount || response.currentCount < PAGE_SIZE) {
+    stores.push(...response.data.filter((store) => FOOD_CATEGORIES.has(store.업종)));
+    if (response.currentCount < PAGE_SIZE) {
       break;
     }
     page += 1;
