@@ -25,6 +25,8 @@ const meta: Meta<typeof Icon> = {
         'arrow-right',
         'swap',
         'search',
+        'restaurant',
+        'locate',
       ],
     },
     size: { control: 'select', options: ['xsmall', 'small', 'medium', 'large', 'xlarge'] },
@@ -100,6 +102,14 @@ export const Swap: Story = {
 
 export const Search: Story = {
   args: { name: 'search' },
+}
+
+export const Restaurant: Story = {
+  args: { name: 'restaurant' },
+}
+
+export const Locate: Story = {
+  args: { name: 'locate' },
 }
 
 export const AllSizes: Story = {

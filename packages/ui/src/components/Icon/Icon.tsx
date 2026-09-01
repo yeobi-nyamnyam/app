@@ -9,7 +9,7 @@ export type IconSize = keyof typeof iconSize
 /**
  * @param name 아이콘 종류: 'bulb' | 'link-horizontal' | 'puzzle' | 'chevron-left' |
  * 'chevron-down' | 'chevron-up' | 'home' | 'recommend' | 'chat' | 'record' | 'profile' |
- * 'camera' | 'krw' | 'arrow-right' | 'swap' | 'search'
+ * 'camera' | 'krw' | 'arrow-right' | 'swap' | 'search' | 'restaurant' | 'locate'
  * @param size 아이콘이 차지하는 정사각형 영역 크기: 'xsmall' | 'small' | 'medium' | 'large' | 'xlarge' (optional, 기본값 'medium')
  * @param color 아이콘 색상. 획(stroke) 아이콘은 선 색, 채우기(fill) 아이콘은 도형 색으로 쓰임 (optional, 기본값 content/neutral/default)
  */
@@ -21,7 +21,7 @@ export interface IconProps {
 
 export const Icon = ({ name, size = 'medium', color = colors.content.neutral.default }: IconProps) => {
   const box = iconSize[size]
-  const { width, height, d, fill } = icons[name]
+  const { width, height, d, fill, extra } = icons[name]
   const scale = box / ICON_BASE_SIZE
 
   return (
@@ -31,6 +31,20 @@ export const Icon = ({ name, size = 'medium', color = colors.content.neutral.def
           <Path d={d} fill={color} />
         ) : (
           <Path d={d} stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+        )}
+        {extra?.map((part, index) =>
+          part.fill ? (
+            <Path key={index} d={part.d} fill={color} />
+          ) : (
+            <Path
+              key={index}
+              d={part.d}
+              stroke={color}
+              strokeWidth={2}
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          ),
         )}
       </Svg>
     </View>

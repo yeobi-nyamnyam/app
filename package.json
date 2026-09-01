@@ -34,7 +34,8 @@
   },
   "pnpm": {
     "patchedDependencies": {
-      "expo-modules-autolinking@2.0.8": "patches/expo-modules-autolinking@2.0.8.patch"
+      "expo-modules-autolinking@2.0.8": "patches/expo-modules-autolinking@2.0.8.patch",
+      "@mj-studio/react-native-naver-map@1.5.10": "patches/@mj-studio__react-native-naver-map@1.5.10.patch"
     }
   }
 }
