@@ -118,8 +118,27 @@ export const RecommendMapView = ({
                 onTap={() => onSelectMarker(marker.id)}
               >
                 {isSelected ? (
-                  <View collapsable={false} style={styles.selectedMarker}>
-                    <Icon name="restaurant" size="medium" color={colors.content.neutral.inverse} />
+                  <View
+                    collapsable={false}
+                    style={[
+                      styles.selectedMarker,
+                      {
+                        backgroundColor:
+                          marker.source === "good_price"
+                            ? colors.surface.primary.bold
+                            : colors.surface.primary.default,
+                      },
+                    ]}
+                  >
+                    <Icon
+                      name="restaurant"
+                      size="medium"
+                      color={
+                        marker.source === "good_price"
+                          ? colors.content.neutral.inverse
+                          : colors.content.neutral.default
+                      }
+                    />
                   </View>
                 ) : (
                   <View
@@ -233,6 +252,5 @@ const styles = StyleSheet.create({
     borderRadius: radius.full,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: colors.surface.primary.bold,
   },
 });
