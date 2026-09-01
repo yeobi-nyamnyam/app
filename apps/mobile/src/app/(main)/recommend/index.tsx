@@ -48,9 +48,9 @@ const MOCK_RESTAURANTS = [
 ];
 
 // TODO(F3-1 데이터 연동): restaurants GraphQL 쿼리(실제 latitude/longitude)로 교체.
-// 지금은 대구 북구 인근 좌표를 임의로 흩뿌린 정적 mock (Figma "recommand-map" 화면,
+// 지금은 약수역(서울) 인근 좌표를 임의로 흩뿌린 정적 mock (Figma "recommand-map" 화면,
 // node 733:15646, 733:15879의 마커 배치 예시를 좌표로 옮김).
-const CURRENT_LOCATION = { latitude: 35.8974, longitude: 128.5865 };
+const CURRENT_LOCATION = { latitude: 37.5544, longitude: 127.0098 };
 
 const MOCK_MAP_MARKERS: RecommendMapMarker[] = [
   {
@@ -60,8 +60,8 @@ const MOCK_MAP_MARKERS: RecommendMapMarker[] = [
     category: "한식",
     distance: "0.5km",
     price: "6,500원",
-    latitude: 35.9009,
-    longitude: 128.584,
+    latitude: 37.5559,
+    longitude: 127.0083,
   },
   {
     id: "m2",
@@ -70,36 +70,26 @@ const MOCK_MAP_MARKERS: RecommendMapMarker[] = [
     category: "한식",
     distance: "0.8km",
     price: "15,000원",
-    latitude: 35.8959,
-    longitude: 128.591,
+    latitude: 37.5528,
+    longitude: 127.0117,
   },
   {
     id: "m3",
-    source: "good_price",
-    name: "범물본가국수 팔달시장점",
-    category: "한식",
-    distance: "0.4km",
-    price: "6,000원",
-    latitude: 35.8944,
-    longitude: 128.581,
-  },
-  {
-    id: "m4",
     source: "tour_api",
     name: "가마솥 순대국밥",
     category: "한식",
     distance: "0.1km",
-    latitude: 35.8984,
-    longitude: 128.593,
+    latitude: 37.5567,
+    longitude: 127.0106,
   },
   {
-    id: "m5",
+    id: "m4",
     source: "tour_api",
     name: "둔산식당",
     category: "한식",
     distance: "0.6km",
-    latitude: 35.9029,
-    longitude: 128.596,
+    latitude: 37.5519,
+    longitude: 127.0072,
   },
 ];
 
