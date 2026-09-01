@@ -3,6 +3,7 @@
 // 지역을 필터링한다 — 이 코드는 region_cache.region_code와 동일한 체계라
 // 별도 매핑 없이 그대로 재사용할 수 있다.
 const TOUR_API_URL = "https://apis.data.go.kr/B551011/KorService2/areaBasedList2";
+const TOUR_API_DETAIL_INTRO_URL = "https://apis.data.go.kr/B551011/KorService2/detailIntro2";
 const RESTAURANT_CONTENT_TYPE_ID = "39";
 const PAGE_SIZE = 1000;
 
@@ -87,4 +88,71 @@ export const fetchTourApiRestaurants = async (regionCode: string): Promise<TourA
     page += 1;
   }
   return restaurants;
+};
+
+interface TourApiIntroItem {
+  opentimefood?: string;
+  restdatefood?: string;
+  infocenterfood?: string;
+}
+
+interface TourApiIntroResponse {
+  response: {
+    header: { resultCode: string; resultMsg: string };
+    body: {
+      items: "" | { item: TourApiIntroItem[] };
+    };
+  };
+}
+
+export interface TourApiIntro {
+  businessHours: string | null;
+  holiday: string | null;
+  phone: string | null;
+}
+
+// TourAPI 텍스트 필드는 줄바꿈을 <br> HTML 태그로 넣어서 준다 — 화면에 그대로
+// 노출되지 않도록 " / "로 펼치고, 남은 태그는 방어적으로 제거한다.
+const cleanTourApiText = (raw: string): string =>
+  raw
+    .replace(/<br\s*\/?>/gi, " / ")
+    .replace(/<[^>]+>/g, "")
+    .trim();
+
+/**
+ * F3-2 지연 로딩: 목록 조회(areaBasedList2)에는 영업시간/휴일이 없어, 상세
+ * 화면 진입 시에만 별도 호출한다 (docs/business-logic-notes.md §8).
+ *
+ * @param contentId restaurants.external_id (TourAPI content_id)
+ */
+export const fetchTourApiIntro = async (contentId: string): Promise<TourApiIntro> => {
+  const serviceKey = process.env.TOUR_API_KEY;
+  if (!serviceKey) {
+    throw new Error("Missing TOUR_API_KEY env config");
+  }
+
+  const url = new URL(TOUR_API_DETAIL_INTRO_URL);
+  url.searchParams.set("serviceKey", serviceKey);
+  url.searchParams.set("MobileOS", "ETC");
+  url.searchParams.set("MobileApp", "yeobinyamnyam");
+  url.searchParams.set("_type", "json");
+  url.searchParams.set("contentId", contentId);
+  url.searchParams.set("contentTypeId", RESTAURANT_CONTENT_TYPE_ID);
+
+  const response = await fetch(url);
+  if (!response.ok) {
+    throw new Error(`TourAPI 상세 호출 실패 (status: ${response.status})`);
+  }
+
+  const body = (await response.json()) as TourApiIntroResponse;
+  if (body.response.header.resultCode !== "0000") {
+    throw new Error(`TourAPI 오류: ${body.response.header.resultMsg}`);
+  }
+
+  const item = body.response.body.items === "" ? undefined : body.response.body.items.item[0];
+  return {
+    businessHours: item?.opentimefood ? cleanTourApiText(item.opentimefood) : null,
+    holiday: item?.restdatefood ? cleanTourApiText(item.restdatefood) : null,
+    phone: item?.infocenterfood ? cleanTourApiText(item.infocenterfood) : null,
+  };
 };

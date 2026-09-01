@@ -9,6 +9,7 @@ query RestaurantById($id: UUID!) {
         category
         phone
         price_menus
+        image_url
       }
     }
   }

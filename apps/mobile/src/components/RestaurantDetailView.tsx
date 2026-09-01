@@ -1,6 +1,7 @@
 import { useRef, useState, type ReactNode } from "react";
 import {
   Animated,
+  Image,
   Share,
   StyleSheet,
   Text as RNText,
@@ -171,6 +172,11 @@ export const RestaurantDetailView = ({
       <Animated.ScrollView style={styles.scroll} onScroll={handleScroll} scrollEventThrottle={16}>
         {hasHero ? (
           <View style={styles.hero}>
+            <Image
+              source={{ uri: restaurant.imageUrl }}
+              style={StyleSheet.absoluteFill}
+              resizeMode="cover"
+            />
             <View style={styles.heroDim} />
           </View>
         ) : (
