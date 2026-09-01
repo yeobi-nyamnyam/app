@@ -1,18 +1,5 @@
-import { useRef } from "react";
-import { Pressable, StyleSheet, View } from "react-native";
-import * as Location from "expo-location";
-import {
-  NaverMapMarkerOverlay,
-  NaverMapView,
-  type NaverMapViewRef,
-} from "@mj-studio/react-native-naver-map";
-import { Icon, Preview, Text, colors, radius, spacing } from "@repo/ui";
-
-// Figma "color/info"(#2A8ADF)와 그 테두리(#E0F3FF)는 아직 packages/tokens에 없는
-// 값이라 로컬 상수로 둔다 (현재 위치를 나타내는 지도 마커 전용, 반경 검색 등 다른
-// 화면에서도 쓰이면 그때 packages/tokens에 편입 검토).
-const CURRENT_LOCATION_FILL = "#2A8ADF";
-const CURRENT_LOCATION_BORDER = "#E0F3FF";
+import { StyleSheet, View } from "react-native";
+import { NaverMapView } from "@mj-studio/react-native-naver-map";
 
 export type RecommendMapMarkerSource = "good_price" | "tour_api";
 
@@ -27,21 +14,6 @@ export interface RecommendMapMarker {
   latitude: number;
   longitude: number;
 }
-
-/**
- * 지도 마커를 눌렀을 때 뜨는 범례 항목.
- *
- * @param color 범례 점 색상
- * @param label 범례 라벨 텍스트
- */
-const LegendItem = ({ color, label }: { color: string; label: string }) => (
-  <View style={styles.legendItem}>
-    <View style={[styles.legendDot, { backgroundColor: color }]} />
-    {/* Figma 범례 텍스트는 10px Medium인데 packages/tokens에 아직 그 스케일이
-        없어 가장 작은 footnoteRegular(12px)로 대체 — 스케일 추가되면 교체 */}
-    <Text variant="footnoteRegular">{label}</Text>
-  </View>
-);
 
 /**
  * 추천 탭 "지도보기" 화면의 지도 영역 (Figma "recommand-map", node 733:15646 /
@@ -62,27 +34,14 @@ export interface RecommendMapViewProps {
   onPressDetail?: () => void;
 }
 
-export const RecommendMapView = ({
-  markers,
-  currentLocation,
-  selectedMarkerId,
-  onSelectMarker,
-  onPressDetail,
-}: RecommendMapViewProps) => {
-  const selectedMarker = markers.find((marker) => marker.id === selectedMarkerId);
-  const mapRef = useRef<NaverMapViewRef>(null);
-
-  const handlePressLocate = async () => {
-    const { status } = await Location.requestForegroundPermissionsAsync();
-    if (status !== Location.PermissionStatus.GRANTED) return;
-    mapRef.current?.setLocationTrackingMode("Follow");
-  };
-
+export const RecommendMapView = ({ currentLocation }: RecommendMapViewProps) => {
+  // NCP 401(Unauthorized client) 원인 확인 중 — 마커/범례/현재위치 버튼/Preview를
+  // 걷어내고 NaverMapView 자체가 뜨는지만 우선 확인한다 (이슈 #83 참고).
+  // TODO(F3-1): 401 해결되면 마커·범례·현재위치·Preview 복원할 것.
   return (
     <View style={styles.container}>
       <View style={styles.mapArea}>
         <NaverMapView
-          ref={mapRef}
           style={StyleSheet.absoluteFill}
           isUseTextureViewAndroid
           mapType="Basic"
@@ -95,68 +54,8 @@ export const RecommendMapView = ({
           isShowZoomControls={false}
           isShowScaleBar={false}
           isShowLocationButton={false}
-        >
-          <NaverMapMarkerOverlay
-            latitude={currentLocation.latitude}
-            longitude={currentLocation.longitude}
-            width={16}
-            height={16}
-            anchor={{ x: 0.5, y: 0.5 }}
-          >
-            <View collapsable={false} style={styles.currentLocationMarker} />
-          </NaverMapMarkerOverlay>
-          {markers.map((marker) => {
-            const isSelected = marker.id === selectedMarkerId;
-            return (
-              <NaverMapMarkerOverlay
-                key={marker.id}
-                latitude={marker.latitude}
-                longitude={marker.longitude}
-                width={isSelected ? 24 : 8}
-                height={isSelected ? 24 : 8}
-                anchor={{ x: 0.5, y: 0.5 }}
-                onTap={() => onSelectMarker(marker.id)}
-              >
-                {isSelected ? (
-                  <View collapsable={false} style={styles.selectedMarker}>
-                    <Icon name="restaurant" size="medium" color={colors.content.neutral.inverse} />
-                  </View>
-                ) : (
-                  <View
-                    collapsable={false}
-                    style={[
-                      styles.dotMarker,
-                      {
-                        backgroundColor:
-                          marker.source === "good_price"
-                            ? colors.surface.primary.bold
-                            : colors.surface.primary.default,
-                      },
-                    ]}
-                  />
-                )}
-              </NaverMapMarkerOverlay>
-            );
-          })}
-        </NaverMapView>
-        <View style={styles.legend}>
-          <LegendItem color={colors.surface.primary.bold} label="착한가격업소" />
-          <LegendItem color={colors.surface.primary.default} label="일반 업소" />
-        </View>
-        <Pressable style={styles.locateButton} onPress={handlePressLocate}>
-          <Icon name="locate" size="medium" color={colors.content.neutral.default} />
-        </Pressable>
-      </View>
-      {selectedMarker ? (
-        <Preview
-          name={selectedMarker.name}
-          category={selectedMarker.category}
-          distance={selectedMarker.distance}
-          price={selectedMarker.price ?? ""}
-          showPrice={selectedMarker.source === "good_price"}
-          onPressDetail={onPressDetail}
         />
-      ) : null}
+      </View>
     </View>
   );
 };
@@ -168,69 +67,5 @@ const styles = StyleSheet.create({
   mapArea: {
     flex: 1,
     overflow: "hidden",
-  },
-  legend: {
-    position: "absolute",
-    left: spacing[10],
-    top: spacing[10],
-    flexDirection: "row",
-    alignItems: "center",
-    gap: spacing[12],
-    paddingHorizontal: spacing[12],
-    paddingVertical: spacing[8],
-    borderRadius: radius[10],
-    backgroundColor: colors.surface.neutral.default,
-  },
-  legendItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: spacing[4],
-  },
-  legendDot: {
-    width: 8,
-    height: 8,
-    borderRadius: radius.full,
-  },
-  locateButton: {
-    position: "absolute",
-    right: spacing[10],
-    bottom: spacing[10],
-    width: 44,
-    height: 44,
-    alignItems: "center",
-    justifyContent: "center",
-    borderRadius: radius[10],
-    backgroundColor: colors.surface.neutral.default,
-    shadowColor: colors.surface.neutral.inverse,
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  currentLocationMarker: {
-    width: 16,
-    height: 16,
-    borderRadius: radius.full,
-    borderWidth: 2.5,
-    borderColor: CURRENT_LOCATION_BORDER,
-    backgroundColor: CURRENT_LOCATION_FILL,
-    shadowColor: CURRENT_LOCATION_FILL,
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.6,
-    shadowRadius: 6,
-    elevation: 6,
-  },
-  dotMarker: {
-    width: 8,
-    height: 8,
-    borderRadius: radius.full,
-  },
-  selectedMarker: {
-    width: 24,
-    height: 24,
-    borderRadius: radius.full,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: colors.surface.primary.bold,
   },
 });

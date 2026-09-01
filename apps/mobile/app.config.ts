@@ -99,5 +99,5 @@ const config: ExpoConfig = {
 };
 
 export default withNaverMapAuthWorkaround(config, {
-  clientId: process.env.NAVER_MAP_CLIENT_ID ?? "",
+  clientId: process.env.NAVER_MAP_CLIENT_ID ?? "d568thotkp",
 });
