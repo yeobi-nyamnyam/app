@@ -90,22 +90,23 @@ export interface RedistributableSlot {
 
 /**
  * F2-3 남은 끼니 기준 재분배 (business-logic-notes.md §2).
- * is_recorded=true 슬롯은 소급 변경하지 않고, 새 floatingBudget에서 그 슬롯들의
+ * is_recorded=true 슬롯은 소급 변경하지 않고, 새 식비 예산에서 그 슬롯들의
  * budget_amount 합을 뺀 나머지를 남은(is_recorded=false) 슬롯들의 weight_level
  * 비율로 재배분한다. 계산에 필요한 최소 필드(RedistributableSlot)만 요구하는
  * 제네릭이라 실제 GraphQL 응답 슬롯 타입 그대로 재사용할 수 있다.
  *
  * @param mealSlots 여행의 전체 끼니 슬롯
- * @param nextFloatingBudget 새로 저장된 유동비용(식비 예산)
+ * @param nextFoodBudget 새로 계산된 식비 예산 (= total_budget - fixed_cost - floating_budget,
+ *   trips.floating_budget은 유동비용 자체를 저장하는 필드라 식비가 아님)
  */
 export const redistributeUnrecordedSlots = <T extends RedistributableSlot>(
   mealSlots: T[],
-  nextFloatingBudget: number,
+  nextFoodBudget: number,
 ): T[] => {
   const recordedTotal = mealSlots
     .filter((slot) => slot.isRecorded)
     .reduce((sum, slot) => sum + slot.budgetAmount, 0);
-  const remainingPool = Math.max(nextFloatingBudget - recordedTotal, 0);
+  const remainingPool = Math.max(nextFoodBudget - recordedTotal, 0);
 
   const unrecorded = mealSlots.filter((slot) => !slot.isRecorded);
   const totalWeight = unrecorded.reduce(

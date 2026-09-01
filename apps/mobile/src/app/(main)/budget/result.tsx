@@ -47,6 +47,11 @@ export default function BudgetResultScreen() {
     dinner: toWeightLevel(params.dinnerWeight, "hearty"),
   };
 
+  // floatingBudget 라우트 파라미터는 (전체-고정)×비율로 계산된 "식비"다.
+  // trips.floating_budget 컬럼은 진짜 유동비(전체-고정-식비, 남는 금액)를 저장해야 하므로
+  // 여기서 역산해 createTrip에는 이 값을 넘긴다.
+  const variableBudget = totalBudget - fixedCost - floatingBudget;
+
   const dates = params.startDate && params.endDate ? getTripDates({ startDate: params.startDate, endDate: params.endDate }) : [];
   const dayBudgets = computeDayBudgets(floatingBudget, Math.max(dates.length, 1));
 
@@ -80,7 +85,7 @@ export default function BudgetResultScreen() {
         totalBudget,
         fixedCost,
         foodBudgetRatio: ratio,
-        floatingBudget,
+        floatingBudget: variableBudget,
         dates: slotDates,
         mealTypes: slotMealTypes,
         weightLevels: slotWeightLevels,
