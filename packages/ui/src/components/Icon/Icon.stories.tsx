@@ -13,6 +13,7 @@ const meta: Meta<typeof Icon> = {
         'link-horizontal',
         'puzzle',
         'chevron-left',
+        'chevron-left-lg',
         'chevron-down',
         'chevron-up',
         'home',
@@ -55,6 +56,10 @@ export const Puzzle: Story = {
 
 export const ChevronLeft: Story = {
   args: { name: 'chevron-left' },
+}
+
+export const ChevronLeftLg: Story = {
+  args: { name: 'chevron-left-lg' },
 }
 
 export const ChevronDown: Story = {

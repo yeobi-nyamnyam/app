@@ -33,6 +33,6 @@ export default tseslint.config(
         },
     },
     {
-        ignores: ["dist/**", ".expo/**", "metro.config.js"],
+        ignores: ["dist/**", ".expo/**", "metro.config.js", "android/**", "ios/**"],
     }
 );

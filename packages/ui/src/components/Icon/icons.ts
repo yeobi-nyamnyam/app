@@ -3,6 +3,7 @@ export type IconName =
   | 'link-horizontal'
   | 'puzzle'
   | 'chevron-left'
+  | 'chevron-left-lg'
   | 'chevron-down'
   | 'chevron-up'
   | 'home'
@@ -53,6 +54,13 @@ export const icons: Record<IconName, IconDefinition> = {
     width: 24,
     height: 24,
     d: 'M14 16L10 12L14 8',
+  },
+  // Figma "Chevron_Left"(node 270:11874) 기준. 'chevron-left'(Chevron_Left_MD,
+  // node 270:11882)보다 꺾임 폭이 넓은 별도 glyph — size prop으로는 재현 안 됨
+  'chevron-left-lg': {
+    width: 24,
+    height: 24,
+    d: 'M15 19L8 12L15 5',
   },
   // chevron-left(꼭짓점 왼쪽 기준)을 중심(12,12) 기준으로 90도 회전한 좌표
   'chevron-down': {

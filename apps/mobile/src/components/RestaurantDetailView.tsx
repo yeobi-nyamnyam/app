@@ -1,5 +1,14 @@
-import type { ReactNode } from "react";
-import { ScrollView, Share, StyleSheet, Text as RNText, View } from "react-native";
+import { useRef, useState, type ReactNode } from "react";
+import {
+  Animated,
+  Share,
+  StyleSheet,
+  Text as RNText,
+  View,
+  type LayoutChangeEvent,
+  type NativeScrollEvent,
+  type NativeSyntheticEvent,
+} from "react-native";
 import { StatusBar } from "expo-status-bar";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
@@ -107,10 +116,42 @@ export const RestaurantDetailView = ({
     Share.share({ message: restaurant.name }).catch(() => {});
   };
 
+  // 스크롤에 따라 상단 플로팅 버튼 줄 뒤 배경을 투명→흰색으로 전환 (Figma
+  // "cuisine-detail (good-price) (middle)" node 743:20390). 히어로 사진이
+  // 버튼 줄 뒤로 완전히 지나가는 스크롤 거리(HERO_HEIGHT - 버튼 줄 하단
+  // 위치)에 맞춰 페이드가 끝나도록 계산.
+  const scrollY = useRef(new Animated.Value(0)).current;
+  const [floatingRowHeight, setFloatingRowHeight] = useState(0);
+  const [isHeaderSolid, setIsHeaderSolid] = useState(false);
+
+  const headerBackgroundHeight = spacing[16] + floatingRowHeight + spacing[12];
+  const headerFadeDistance = Math.max(HERO_HEIGHT - (insets.top + headerBackgroundHeight), 1);
+
+  const headerBackgroundOpacity = scrollY.interpolate({
+    inputRange: [0, headerFadeDistance],
+    outputRange: [0, 1],
+    extrapolate: "clamp",
+  });
+
+  const handleFloatingRowLayout = (event: LayoutChangeEvent) => {
+    setFloatingRowHeight(event.nativeEvent.layout.height);
+  };
+
+  const handleScroll = Animated.event<NativeScrollEvent>(
+    [{ nativeEvent: { contentOffset: { y: scrollY } } }],
+    {
+      useNativeDriver: true,
+      listener: (event: NativeSyntheticEvent<NativeScrollEvent>) => {
+        const solid = event.nativeEvent.contentOffset.y >= headerFadeDistance;
+        setIsHeaderSolid((prev) => (prev === solid ? prev : solid));
+      },
+    },
+  );
+
   return (
     <View style={styles.container}>
-      <StatusBar style="light" />
-      <ScrollView style={styles.scroll}>
+      <StatusBar style={isHeaderSolid ? "dark" : "light"} />
+      <Animated.ScrollView style={styles.scroll} onScroll={handleScroll} scrollEventThrottle={16}>
         <View style={styles.hero}>
           <View style={styles.heroDim} />
         </View>
@@ -163,9 +204,19 @@ export const RestaurantDetailView = ({
             <Button label="여기로 정하고 기록" variant="primary" onPress={onPressCTA} />
           </View>
         </View>
-      </ScrollView>
-      <View style={[styles.floatingRow, { top: insets.top + spacing[16] }]}>
-        <FloatingButton onPress={onBackPress} />
+      </Animated.ScrollView>
+      <Animated.View
+        pointerEvents="none"
+        style={[
+          styles.headerBackground,
+          { height: insets.top + headerBackgroundHeight, opacity: headerBackgroundOpacity },
+        ]}
+      />
+      <View
+        style={[styles.floatingRow, { top: insets.top + spacing[16] }]}
+        onLayout={handleFloatingRowLayout}
+      >
+        <FloatingButton icon={<Icon name="chevron-left-lg" size="medium" />} onPress={onBackPress} />
         <FloatingButton icon={<Icon name="share" size="medium" />} onPress={handleShare} />
       </View>
     </View>
@@ -190,6 +241,13 @@ const styles = StyleSheet.create({
   heroDim: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: colors.surface.neutral.alpha["inverse-alpha-30"],
+  },
+  headerBackground: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: colors.surface.neutral.default,
   },
   floatingRow: {
     position: "absolute",
