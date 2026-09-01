@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { Alert, FlatList, Pressable, StyleSheet, View } from "react-native";
-import { router } from "expo-router";
+import { router, useFocusEffect } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useQuery } from "@apollo/client/react";
 import {
@@ -132,12 +132,22 @@ export default function RecommendScreen() {
   const [selectedMarkerId, setSelectedMarkerId] = useState<string | undefined>(undefined);
 
   const { session } = useSession();
-  const { data, loading } = useQuery(ActiveTripDocument, {
+  const { data, loading, refetch: refetchActiveTrip } = useQuery(ActiveTripDocument, {
     variables: { userId: session?.user.id ?? "" },
     skip: !session,
     fetchPolicy: "cache-and-network",
   });
   const tripNode = data?.tripsCollection.edges[0]?.node;
+
+  // 소비 기록 작성(record/new) 후 이 화면으로 돌아왔을 때 끼니 기록 여부가 바뀌어도
+  // cache-and-network만으로는 재조회가 안 된다 — 포커스를 다시 받을 때마다 refetch해서
+  // 추천 기준(끼니/예산)이 최신 상태를 반영하게 한다.
+  useFocusEffect(
+    useCallback(() => {
+      refetchActiveTrip();
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []),
+  );
 
   const mealSlots = (tripNode?.meal_slotsCollection?.edges ?? []).map((edge) => ({
     date: edge.node.date,

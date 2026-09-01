@@ -1,5 +1,6 @@
+import { useCallback } from "react";
 import { Alert, View } from "react-native";
-import { router, useLocalSearchParams } from "expo-router";
+import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import { useQuery } from "@apollo/client/react";
 import { Text } from "@repo/ui";
 import { ActiveTripDocument, RestaurantByIdDocument } from "@repo/types";
@@ -132,13 +133,22 @@ export default function RestaurantDetailScreen() {
   const restaurantNode = restaurantData?.restaurantsCollection.edges[0]?.node;
 
   const { session } = useSession();
-  const { data } = useQuery(ActiveTripDocument, {
+  const { data, refetch: refetchActiveTrip } = useQuery(ActiveTripDocument, {
     variables: { userId: session?.user.id ?? "" },
     skip: !session,
     fetchPolicy: "cache-and-network",
   });
   const tripNode = data?.tripsCollection.edges[0]?.node;
   const tripId = tripNode?.id;
+
+  // 소비 기록 작성(record/new)에서 저장하고 돌아왔을 때, 예산 요약(budgetSummary)이
+  // 방금 기록한 끼니 기준으로 남아있지 않도록 포커스를 다시 받을 때마다 refetch한다.
+  useFocusEffect(
+    useCallback(() => {
+      refetchActiveTrip();
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []),
+  );
 
   const mealSlots = (tripNode?.meal_slotsCollection?.edges ?? []).map((edge) => ({
     date: edge.node.date,
