@@ -164,7 +164,7 @@ export default function RecommendScreen() {
 
   if (loading && !data) {
     return (
-      <View style={[styles.screen, { paddingTop: insets.top }]}>
+      <View style={styles.screen}>
         <View style={styles.emptyState}>
           <Text color="subtlest">여행 정보 불러오는 중...</Text>
         </View>
@@ -177,7 +177,7 @@ export default function RecommendScreen() {
   // 빈 상태(EmptyTripPrompt)로 유도한다.
   if (!tripNode) {
     return (
-      <View style={[styles.screen, { paddingTop: insets.top }]}>
+      <View style={styles.screen}>
         <View style={styles.emptyState}>
           <EmptyTripPrompt
             onCreateTrip={() => router.push("/trip-create")}
@@ -314,6 +314,7 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
+    paddingHorizontal: spacing[16],
   },
   budgetAdjustBlock: {
     width: "100%",
