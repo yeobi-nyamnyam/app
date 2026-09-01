@@ -1,9 +1,11 @@
 import { useState } from "react";
-import { FlatList, Pressable, StyleSheet, View } from "react-native";
+import { Alert, FlatList, Pressable, StyleSheet, View } from "react-native";
 import { router } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useQuery } from "@apollo/client/react";
 import {
   Button,
+  EmptyTripPrompt,
   Icon,
   NavBar,
   RestaurantCard,
@@ -14,9 +16,11 @@ import {
   spacing,
   type NavBarItemKey,
 } from "@repo/ui";
+import { ActiveTripDocument } from "@repo/types";
 
 import { RecommendMapView, type RecommendMapMarker } from "@/components/RecommendMapView";
 import { SortSheet, type SortOption } from "@/components/SortSheet";
+import { useSession } from "@/hooks/useSession";
 
 // TODO(F3 데이터 연동): restaurants + F3-3(예산 기준 실시간 산정) GraphQL 쿼리로 교체.
 // 지금은 Figma "recommand-price" 화면(node 721:14702) 예시 그대로의 정적 mock.
@@ -146,9 +150,44 @@ export default function RecommendScreen() {
   // 마커를 눌러야 선택되는 상태 — 지도보기 진입 시 기본값은 미선택(Preview 미표시)
   const [selectedMarkerId, setSelectedMarkerId] = useState<string | undefined>(undefined);
 
+  const { session } = useSession();
+  const { data, loading } = useQuery(ActiveTripDocument, {
+    variables: { userId: session?.user.id ?? "" },
+    skip: !session,
+    fetchPolicy: "cache-and-network",
+  });
+  const tripNode = data?.tripsCollection.edges[0]?.node;
+
   const hasResults = MOCK_RESTAURANTS.length > 0;
   const sortedRestaurants = sortByValue(MOCK_RESTAURANTS, sortValue);
   const sortLabel = SORT_OPTIONS.find((option) => option.value === sortValue)?.label ?? "";
+
+  if (loading && !data) {
+    return (
+      <View style={[styles.screen, { paddingTop: insets.top }]}>
+        <View style={styles.emptyState}>
+          <Text color="subtlest">여행 정보 불러오는 중...</Text>
+        </View>
+        <NavBar active="recommend" onChange={handleNavChange} />
+      </View>
+    );
+  }
+
+  // 홈 탭과 동일하게, 진행 중인 여행이 없으면 추천도 보여줄 수 없으므로 같은
+  // 빈 상태(EmptyTripPrompt)로 유도한다.
+  if (!tripNode) {
+    return (
+      <View style={[styles.screen, { paddingTop: insets.top }]}>
+        <View style={styles.emptyState}>
+          <EmptyTripPrompt
+            onCreateTrip={() => router.push("/trip-create")}
+            onLoadPastTrip={() => Alert.alert("준비 중", "과거 여행 불러오기는 아직 준비 중이에요.")}
+          />
+        </View>
+        <NavBar active="recommend" onChange={handleNavChange} />
+      </View>
+    );
+  }
 
   return (
     <View style={[styles.screen, { paddingTop: insets.top }]}>
