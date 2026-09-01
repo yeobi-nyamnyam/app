@@ -15,6 +15,8 @@ import {
 // 해결되지 않으므로 계정 쪽 확인이 더 필요하다 (이슈 #83 참고).
 // TODO(F3-1): 원인 확인되면 이 우회가 여전히 필요한지(불필요해지면 제거) 재점검할 것.
 const NAVER_MAP_SDK_VERSION = "3.23.2";
+// .env의 NAVER_MAP_CLIENT_ID가 로컬에서 비어있을 때 쓰는 폴백 — 팀 공용 NCP 개발용 client id.
+const NAVER_MAP_CLIENT_ID_FALLBACK = "d568thotkp";
 
 const withNaverMapAuthWorkaround: ConfigPlugin<{ clientId: string }> = (
   config,
@@ -52,7 +54,7 @@ const config: ExpoConfig = {
   scheme: "yeobinyamnyam",
   orientation: "portrait",
   userInterfaceStyle: "automatic",
-  platforms: ["ios", "android"],
+  platforms: ["android"],
   android: {
     package: "com.yeobinyamnyam.mobile",
   },
@@ -76,7 +78,7 @@ const config: ExpoConfig = {
     ],
     [
       "@mj-studio/react-native-naver-map",
-      { client_id: process.env.NAVER_MAP_CLIENT_ID ?? "" },
+      { client_id: process.env.NAVER_MAP_CLIENT_ID ?? NAVER_MAP_CLIENT_ID_FALLBACK },
     ],
     [
       "expo-location",

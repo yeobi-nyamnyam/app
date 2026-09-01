@@ -22,7 +22,7 @@ Postgres 함수(RPC)로 할지 Apollo mutation 여러 개를 클라이언트가 
 **규칙**:
 1. `trips` 값이 바뀌는 즉시 `budget_change_history`에 `event_type='budget_edit'` 로그 추가 (before/after는 `trips`의 관련 필드 스냅샷)
 2. `is_recorded=true`인 슬롯은 **소급 변경하지 않음** (그대로 유지)
-3. `is_recorded=false`인 슬롯만 대상으로, 변경된 `floating_budget`에서 이미 확정된 슬롯들의 `budget_amount` 합을 뺀 나머지를 남은 슬롯 수·가중치(`weight_level`)로 재배분
+3. `is_recorded=false`인 슬롯만 대상으로, 변경된 식비(`total_budget-fixed_cost-floating_budget`로 역산, `floating_budget` 자체가 아님 — 이 컬럼은 유동비용을 저장함)에서 이미 확정된 슬롯들의 `budget_amount` 합을 뺀 나머지를 남은 슬롯 수·가중치(`weight_level`)로 재배분
 4. 재배분이 실제로 실행되면(대상 슬롯이 1개 이상 존재) `budget_change_history`에 **별도로** `event_type='rebalance'` 로그를 추가 (before/after는 영향받은 슬롯 목록과 각 `budget_amount` 변화)
 
 > **왜 2개 이벤트로 나누나**: `budget_edit`(1번)은 "사용자가 예산을 고쳤다"는
@@ -70,7 +70,7 @@ Postgres 함수(RPC)로 할지 Apollo mutation 여러 개를 클라이언트가 
 |---|---|
 | G1 예산 완주자 | `budget_change_history` + 총지출 합계 (`meal_logs` SUM) |
 | G2 딱 맞춤 플래너 | `trips.total_budget` vs 총지출 ±5% |
-| G3 짠테크 고수 | `trips.floating_budget` vs 식비 실지출 80% 이하 (`is_cascade_confirmed=true` 슬롯은 집계 제외) |
+| G3 짠테크 고수 | 식비(`trips.total_budget-fixed_cost-floating_budget`로 역산, `floating_budget` 자체는 유동비용이라 직접 비교하면 안 됨) vs 식비 실지출 80% 이하 (`is_cascade_confirmed=true` 슬롯은 집계 제외) |
 | G4 위기탈출 | 일별 예산 초과 후 다음 끼니로 당일 회복 (`meal_slots` 일자별 그룹핑 후 판정) |
 | G5~G6 소비패턴형 | `meal_logs.category` 비교/시간대 분석 |
 | G7~G9 계획변경 유연성 | `budget_change_history` 이벤트 횟수 |

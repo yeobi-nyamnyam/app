@@ -21,7 +21,7 @@ D0~D3, G0~G17, L0~L4, M0~M2)를 한 번씩 훑어 테이블/컬럼으로 반영�
 | F1, F1-2~F1-5 | 여행 생성 | `trips`(name, start_date, end_date, total_budget, fixed_cost, food_budget_ratio) |
 | F1-1 | 지역 입력 | `trips.region_code` ↔ `region_cache` |
 | F1-6 | 끼니별 가중치 기본값 | `meal_slots.weight_level` (여행 생성 트랜잭션에서 각 슬롯에 심음) |
-| F2 | 식비 예산 자동계산 | `trips.floating_budget` |
+| F2 | 식비 예산 자동계산 | 식비는 별도 컬럼 없이 `(total_budget-fixed_cost)-floating_budget`로 파생계산 (아래 `trips.floating_budget` 설명 참고), `meal_slots.budget_amount` 합계로 실제 배분됨 |
 | F2-1, F2-2 | 일별/끼니별 배분 | `meal_slots.budget_amount` |
 | F2-3 | 남은 끼니 재분배 | `meal_slots.is_recorded`/`budget_amount` 재계산, `budget_change_history`(`event_type='rebalance'`) |
 | F2-4, F2-5 | 가중치 적용/조건부 수정 | `meal_slots.weight_level`, `is_recorded` |
@@ -126,7 +126,7 @@ GraphQL로 UPDATE한다 (`supabase/migrations/20260828010000_profile_terms_agree
 | total_budget | integer | 원 단위, 1원 이상 (F1-3) |
 | fixed_cost | integer default 0 | (F1-4) |
 | food_budget_ratio | numeric(5,2) | 생성 시점에만 사용 (F1-5) |
-| floating_budget | integer | = (total_budget-fixed_cost)×ratio, 소수점 버림 (F2) — 생성 시 1회 계산 후 이후엔 F4에서 절대값 관리 |
+| floating_budget | integer | 유동비용(전체-고정-식비, 남는 금액). 식비 = (total_budget-fixed_cost)×ratio(소수점 버림, 생성 시점에만 사용)이고, `floating_budget = (total_budget-fixed_cost) - 식비`로 생성 시 1회 계산 후 이후엔 F4에서 절대값 관리. **식비 자체는 컬럼으로 저장하지 않고 필요할 때마다 `total_budget-fixed_cost-floating_budget`로 역산** (F3-3처럼 조회 시점 계산, 비저장) |
 | status | text CHECK (ongoing/completed) | (F7) |
 | created_at / updated_at | timestamptz | |
 
