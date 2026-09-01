@@ -99,7 +99,12 @@ export default function RecordNewScreen() {
           variables: { mealLogId, receiptImageUrl: values.receiptImageUrl, ocrRaw: values.ocrRaw },
         });
       }
-      router.back();
+      // 저장 완료 후에는 진입 경로(recommend/chat/record 등)로 되돌아가지 않고,
+      // 방금 반영된 예산을 바로 확인할 수 있는 홈 탭으로 보낸다. NavBar가 탭 전환마다
+      // push를 써서 스택이 깊게 쌓이기 쉬우므로, dismissAll로 현재 스택 전체를 비운
+      // 뒤 replace로 홈을 확정해 뒤로가기가 record/new 이전 화면으로 새지 않게 한다.
+      router.dismissAll();
+      router.replace("/");
     } catch (error) {
       Alert.alert("저장 실패", error instanceof Error ? error.message : "잠시 후 다시 시도해주세요.");
     }
