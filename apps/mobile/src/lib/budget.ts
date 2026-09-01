@@ -135,6 +135,40 @@ export const redistributeUnrecordedSlots = <T extends RedistributableSlot>(
   );
 };
 
+export interface UnrecordedMealSlot {
+  date: string;
+  mealType: MealType;
+  budgetAmount: number;
+  carriedOverAmount: number;
+  isRecorded: boolean;
+}
+
+/**
+ * F3-3 추천 기준 실시간 산정 (schema-design.md §2, F3-3 매핑):
+ * 여행 전체 meal_slots 중 날짜+끼니 순서로 가장 이른 미기록(is_recorded=false)
+ * 슬롯을 찾는다. 모든 슬롯이 기록됐으면 undefined.
+ *
+ * @param mealSlots 여행의 전체 끼니 슬롯
+ */
+export const findNextUnrecordedMealSlot = <T extends UnrecordedMealSlot>(
+  mealSlots: T[],
+): T | undefined =>
+  [...mealSlots]
+    .sort((a, b) =>
+      a.date === b.date
+        ? MEAL_TYPES.indexOf(a.mealType) - MEAL_TYPES.indexOf(b.mealType)
+        : a.date.localeCompare(b.date),
+    )
+    .find((slot) => !slot.isRecorded);
+
+/**
+ * F3-3: 추천 기준 예산 상한 = 해당 슬롯의 budget_amount + carried_over_amount
+ *
+ * @param slot 기준이 되는 끼니 슬롯 (findNextUnrecordedMealSlot 결과)
+ */
+export const getRecommendBudgetAmount = (slot: UnrecordedMealSlot): number =>
+  slot.budgetAmount + slot.carriedOverAmount;
+
 export const getTripDates = (trip: { startDate: string; endDate: string }): string[] => {
   const dates: string[] = [];
   const cursor = new Date(trip.startDate);

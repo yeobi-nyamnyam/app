@@ -31,6 +31,8 @@ export default function RecordNewScreen() {
     presetStoreName?: string;
     presetStoreAddress?: string;
     presetAmount?: string;
+    presetVisitDate?: string;
+    presetMealType?: MealType;
   }>();
 
   const source: RecordSource = params.source ?? "record";
@@ -132,6 +134,8 @@ export default function RecordNewScreen() {
           storeName: params.presetStoreName,
           storeAddress: params.presetStoreAddress,
           amount: params.presetAmount,
+          visitDate: params.presetVisitDate,
+          mealType: params.presetMealType,
         }}
         onSubmit={handleSubmit}
       />
