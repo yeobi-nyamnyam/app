@@ -30,7 +30,6 @@ export const RestaurantCard = ({
 }: RestaurantCardProps) => {
   return (
     <Pressable style={styles.container} onPress={onPress}>
-      <View style={styles.photo} />
       <View style={styles.body}>
         <View style={styles.info}>
           <View style={styles.nameRow}>
@@ -61,12 +60,6 @@ const styles = StyleSheet.create({
     borderWidth: stroke.hairline,
     borderColor: colors.border.neutral.subtle,
     backgroundColor: colors.surface.neutral.default,
-    overflow: 'hidden',
-  },
-  photo: {
-    width: '100%',
-    height: 140,
-    backgroundColor: colors.surface.neutral.subtlest,
   },
   body: {
     gap: spacing[4],
