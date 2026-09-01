@@ -21,7 +21,7 @@ export interface IconProps {
 
 export const Icon = ({ name, size = 'medium', color = colors.content.neutral.default }: IconProps) => {
   const box = iconSize[size]
-  const { width, height, d, fill } = icons[name]
+  const { width, height, d, fill, extra } = icons[name]
   const scale = box / ICON_BASE_SIZE
 
   return (
@@ -31,6 +31,20 @@ export const Icon = ({ name, size = 'medium', color = colors.content.neutral.def
           <Path d={d} fill={color} />
         ) : (
           <Path d={d} stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+        )}
+        {extra?.map((part, index) =>
+          part.fill ? (
+            <Path key={index} d={part.d} fill={color} />
+          ) : (
+            <Path
+              key={index}
+              d={part.d}
+              stroke={color}
+              strokeWidth={2}
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          ),
         )}
       </Svg>
     </View>

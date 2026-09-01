@@ -9,3 +9,52 @@ index 29a238e8e30a5df165b378cef6e473fe7b28966b..f2a68440024f59c38ac3678ea9271f5d
 -NaverMap_sdkVersion=3.18.0
 +NaverMap_sdkVersion=3.23.2
  NaverMap_locationServiceVersion=21.2.0
+diff --git a/android/src/main/java/com/mjstudio/reactnativenavermap/mapview/RNCNaverMapViewManager.kt b/android/src/main/java/com/mjstudio/reactnativenavermap/mapview/RNCNaverMapViewManager.kt
+index d833adf6266adeef0b55f954fe436d1da716e0f4..ea816c30be5a1996b5779b0ceab6fd1f3ac11f30 100644
+--- a/android/src/main/java/com/mjstudio/reactnativenavermap/mapview/RNCNaverMapViewManager.kt
++++ b/android/src/main/java/com/mjstudio/reactnativenavermap/mapview/RNCNaverMapViewManager.kt
+@@ -733,14 +733,20 @@ class RNCNaverMapViewManager : RNCNaverMapViewManagerSpec<RNCNaverMapViewWrapper
+   override fun setLocationTrackingMode(
+     view: RNCNaverMapViewWrapper?,
+     mode: String?,
+-  ) = view.withMap {
+-    it.locationTrackingMode =
+-      when (mode) {
+-        "NoFollow" -> LocationTrackingMode.NoFollow
+-        "Follow" -> LocationTrackingMode.Follow
+-        "Face" -> LocationTrackingMode.Face
+-        else -> LocationTrackingMode.None
+-      }
++  ) = view.withMapView { mapView ->
++    // isShowLocationButton prop 세터에서만 setupLocationSource()가 호출되던 문제 패치
++    // (isShowLocationButton=false면 locationSource가 끝까지 안 붙어서 Follow 모드가
++    // 아무 동작도 안 함). 커맨드 호출 시점에도 직접 붙여준다.
++    mapView.setupLocationSource()
++    mapView.withMap {
++      it.locationTrackingMode =
++        when (mode) {
++          "NoFollow" -> LocationTrackingMode.NoFollow
++          "Follow" -> LocationTrackingMode.Follow
++          "Face" -> LocationTrackingMode.Face
++          else -> LocationTrackingMode.None
++        }
++    }
+   }
+ 
+   companion object {
+diff --git a/android/src/oldarch/RNCNaverMapViewManagerSpec.kt b/android/src/oldarch/RNCNaverMapViewManagerSpec.kt
+index cca7f2bc03698505c6d36332b7139265163b101b..a9a03dc396265249dd2da3de5b5ceee7cd5e6478 100644
+--- a/android/src/oldarch/RNCNaverMapViewManagerSpec.kt
++++ b/android/src/oldarch/RNCNaverMapViewManagerSpec.kt
+@@ -296,6 +296,11 @@ abstract class RNCNaverMapViewManagerSpec<T : ViewGroup> :
+         )
+ 
+       "cancelAnimation" -> cancelAnimation(view)
++
++      // "setLocationTrackingMode"가 supportedCommands(JS)엔 있는데 여기 디스패처에
++      // 빠져 있어서, ref.setLocationTrackingMode(...)를 호출해도 네이티브까지 명령이
++      // 전달되지 않고 조용히 무시되던 문제를 패치.
++      "setLocationTrackingMode" -> setLocationTrackingMode(view, args.getString(0))
+     }
+   }
+ }

@@ -1,5 +1,8 @@
-import { StyleSheet, View } from "react-native";
-import { NaverMapView } from "@mj-studio/react-native-naver-map";
+import { useRef } from "react";
+import { Pressable, StyleSheet, View } from "react-native";
+import * as Location from "expo-location";
+import { NaverMapView, type NaverMapViewRef } from "@mj-studio/react-native-naver-map";
+import { Icon, colors, radius, spacing, stroke } from "@repo/ui";
 
 export type RecommendMapMarkerSource = "good_price" | "tour_api";
 
@@ -35,13 +38,20 @@ export interface RecommendMapViewProps {
 }
 
 export const RecommendMapView = ({ currentLocation }: RecommendMapViewProps) => {
-  // NCP 401(Unauthorized client) 원인 확인 중 — 마커/범례/현재위치 버튼/Preview를
-  // 걷어내고 NaverMapView 자체가 뜨는지만 우선 확인한다 (이슈 #83 참고).
-  // TODO(F3-1): 401 해결되면 마커·범례·현재위치·Preview 복원할 것.
+  // TODO(F3-1): 마커·범례·Preview는 이슈 #83에서 순차 복원 예정.
+  const mapRef = useRef<NaverMapViewRef>(null);
+
+  const handlePressLocate = async () => {
+    const { status } = await Location.requestForegroundPermissionsAsync();
+    if (status !== Location.PermissionStatus.GRANTED) return;
+    mapRef.current?.setLocationTrackingMode("Follow");
+  };
+
   return (
     <View style={styles.container}>
       <View style={styles.mapArea}>
         <NaverMapView
+          ref={mapRef}
           style={StyleSheet.absoluteFill}
           isUseTextureViewAndroid
           mapType="Basic"
@@ -55,6 +65,9 @@ export const RecommendMapView = ({ currentLocation }: RecommendMapViewProps) => 
           isShowScaleBar={false}
           isShowLocationButton={false}
         />
+        <Pressable style={styles.locateButton} onPress={handlePressLocate}>
+          <Icon name="locate" size="medium" color={colors.content.neutral.default} />
+        </Pressable>
       </View>
     </View>
   );
@@ -67,5 +80,23 @@ const styles = StyleSheet.create({
   mapArea: {
     flex: 1,
     overflow: "hidden",
+  },
+  locateButton: {
+    position: "absolute",
+    right: spacing[10],
+    bottom: spacing[10],
+    width: 32,
+    height: 32,
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: radius.full,
+    borderWidth: stroke.hairline,
+    borderColor: colors.border.neutral.subtle,
+    backgroundColor: colors.surface.neutral.default,
+    // Figma "drop-shadow(0px 0px 2px rgba(24,24,24,0.3))" — shadow*/elevation는
+    // 안드로이드에서 offsetY 0을 무시하고 항상 아래로 그림자가 지길래 boxShadow로 대체
+    boxShadow: [
+      { offsetX: 0, offsetY: 0, blurRadius: 2, color: colors.surface.neutral.alpha["inverse-alpha-30"] },
+    ],
   },
 });
