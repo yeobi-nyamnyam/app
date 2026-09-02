@@ -1,16 +1,21 @@
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { Alert, Modal as RNModal, Pressable, ScrollView, StyleSheet, View } from "react-native";
-import { router, useLocalSearchParams } from "expo-router";
+import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useMutation } from "@apollo/client/react";
+import { useMutation, useQuery } from "@apollo/client/react";
 import { Button, Header, Modal, NavBar, Text, colors, radius, spacing, stroke, type NavBarItemKey } from "@repo/ui";
-import { DeleteDiaryDocument } from "@repo/types";
+import { DeleteDiaryDocument, DiaryByIdDocument } from "@repo/types";
 
 /**
  * 일기 상세 화면 (D4, Figma "diary-detail"). record/history.tsx의 소비 기록
  * 목록에서 일기 카드를 눌러 진입한다. 본문은 읽기 전용으로 보여주고, 상단 "수정"을
  * 누르면 diary/edit.tsx로 이동한다. Figma 시안에는 삭제 동선이 없어 하단에
  * "일기 삭제" 버튼을 추가했다.
+ *
+ * 목록에서 넘어온 params를 첫 렌더에 바로 쓰되(깜빡임 방지), diary/edit에서
+ * 저장 후 돌아왔을 때 이 화면이 그대로 마운트되어 있어서 params만으로는 수정된
+ * 값이 반영되지 않는다 — record/history.tsx와 동일하게 포커스를 다시 받을 때마다
+ * diariesByPk를 refetch해서 최신값으로 덮어쓴다.
  */
 export default function DiaryDetailScreen() {
   const insets = useSafeAreaInsets();
@@ -23,6 +28,22 @@ export default function DiaryDetailScreen() {
     mode: string;
   }>();
 
+  const { data: diaryData, refetch: refetchDiary } = useQuery(DiaryByIdDocument, {
+    variables: { diaryId: params.diaryId },
+    fetchPolicy: "cache-and-network",
+  });
+  const diaryNode = diaryData?.diariesByPk;
+  const title = diaryNode?.title ?? params.title;
+  const content = diaryNode?.content ?? params.content;
+  const mode = diaryNode?.mode ?? params.mode;
+
+  useFocusEffect(
+    useCallback(() => {
+      refetchDiary();
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []),
+  );
+
   const [isDeleteConfirmVisible, setIsDeleteConfirmVisible] = useState(false);
   const [deleteDiary, { loading: deleting }] = useMutation(DeleteDiaryDocument);
 
@@ -33,9 +54,9 @@ export default function DiaryDetailScreen() {
         diaryId: params.diaryId,
         tripId: params.tripId,
         dayLabel: params.dayLabel,
-        title: params.title,
-        content: params.content,
-        mode: params.mode,
+        title,
+        content,
+        mode,
       },
     });
   };
@@ -79,7 +100,7 @@ export default function DiaryDetailScreen() {
   return (
     <View style={styles.screen}>
       <Header
-        title={params.title || "여행 일기"}
+        title={title || "여행 일기"}
         textAlign="start"
         tailing="text"
         tailingText="수정"
@@ -90,7 +111,7 @@ export default function DiaryDetailScreen() {
       <ScrollView style={styles.scroll} contentContainerStyle={styles.content}>
         <Text variant="title3Emphasized">{params.dayLabel}</Text>
         <View style={styles.contentBox}>
-          <Text>{params.content}</Text>
+          <Text>{content}</Text>
         </View>
       </ScrollView>
 
