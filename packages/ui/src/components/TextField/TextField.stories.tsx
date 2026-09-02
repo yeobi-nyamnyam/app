@@ -43,6 +43,11 @@ export const Error: Story = {
   render: (args) => <Controlled {...args} value="Value" />,
 }
 
+export const ErrorHiddenMessage: Story = {
+  args: { error: '이미 사용 중인 이메일이에요', hideErrorMessage: true },
+  render: (args) => <Controlled {...args} value="Value" />,
+}
+
 export const Disabled: Story = {
   args: { disabled: true },
   render: (args) => <Controlled {...args} value="Value" />,

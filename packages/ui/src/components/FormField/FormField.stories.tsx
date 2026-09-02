@@ -26,7 +26,7 @@ export default meta
 
 type Story = StoryObj<typeof FormField>
 
-const TextFieldExample = (args: { label: string }) => {
+const TextFieldExample = (args: { label: string; labelSize?: 'default' | 'large' }) => {
   const [value, setValue] = useState('')
   return (
     <FormField {...args}>
@@ -50,6 +50,11 @@ const ChipListExample = (args: { label: string }) => {
 }
 
 export const WithTextField: Story = {
+  render: (args) => <TextFieldExample {...args} />,
+}
+
+export const WithLargeLabel: Story = {
+  args: { labelSize: 'large' },
   render: (args) => <TextFieldExample {...args} />,
 }
 

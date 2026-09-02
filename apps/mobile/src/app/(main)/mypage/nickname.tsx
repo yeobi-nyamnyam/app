@@ -55,15 +55,19 @@ export default function NicknameScreen() {
     <View style={[styles.container, { paddingTop: insets.top }]}>
       <Header title="닉네임 변경" onBackPress={() => router.back()} />
       <View style={styles.content}>
-        <FormField label="닉네임">
+        <FormField label="닉네임" labelSize="large">
           <TextField
             value={nickname}
             onChangeText={handleChangeText}
             placeholder="닉네임을 입력하세요"
             error={fieldError}
+            hideErrorMessage
           />
         </FormField>
-        <View style={styles.counterRow}>
+        <View style={styles.metaRow}>
+          <Text variant="footnoteRegular" color="error">
+            {fieldError ?? ""}
+          </Text>
           <Text variant="footnoteRegular" color="subtle">
             {`${trimmed.length}/${MAX_NICKNAME_LENGTH}자`}
           </Text>
@@ -87,8 +91,10 @@ const styles = StyleSheet.create({
     padding: spacing[16],
     paddingTop: spacing[14],
   },
-  counterRow: {
-    alignItems: "flex-end",
+  metaRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
   },
   footer: {
     padding: spacing[16],
