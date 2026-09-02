@@ -191,10 +191,11 @@ export default function RecommendScreen() {
     .filter((marker): marker is RecommendMapMarker => marker !== null);
 
   // F3-1 2단계: 일반 업소(source=tour_api, TourAPI contentTypeId=39)도 가격과
-  // 무관하게 좌표가 있는 것 전부 마커로 띄운다.
+  // 무관하게 좌표가 있는 것 전부 마커로 띄운다. 지도보기(viewMode===1)에서만
+  // 쓰는 데이터라 가격보기에서까지 불필요하게 조회하지 않도록 skip한다.
   const { data: tourApiData } = useQuery(TourApiRestaurantsDocument, {
     variables: { regionSido: regionSido ?? "" },
-    skip: !regionSido,
+    skip: !regionSido || viewMode !== 1,
     fetchPolicy: "cache-and-network",
   });
   const tourApiMapMarkers: RecommendMapMarker[] = (tourApiData?.restaurantsCollection.edges ?? [])

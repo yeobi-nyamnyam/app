@@ -40,6 +40,10 @@ registry.registerPath({
       description: "영업시간/휴일/전화/메뉴",
       content: { "application/json": { schema: RestaurantDetailResponseSchema } },
     },
+    400: {
+      description: "요청 형식이 올바르지 않음",
+      content: { "application/json": { schema: ErrorResponseSchema } },
+    },
     404: {
       description: "음식점을 찾을 수 없음",
       content: { "application/json": { schema: ErrorResponseSchema } },
@@ -107,7 +111,7 @@ recommendRouter.get("/recommend/restaurants/:id/detail", async (req, res) => {
     }
 
     const intro = await fetchTourApiIntro(restaurant.external_id);
-    await supabase
+    const { error: updateError } = await supabase
       .from("restaurants")
       .update({
         business_hours: { businessHours: intro.businessHours, holiday: intro.holiday, menu: intro.menu },
@@ -115,6 +119,12 @@ recommendRouter.get("/recommend/restaurants/:id/detail", async (req, res) => {
         detail_synced_at: new Date().toISOString(),
       })
       .eq("id", id);
+    if (updateError) {
+      // 캐시 갱신 실패는 응답 자체(TourAPI에서 방금 받아온 최신 값)엔 영향 없지만,
+      // detail_synced_at이 안 바뀌어 다음 요청도 매번 TourAPI를 다시 부르게 된다 —
+      // 조용히 넘어가지 않고 남겨서 캐시가 왜 안 타는지 추적 가능하게 한다.
+      console.error(`[recommend] restaurants 캐시 갱신 실패 (id: ${id})`, updateError.message);
+    }
 
     const body: z.infer<typeof RestaurantDetailResponseSchema> = {
       businessHours: intro.businessHours,
