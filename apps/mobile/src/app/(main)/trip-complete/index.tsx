@@ -1,8 +1,22 @@
-import { ScrollView, StyleSheet, View } from "react-native";
+import { ScrollView, StyleSheet, Text as RNText, View } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useQuery } from "@apollo/client/react";
-import { Button, Character, Notice, Text, colors, radius, spacing, stroke } from "@repo/ui";
+import {
+  BadgeCard,
+  Button,
+  Notice,
+  Text,
+  TripCompleteIllustration,
+  badgeNames,
+  colors,
+  getFontFamily,
+  radius,
+  spacing,
+  stroke,
+  typography,
+  type BadgeId,
+} from "@repo/ui";
 import { TripCompleteDocument } from "@repo/types";
 
 import { formatWon } from "@/lib/format";
@@ -14,14 +28,22 @@ const hasFinalConsonant = (text: string): boolean => {
   return (lastChar - 0xac00) % 28 !== 0;
 };
 
+// badgeNames(BadgeId → 한글명, business-logic-notes.md §6과 동일 배지명)을 뒤집어
+// user_badges.badges.name(한글명)으로 아이콘 에셋을 찾는다.
+const BADGE_ID_BY_NAME = Object.fromEntries(
+  Object.entries(badgeNames).map(([id, name]) => [name, id as BadgeId]),
+) as Record<string, BadgeId>;
+
 /**
  * 여행 완료 화면 (F7, Figma "end-journey", node 721:14384). index.tsx가 종료일이
  * 지난 여행을 감지해 complete_trip RPC를 호출한 뒤 tripId와 함께 이 화면으로
  * 리다이렉트한다. 종료 화면이라 뒤로 갈 곳이 없어 헤더/NavBar 없이 CTA 하나만 둔다.
  *
- * G0~G17 배지 판정·아이콘·시드 데이터가 아직 없어 "획득한 배지" 섹션은 실제
- * user_badges를 그대로 조회하되(현재는 대부분 비어있을 것), 아이콘 없이 텍스트만
- * 보여준다. CTA는 아직 없는 배지 화면(/badges) 플레이스홀더로 연결한다.
+ * G0~G17 배지 판정 로직·시드 데이터가 아직 없어(아이콘은 `@repo/ui`의
+ * `badgeAssets`로 이미 준비돼 있음) "획득한 배지" 섹션은 실제 user_badges를
+ * 그대로 조회하되(판정 로직이 없어 현재는 비어있을 것), 있으면 BadgeCard로
+ * 보여주고 없으면 섹션을 숨긴다. CTA는 아직 없는 배지 화면(/badges) 플레이스홀더로
+ * 연결한다.
  */
 export default function TripCompleteScreen() {
   const insets = useSafeAreaInsets();
@@ -63,7 +85,7 @@ export default function TripCompleteScreen() {
     <View style={[styles.container, { paddingTop: insets.top }]}>
       <ScrollView contentContainerStyle={styles.content}>
         <View style={styles.characterRow}>
-          <Character variant="sky" size={120} />
+          <TripCompleteIllustration size={120} />
         </View>
         <Text variant="title3Emphasized" align="center">
           {`${tripNode.name}${particle} 끝났어요!`}
@@ -74,7 +96,7 @@ export default function TripCompleteScreen() {
             {`식비 예산 준수율 ${adherence}%`}
           </Text>
           <View style={styles.statCard}>
-            <Text variant="headlineEmphasized">총 사용 식비</Text>
+            <RNText style={styles.statCardLabel}>총 사용 식비</RNText>
             <Text variant="title1Bold">{formatWon(consumed)}</Text>
             <Text variant="subheadlineRegular">
               {`${formatWon(foodBudget)} 중 ${formatWon(consumed)} 사용 | ${formatWon(Math.max(saved, 0))} 절약`}
@@ -89,13 +111,12 @@ export default function TripCompleteScreen() {
             </Text>
             <View style={styles.badgeList}>
               {badgeEdges.map(({ node }) => (
-                <View key={node.id} style={styles.badgeCard}>
-                  <View style={styles.badgeGlyph} />
-                  <Text variant="headlineEmphasized" align="center">
-                    {node.badges?.name ?? "배지"}
-                  </Text>
-                  <Text variant="subheadlineEmphasized">{`+${node.badges?.bonus_points ?? 0}pt`}</Text>
-                </View>
+                <BadgeCard
+                  key={node.id}
+                  title={node.badges?.name ?? "배지"}
+                  point={`+${node.badges?.bonus_points ?? 0}pt`}
+                  badgeId={node.badges ? BADGE_ID_BY_NAME[node.badges.name] : undefined}
+                />
               ))}
             </View>
           </View>
@@ -140,26 +161,18 @@ const styles = StyleSheet.create({
     gap: spacing[6],
     alignItems: "center",
   },
+  statCardLabel: {
+    fontFamily: getFontFamily(typography.headlineEmphasized.fontWeight),
+    fontSize: typography.headlineEmphasized.fontSize,
+    lineHeight: typography.headlineEmphasized.lineHeight,
+    letterSpacing: typography.headlineEmphasized.letterSpacing,
+    fontWeight: typography.headlineEmphasized.fontWeight,
+    color: colors.content.primary.bold,
+  },
   badgeList: {
     flexDirection: "row",
     flexWrap: "wrap",
     gap: spacing[8],
-  },
-  badgeCard: {
-    flex: 1,
-    minWidth: 120,
-    borderWidth: stroke.default,
-    borderColor: colors.border.neutral.subtle,
-    borderRadius: radius[34],
-    paddingVertical: spacing[14],
-    alignItems: "center",
-    gap: spacing[6],
-  },
-  badgeGlyph: {
-    width: 40,
-    height: 40,
-    borderRadius: radius.full,
-    backgroundColor: colors.surface.primary.subtlest,
   },
   footer: {
     borderTopWidth: stroke.default,
