@@ -43,19 +43,43 @@ export const getCharacterLevel = (totalPoints: number): number => {
   return level;
 };
 
-// L3(캐릭터 진화 단계) — 구간(Lv1~2/3~4/5~6/7~9/10+)은 사용자 확정 스펙과
-// Figma "캐릭터 성장"(node 406:2141)이 일치한다. 단, 단계 이름은 사용자 스펙
-// (알/새싹 냠냠이/미식가 냠냠이/여행왕 냠냠이/냠냠 마스터)과 Figma 표기
-// (새싹/여행자/배부른 여행자/미식 탐험가/예산 마스터)가 서로 달라서, 실제
-// "캐릭터 성장" 화면을 만들 때 어느 쪽을 쓸지 확인이 필요 — 우선 사용자 스펙을
-// 기본으로 둔다. 단계별 그림(GrowthStage 1~5)은 @repo/ui의 CharacterGrowth가
-// Figma "Stage Row" 에셋을 그대로 옮긴 것.
-const EVOLUTION_STAGES: { maxLevel: number; label: string; stage: GrowthStage }[] = [
-  { maxLevel: 2, label: "알", stage: 1 },
-  { maxLevel: 4, label: "새싹 냠냠이", stage: 2 },
-  { maxLevel: 6, label: "미식가 냠냠이", stage: 3 },
-  { maxLevel: 9, label: "여행왕 냠냠이", stage: 4 },
-  { maxLevel: Infinity, label: "냠냠 마스터", stage: 5 },
+/**
+ * 해당 레벨에 도달하는 데 필요한 누적 포인트. getCharacterLevel의 구간 계산과
+ * 동일한 규칙(Lv1~7 고정값, Lv8+는 직전 구간의 1.5배씩)을 레벨 기준으로 뒤집어
+ * 계산한다 — 캐릭터 성장 화면의 진행률 바(현재 레벨 대비 다음 레벨까지 남은
+ * 포인트)에 사용.
+ * @param level 조회할 레벨 (1 이상)
+ */
+export const getPointsForLevel = (level: number): number => {
+  const known = KNOWN_LEVEL_THRESHOLDS.find(([lv]) => lv === level);
+  if (known) return known[1];
+  if (level < LAST_KNOWN_LEVEL) return 0;
+
+  let threshold = LAST_KNOWN_THRESHOLD;
+  let interval = LAST_KNOWN_INTERVAL;
+  for (let lv = LAST_KNOWN_LEVEL + 1; lv <= level; lv++) {
+    interval = Math.round(interval * 1.5);
+    threshold += interval;
+  }
+  return threshold;
+};
+
+// L3(캐릭터 진화 단계) — 구간(Lv1~2/3~4/5~6/7~9/10+)과 단계 이름 모두 실제
+// "캐릭터 성장" 화면(node 406:2141)을 만들면서 Figma 표기로 확정했다(예전엔
+// 사용자 스펙의 알/새싹 냠냠이/미식가 냠냠이/여행왕 냠냠이/냠냠 마스터와 Figma
+// 표기가 달라 미확정 상태였음). 단계별 그림(GrowthStage 1~5)은 @repo/ui의
+// CharacterGrowth가 Figma "Stage Row" 에셋을 그대로 옮긴 것.
+export const EVOLUTION_STAGES: {
+  maxLevel: number;
+  label: string;
+  levelRangeLabel: string;
+  stage: GrowthStage;
+}[] = [
+  { maxLevel: 2, label: "새싹", levelRangeLabel: "Lv1~2", stage: 1 },
+  { maxLevel: 4, label: "여행자", levelRangeLabel: "Lv3~4", stage: 2 },
+  { maxLevel: 6, label: "배부른 여행자", levelRangeLabel: "Lv5~6", stage: 3 },
+  { maxLevel: 9, label: "미식 탐험가", levelRangeLabel: "Lv7~9", stage: 4 },
+  { maxLevel: Infinity, label: "예산 마스터", levelRangeLabel: "Lv10+", stage: 5 },
 ];
 
 // maxLevel: Infinity인 마지막 항목이 항상 매치되므로 find는 절대 undefined가 될 수 없다.

@@ -1,0 +1,30 @@
+query CompletedTrips($userId: UUID!) {
+  tripsCollection(filter: { user_id: { eq: $userId } }) {
+    edges {
+      node {
+        id
+        name
+        status
+        start_date
+        end_date
+        region_code
+        total_budget
+        meal_logsCollection(first: 1000) {
+          edges {
+            node {
+              amount
+            }
+          }
+        }
+      }
+    }
+  }
+  region_cacheCollection {
+    edges {
+      node {
+        region_code
+        region_name
+      }
+    }
+  }
+}
