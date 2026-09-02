@@ -114,7 +114,7 @@ export default function TripCompleteScreen() {
                 <BadgeCard
                   key={node.id}
                   title={node.badges?.name ?? "배지"}
-                  point={`+${node.badges?.bonus_points ?? 0}pt`}
+                  subtitle={`+${node.badges?.bonus_points ?? 0}pt`}
                   badgeId={node.badges ? BADGE_ID_BY_NAME[node.badges.name] : undefined}
                 />
               ))}
