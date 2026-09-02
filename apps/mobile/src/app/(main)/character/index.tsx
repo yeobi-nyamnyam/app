@@ -4,6 +4,8 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useQuery } from "@apollo/client/react";
 import {
   CharacterGrowth,
+  CharacterStageCard,
+  GROWTH_STAGE_COLORS,
   Header,
   NavBar,
   Text,
@@ -12,7 +14,6 @@ import {
   radius,
   spacing,
   typography,
-  type GrowthStage,
   type NavBarItemKey,
 } from "@repo/ui";
 import { CharacterGrowthDocument } from "@repo/types";
@@ -47,6 +48,7 @@ export default function CharacterScreen() {
   const level = getCharacterLevel(totalPoints);
   const stage = getGrowthStage(level);
   const stageLabel = getCharacterStage(level);
+  const stageColor = GROWTH_STAGE_COLORS[stage];
   const currentLevelPoints = getPointsForLevel(level);
   const nextLevelPoints = getPointsForLevel(level + 1);
   const pointsToNext = Math.max(nextLevelPoints - totalPoints, 0);
@@ -89,11 +91,15 @@ export default function CharacterScreen() {
       ) : (
         <ScrollView contentContainerStyle={styles.content}>
           <View style={styles.heroSection}>
-            <View style={styles.glow1} />
-            <View style={styles.glow2} />
-            <View style={styles.glow3} />
-            <View style={styles.glow4} />
-            <CharacterGrowth stage={stage} size={130} />
+            <View style={styles.heroStack}>
+              <View style={[styles.glowCircle, styles.glow1, { backgroundColor: stageColor }]} />
+              <View style={[styles.glowCircle, styles.glow2, { backgroundColor: stageColor }]} />
+              <View style={[styles.glowCircle, styles.glow3, { backgroundColor: stageColor }]} />
+              <View style={[styles.glowCircle, styles.glow4, { backgroundColor: stageColor }]} />
+              <View style={styles.characterSlot}>
+                <CharacterGrowth stage={stage} size={130} />
+              </View>
+            </View>
           </View>
 
           <View style={styles.card}>
@@ -115,7 +121,13 @@ export default function CharacterScreen() {
             <Text variant="footnoteEmphasized">캐릭터 성장 단계</Text>
             <View style={styles.stageRow}>
               {EVOLUTION_STAGES.map((item) => (
-                <StageItem key={item.stage} stage={item.stage} label={item.label} levelRangeLabel={item.levelRangeLabel} active={item.stage === stage} />
+                <CharacterStageCard
+                  key={item.stage}
+                  stage={item.stage}
+                  label={item.label}
+                  levelRangeLabel={item.levelRangeLabel}
+                  active={item.stage === stage}
+                />
               ))}
             </View>
 
@@ -147,40 +159,10 @@ export default function CharacterScreen() {
   );
 }
 
-const StageItem = ({
-  stage,
-  label,
-  levelRangeLabel,
-  active,
-}: {
-  stage: GrowthStage;
-  label: string;
-  levelRangeLabel: string;
-  active: boolean;
-}) => (
-  <View style={[styles.stageItem, active && styles.stageItemActive]}>
-    <View
-      style={[
-        styles.stageIconSlot,
-        // Lv1~2(새싹)만 아이콘 자체가 44px 전체를 채우는 에셋이라 원형 배경이 없다 —
-        // 나머지 단계는 28px 아이콘을 원형 배경 위에 얹는다 (Figma node 428:6172).
-        stage !== 1 && (active ? styles.stageIconSlotActive : styles.stageIconSlotInactive),
-      ]}
-    >
-      <CharacterGrowth stage={stage} size={stage === 1 ? 44 : 28} />
-    </View>
-    <Text variant="footnoteRegular" color="subtlest">
-      {levelRangeLabel}
-    </Text>
-    <RNText
-      style={[styles.stageLabel, active && styles.stageLabelActive]}
-      numberOfLines={2}
-      textBreakStrategy="balanced"
-    >
-      {label}
-    </RNText>
-  </View>
-);
+const HERO_SIZE = 358;
+// 카드가 글로우 바닥과 겹치는 만큼(Figma node 428:6172: top 222px, 글로우 358px
+// 기준 358-222=136px) 음수 마진으로 끌어올린다.
+const CARD_OVERLAP = HERO_SIZE - 222;
 
 const styles = StyleSheet.create({
   container: {
@@ -195,45 +177,60 @@ const styles = StyleSheet.create({
   content: {
     paddingBottom: spacing[20],
   },
+  // Figma Body 컨테이너(node 406:2158)의 pt-[14px] — 헤더 바로 밑에 가장 큰
+  // 글로우(358px)가 곧장 시작한다.
   heroSection: {
     alignItems: "center",
-    justifyContent: "center",
-    paddingVertical: spacing[24],
+    paddingTop: spacing[14],
   },
-  // 캐릭터 뒤 배경 글로우 — Figma node 428:6162("bg")가 동심원 4겹으로 이루어진
-  // 단일 SVG라, 안쪽으로 갈수록 진해지는 원 4개로 재현한다. packages/tokens에
-  // primary 계열 밝기가 3단계(subtlest/subtle/default)뿐이라 가장 안쪽 원만
-  // Figma 실제 값에 가까운 색을 직접 지정했다.
-  glow1: {
+  heroStack: {
+    width: HERO_SIZE,
+    height: HERO_SIZE,
+  },
+  // 캐릭터 뒤 배경 글로우 — Figma node 428:6162("bg")는 별도 팔레트가 아니라
+  // 캐릭터 자체 색(GROWTH_STAGE_COLORS)을 10% 불투명도로 겹친 동심원 4개라,
+  // 안쪽으로 갈수록(원끼리 겹치는 만큼) 저절로 진하게 보인다. 각 원은 Figma
+  // 실측값(358/277/204.35/137.81px)대로 캐릭터(node 1244:5433, top 79 · left
+  // 111)와 같은 중심을 갖도록 절대 위치로 가운데 정렬한다.
+  glowCircle: {
     position: "absolute",
+    borderRadius: radius.full,
+    opacity: 0.1,
+  },
+  glow1: {
+    top: 0,
+    left: 0,
     width: 358,
     height: 358,
-    borderRadius: radius.full,
-    backgroundColor: colors.surface.primary.subtlest,
   },
   glow2: {
-    position: "absolute",
+    top: (358 - 277) / 2,
+    left: (358 - 277) / 2,
     width: 277,
     height: 277,
-    borderRadius: radius.full,
-    backgroundColor: colors.surface.primary.subtle,
   },
   glow3: {
-    position: "absolute",
+    top: (358 - 204.35) / 2,
+    left: (358 - 204.35) / 2,
     width: 204.35,
     height: 204.35,
-    borderRadius: radius.full,
-    backgroundColor: colors.surface.primary.default,
   },
   glow4: {
-    position: "absolute",
+    top: (358 - 137.81) / 2,
+    left: (358 - 137.81) / 2,
     width: 137.81,
     height: 137.81,
-    borderRadius: radius.full,
-    backgroundColor: "#7FE8FA",
+  },
+  characterSlot: {
+    position: "absolute",
+    top: 79,
+    left: 111,
+    width: 130,
+    height: 130,
   },
   card: {
     gap: spacing[12],
+    marginTop: -CARD_OVERLAP,
     marginHorizontal: spacing[16],
     paddingHorizontal: spacing[8],
     paddingVertical: spacing[16],
@@ -275,50 +272,6 @@ const styles = StyleSheet.create({
   stageRow: {
     flexDirection: "row",
     gap: spacing[8],
-  },
-  stageItem: {
-    flex: 1,
-    alignItems: "center",
-    gap: spacing[4],
-    paddingVertical: spacing[4],
-    borderRadius: radius[7],
-    backgroundColor: colors.surface.neutral.default,
-  },
-  stageItemActive: {
-    backgroundColor: colors.surface.primary.subtlest,
-  },
-  stageIconSlot: {
-    width: 44,
-    height: 44,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  stageIconSlotActive: {
-    borderRadius: radius.full,
-    backgroundColor: colors.surface.primary.subtlest,
-  },
-  stageIconSlotInactive: {
-    borderRadius: radius.full,
-    backgroundColor: colors.surface.neutral.subtlest,
-  },
-  stageLabel: {
-    fontFamily: getFontFamily(typography.footnoteRegular.fontWeight),
-    fontSize: typography.footnoteRegular.fontSize,
-    lineHeight: typography.footnoteRegular.lineHeight,
-    letterSpacing: typography.footnoteRegular.letterSpacing,
-    fontWeight: typography.footnoteRegular.fontWeight,
-    color: colors.content.neutral.subtlest,
-    textAlign: "center",
-  },
-  stageLabelActive: {
-    fontFamily: getFontFamily(typography.footnoteEmphasized.fontWeight),
-    fontSize: typography.footnoteEmphasized.fontSize,
-    lineHeight: typography.footnoteEmphasized.lineHeight,
-    letterSpacing: typography.footnoteEmphasized.letterSpacing,
-    fontWeight: typography.footnoteEmphasized.fontWeight,
-    // Figma가 이 텍스트만 별도 다크 톤(--primitive/grey/dark-active, #2f353c)을
-    // 지정해서, content.neutral.default(#424344)보다 한 단계 더 진하게 둔다.
-    color: "#2f353c",
   },
   criteriaCard: {
     gap: spacing[6],
