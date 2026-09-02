@@ -30,7 +30,7 @@ export const LoadingOverlay = ({ label }: LoadingOverlayProps) => {
 
 const styles = StyleSheet.create({
   container: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     alignItems: 'center',
     justifyContent: 'center',
     gap: spacing[12],

@@ -450,7 +450,7 @@ const styles = StyleSheet.create({
     paddingVertical: spacing[12],
   },
   backdrop: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     backgroundColor: colors.surface.neutral.alpha['inverse-alpha-30'],
   },
   modalCenter: {

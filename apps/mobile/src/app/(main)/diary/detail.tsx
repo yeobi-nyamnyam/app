@@ -173,7 +173,7 @@ const styles = StyleSheet.create({
     gap: spacing[8],
   },
   backdrop: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     backgroundColor: colors.surface.neutral.alpha["inverse-alpha-30"],
   },
   modalCenter: {

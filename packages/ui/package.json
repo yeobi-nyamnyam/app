@@ -16,11 +16,11 @@
   },
   "dependencies": {
     "@repo/tokens": "workspace:*",
-    "expo-blur": "~14.0.3",
-    "react": "18.3.1",
-    "react-dom": "18.3.1",
-    "react-native": "0.76.9",
-    "react-native-svg": "15.8.0"
+    "expo-blur": "~56.0.4",
+    "react": "19.2.3",
+    "react-dom": "19.2.3",
+    "react-native": "0.85.3",
+    "react-native-svg": "15.15.4"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.1",
@@ -29,8 +29,8 @@
     "@storybook/react": "^8.6.0",
     "@storybook/react-vite": "^8.6.0",
     "@types/node": "^22.15.3",
-    "@types/react": "^18.2.79",
-    "@types/react-dom": "^18.2.25",
+    "@types/react": "^19.2.18",
+    "@types/react-dom": "^19.2.5",
     "eslint": "^9.39.1",
     "eslint-plugin-react": "^7.37.5",
     "eslint-plugin-react-hooks": "^5.2.0",

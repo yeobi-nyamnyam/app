@@ -195,7 +195,7 @@ const styles = StyleSheet.create({
   mapArea: {
     // Preview가 뜨더라도 지도 영역 자체는 줄어들지 않는다(Figma 참고) — Preview는
     // 지도 위에 겹쳐지는 오버레이로 별도 렌더링.
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     overflow: "hidden",
   },
   previewOverlay: {

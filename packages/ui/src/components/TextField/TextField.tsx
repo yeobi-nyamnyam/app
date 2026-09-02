@@ -113,7 +113,7 @@ export const TextField = ({
 // 별개로 브라우저 기본 포커스 아웃라인이 덧씌워진다 (Storybook/웹 미리보기에서만 보이고
 // 네이티브 앱에는 영향 없음). outlineStyle은 RN의 TextStyle 타입에는 없는 web 전용
 // 속성이라 별도 변수로 캐스팅해 합성한다.
-const webFocusReset = { outlineStyle: 'none' } as TextStyle
+const webFocusReset = { outlineStyle: 'none' } as unknown as TextStyle
 
 const styles = StyleSheet.create({
   wrapper: {

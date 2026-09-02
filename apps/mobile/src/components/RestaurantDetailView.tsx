@@ -262,7 +262,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface.neutral.subtlest,
   },
   heroDim: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     backgroundColor: colors.surface.neutral.alpha["inverse-alpha-30"],
   },
   headerBackground: {
