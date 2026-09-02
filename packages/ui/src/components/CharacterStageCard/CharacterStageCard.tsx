@@ -27,8 +27,11 @@ export const CharacterStageCard = ({ stage, levelRangeLabel, label, active = fal
       <Text style={styles.levelRangeLabel} numberOfLines={1}>
         {levelRangeLabel}
       </Text>
+      {/* 안드로이드 한글 줄바꿈은 단어(공백) 경계를 우선하지 않고 음절 아무데서나
+      끊어서, "배부른 여행자"가 "배부른 여행"/"자"처럼 단어 중간에서 잘렸다 —
+      공백을 강제 줄바꿈으로 바꿔 항상 단어 경계에서만 끊기게 한다. */}
       <Text style={[styles.label, active && styles.labelActive]} numberOfLines={2}>
-        {label}
+        {label.replace(' ', '\n')}
       </Text>
     </View>
   )
