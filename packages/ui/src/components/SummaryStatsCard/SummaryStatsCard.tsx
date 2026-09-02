@@ -45,12 +45,15 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: spacing[2],
   },
+  // Figma는 이 값 텍스트를 Pretendard ExtraBold(800)로 쓰지만, 앱에 번들된 폰트
+  // 굵기는 Regular/SemiBold/Bold(700)까지만 있어 가장 굵은 Bold로 근사한다
+  // (bodyEmphasized의 크기/줄간격은 그대로 쓰고 굵기만 700으로 올림).
   value: {
-    fontFamily: getFontFamily(typography.bodyEmphasized.fontWeight),
+    fontFamily: getFontFamily('700'),
     fontSize: typography.bodyEmphasized.fontSize,
     lineHeight: typography.bodyEmphasized.lineHeight,
     letterSpacing: typography.bodyEmphasized.letterSpacing,
-    fontWeight: typography.bodyEmphasized.fontWeight,
+    fontWeight: '700',
     color: colors.content.neutral.default,
   },
   valueError: {

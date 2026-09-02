@@ -51,8 +51,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: spacing[6],
   },
+  // Figma node 408:2298("Meal Chart")의 막대 너비는 컨테이너 폭과 무관하게 48px 고정.
   bar: {
-    width: '100%',
+    width: 48,
     borderRadius: radius[7],
     backgroundColor: colors.surface.primary.default,
   },

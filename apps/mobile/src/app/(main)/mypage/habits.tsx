@@ -25,25 +25,27 @@ import { useSession } from "@/hooks/useSession";
 import { formatWon } from "@/lib/format";
 import type { MealLogCategory } from "@/components/RecordForm";
 import type { MealType } from "@/lib/budget";
+import { TripSelectDropdown } from "@/components/TripSelectDropdown";
 import {
   CATEGORY_COLORS,
   buildCategoryBreakdown,
   buildMealTimeAverages,
   buildRecordFooterCounts,
+  buildTripOptions,
   buildTripRatios,
   filterMealLogsByScope,
   type MealLogInput,
   type TripInput,
 } from "@/lib/spendingHabits";
 
-// 소비 습관 대시보드 (M1, Figma node 408:2212). Ratio Card의 각 행을 탭하면 그
-// 여행이 선택되고, 아래 요약카드/카테고리/끼니차트는 선택된 범위(전체 또는 특정
-// 여행)를 기준으로 다시 계산된다 — 별도 탭/드롭다운 UI 없이 리스트 자체가 선택
-// 컨트롤을 겸한다(사용자 확인 완료).
+// 소비 습관 대시보드 (M1, Figma node 408:2212). "여행별 예산 대비 소비율" 카드는
+// 각 여행의 소비율을 보여주기만 하는 정보성 리스트이고(탭/선택 기능 없음), 아래
+// 요약카드/카테고리/끼니차트를 어느 여행 기준으로 볼지는 별도의 드롭다운으로
+// 고른다 — 여행이 많아져도 스크롤되는 목록으로 대응(사용자 확인 완료).
 export default function HabitsScreen() {
   const insets = useSafeAreaInsets();
   const { session } = useSession();
-  const [selectedTripId, setSelectedTripId] = useState("all");
+  const [selectedTripId, setSelectedTripId] = useState<string | null>(null);
 
   const { data, loading } = useQuery(SpendingHabitsDocument, {
     variables: { userId: session?.user.id ?? "" },
@@ -58,6 +60,7 @@ export default function HabitsScreen() {
         name: edge.node.name,
         status: edge.node.status,
         startDate: edge.node.start_date,
+        endDate: edge.node.end_date,
         totalBudget: edge.node.total_budget,
       })),
     [data],
@@ -78,10 +81,12 @@ export default function HabitsScreen() {
   );
 
   const tripRatios = useMemo(() => buildTripRatios(trips, mealLogs), [trips, mealLogs]);
-  const selected = tripRatios.find((trip) => trip.id === selectedTripId) ?? tripRatios[0];
+  const tripOptions = useMemo(() => buildTripOptions(trips), [trips]);
+  const effectiveTripId = selectedTripId ?? tripOptions[0]?.id ?? "";
+  const selected = tripRatios.find((trip) => trip.id === effectiveTripId);
   const scopedLogs = useMemo(
-    () => filterMealLogsByScope(mealLogs, selectedTripId),
-    [mealLogs, selectedTripId],
+    () => filterMealLogsByScope(mealLogs, effectiveTripId),
+    [mealLogs, effectiveTripId],
   );
   const categoryBreakdown = useMemo(() => buildCategoryBreakdown(scopedLogs), [scopedLogs]);
   const mealTimeAverages = useMemo(() => buildMealTimeAverages(scopedLogs), [scopedLogs]);
@@ -137,16 +142,12 @@ export default function HabitsScreen() {
             <Text variant="footnoteEmphasized">여행별 예산 대비 소비율 (100%=예산)</Text>
             <View style={styles.ratioList}>
               {tripRatios.map((trip) => (
-                <BudgetRatioRow
-                  key={trip.id}
-                  label={trip.label}
-                  ratio={trip.ratio}
-                  selected={trip.id === selectedTripId}
-                  onPress={() => setSelectedTripId(trip.id)}
-                />
+                <BudgetRatioRow key={trip.id} label={trip.label} ratio={trip.ratio} />
               ))}
             </View>
           </View>
+
+          <TripSelectDropdown options={tripOptions} selectedId={effectiveTripId} onChange={setSelectedTripId} />
 
           <SummaryStatsCard stats={summaryStats} />
 

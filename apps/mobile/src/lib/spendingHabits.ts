@@ -25,6 +25,7 @@ export interface TripInput {
   name: string;
   status: string;
   startDate: string;
+  endDate: string;
   totalBudget: number;
 }
 
@@ -49,31 +50,39 @@ const sum = (values: number[]): number => values.reduce((total, value) => total 
 const ratioOf = (spent: number, budget: number): number =>
   budget > 0 ? Math.round((spent / budget) * 100) : 0;
 
-// "전체" 행을 맨 앞에 두고, 나머지는 여행 시작일 최신순으로 정렬한다.
-export const buildTripRatios = (trips: TripInput[], mealLogs: MealLogInput[]): TripRatio[] => {
-  const perTrip = [...trips]
-    .sort((a, b) => (a.startDate < b.startDate ? 1 : a.startDate > b.startDate ? -1 : 0))
-    .map((trip) => {
-      const spent = sum(mealLogs.filter((log) => log.tripId === trip.id).map((log) => log.amount));
-      const label = trip.status === "ongoing" ? `${trip.name} (진행)` : trip.name;
-      return { id: trip.id, label, spent, budget: trip.totalBudget, ratio: ratioOf(spent, trip.totalBudget) };
-    });
+const sortByEndDateDesc = (trips: TripInput[]): TripInput[] =>
+  [...trips].sort((a, b) => (a.endDate < b.endDate ? 1 : a.endDate > b.endDate ? -1 : 0));
 
-  const totalSpent = sum(perTrip.map((trip) => trip.spent));
-  const totalBudget = sum(perTrip.map((trip) => trip.budget));
-  const all: TripRatio = {
-    id: "all",
-    label: "전체",
-    spent: totalSpent,
-    budget: totalBudget,
-    ratio: ratioOf(totalSpent, totalBudget),
-  };
+// 여행 종료일 최신순으로 정렬한 여행별 예산 대비 소비율. "전체" 합산 행 없음(각
+// 여행 개별 정보만 보여주는 목적, 탭/선택 UI와는 무관).
+export const buildTripRatios = (trips: TripInput[], mealLogs: MealLogInput[]): TripRatio[] =>
+  sortByEndDateDesc(trips).map((trip) => {
+    const spent = sum(mealLogs.filter((log) => log.tripId === trip.id).map((log) => log.amount));
+    const label = trip.status === "ongoing" ? `${trip.name} (진행)` : trip.name;
+    return { id: trip.id, label, spent, budget: trip.totalBudget, ratio: ratioOf(spent, trip.totalBudget) };
+  });
 
-  return [all, ...perTrip];
+export interface TripSelectOption {
+  id: string;
+  label: string;
+  endDateLabel: string;
+}
+
+const formatDate = (date: string): string => {
+  const [year, month, day] = date.split("-");
+  return `${year}.${month}.${day}`;
 };
 
+// 여행 선택 드롭다운 목록. 종료일 최신순(위가 최신)으로 정렬한다.
+export const buildTripOptions = (trips: TripInput[]): TripSelectOption[] =>
+  sortByEndDateDesc(trips).map((trip) => ({
+    id: trip.id,
+    label: trip.name,
+    endDateLabel: trip.status === "ongoing" ? "진행 중" : `${formatDate(trip.endDate)} 종료`,
+  }));
+
 export const filterMealLogsByScope = (mealLogs: MealLogInput[], scopeTripId: string): MealLogInput[] =>
-  scopeTripId === "all" ? mealLogs : mealLogs.filter((log) => log.tripId === scopeTripId);
+  mealLogs.filter((log) => log.tripId === scopeTripId);
 
 export interface CategoryBreakdownItem {
   category: MealLogCategory;
