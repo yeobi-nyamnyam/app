@@ -4,8 +4,9 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Header, Text, colors, spacing } from "@repo/ui";
 
 // PLACEHOLDER: 포인트·캐릭터 성장(L2/L3) 화면 (Figma depth1-1, node 406:2141).
-// 레벨/진화 단계 계산 로직(lib/character.ts)은 mypage 허브에서 먼저 확정했고,
-// 단계별 캐릭터 그래픽(알/새싹/미식가/여행왕/마스터)은 이 화면을 만들 때 준비한다.
+// 레벨/진화 단계 계산 로직(lib/character.ts)과 단계별 그래픽(@repo/ui의
+// CharacterGrowth)은 mypage 허브 작업 때 먼저 준비해뒀다 — 이 화면 자체(진행
+// 바, 다음 레벨까지 남은 포인트, 성장 포인트 적립 기준 안내 등)만 남았다.
 export default function CharacterScreen() {
   const insets = useSafeAreaInsets();
 

@@ -4,7 +4,7 @@ import { router } from "expo-router";
 import { useQuery } from "@apollo/client/react";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
-  Character,
+  CharacterGrowth,
   Icon,
   NavBar,
   Text,
@@ -21,7 +21,7 @@ import { MyPageDashboardDocument } from "@repo/types";
 import { deleteAccount } from "@/lib/account";
 import { supabase } from "@/lib/supabase";
 import { useSession } from "@/hooks/useSession";
-import { getCharacterLevel } from "@/lib/character";
+import { getCharacterLevel, getGrowthStage } from "@/lib/character";
 
 /**
  * 마이페이지 허브 화면 (M0, Figma "User_1 - 마이페이지", node 404:2106).
@@ -29,8 +29,9 @@ import { getCharacterLevel } from "@/lib/character";
  * 이 Figma 프레임은 packages/tokens에 없는 별도 팔레트(text/strong #1e2327,
  * primary/default #85d0ff 등)로 그려져 있어서, 기존 디자인 토큰 중 가장 가까운
  * 값으로 매핑해 구현했다(사용자 확인 완료) — 앱 전체 시각적 일관성 유지가 우선.
- * 캐릭터 아바타는 진화 단계별 그래픽이 아직 없어 기존 Character 컴포넌트로
- * 자리만 채운다(character/index.tsx에서 실제 단계 그래픽 준비 예정).
+ * 캐릭터 아바타는 Figma "캐릭터 성장" 화면(node 406:2141)의 단계별 에셋을
+ * 그대로 옮긴 @repo/ui CharacterGrowth 컴포넌트를 쓴다 — lib/character.ts의
+ * getGrowthStage로 현재 레벨에 맞는 단계(1~5)를 계산해서 넘긴다.
  */
 export default function MyPageScreen() {
   const insets = useSafeAreaInsets();
@@ -114,7 +115,7 @@ export default function MyPageScreen() {
 
         <View style={styles.profileCard}>
           <View style={styles.avatarSlot}>
-            <Character variant="sky" size={36} />
+            <CharacterGrowth stage={getGrowthStage(level)} size={36} />
           </View>
           <View style={styles.profileCol}>
             {loading && !data ? (
@@ -191,10 +192,14 @@ const SectionLabel = ({ label }: { label: string }) => (
   </Text>
 );
 
+// 스토리북에 chevron-right는 없고 chevron-left만 있어서, 대칭인 쉐브론 모양을
+// 180도 회전해 재사용한다(새 에셋 추가하지 않음).
 const MenuRow = ({ title, onPress }: { title: string; onPress: () => void }) => (
   <Pressable style={styles.menuRow} onPress={onPress}>
     <Text variant="calloutRegular">{title}</Text>
-    <Icon name="arrow-right" size="small" color={colors.content.neutral.subtle} />
+    <View style={styles.chevronRight}>
+      <Icon name="chevron-left" size="small" color={colors.content.neutral.subtle} />
+    </View>
   </Pressable>
 );
 
@@ -269,6 +274,9 @@ const styles = StyleSheet.create({
     borderColor: colors.border.neutral.subtle,
     borderRadius: radius[16],
     backgroundColor: colors.surface.neutral.default,
+  },
+  chevronRight: {
+    transform: [{ rotate: "180deg" }],
   },
   accountLinks: {
     flexDirection: "row",
