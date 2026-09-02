@@ -21,7 +21,7 @@ import { MyPageDashboardDocument } from "@repo/types";
 import { deleteAccount } from "@/lib/account";
 import { supabase } from "@/lib/supabase";
 import { useSession } from "@/hooks/useSession";
-import { getCharacterLevel, getGrowthStage } from "@/lib/character";
+import { getCharacterLevel, getCharacterStage, getGrowthStage } from "@/lib/character";
 
 /**
  * 마이페이지 허브 화면 (M0, Figma "User_1 - 마이페이지", node 404:2106).
@@ -132,7 +132,7 @@ export default function MyPageScreen() {
                     @{profile.handle}
                   </Text>
                 </View>
-                <RNText style={styles.levelText}>{`Lv.${level} 여행자`}</RNText>
+                <RNText style={styles.levelText}>{`Lv.${level} ${getCharacterStage(level)}`}</RNText>
               </>
             ) : (
               <Text color="subtlest">프로필이 아직 없어요.</Text>
