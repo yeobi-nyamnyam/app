@@ -1,25 +1,80 @@
-import { StyleSheet, View } from "react-native";
+import { useState } from "react";
+import { Alert, ScrollView, StyleSheet, View } from "react-native";
 import { router } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Header, Text, colors, spacing } from "@repo/ui";
+import { useQuery } from "@apollo/client/react";
+import { Header, SettingRow, Text, colors, spacing } from "@repo/ui";
+import { ProfileDocument } from "@repo/types";
 
-// PLACEHOLDER: 계정 관리 설정 화면 (Figma depth1-1, node 410:2346). 로그아웃/회원탈퇴는
-// 마이페이지 허브(mypage/index.tsx)에 이미 동작하는 채로 남겨뒀고, 여기는 그 외
-// 계정 설정 항목(알림, 프로필 수정 등)이 추가될 자리다.
+import { deleteAccount } from "@/lib/account";
+import { supabase } from "@/lib/supabase";
+import { useSession } from "@/hooks/useSession";
+
+// 계정 관리 설정 (Figma node 410:2346, "User_7 - 계정관리설정").
 export default function AccountScreen() {
   const insets = useSafeAreaInsets();
+  const { session } = useSession();
+  const [isProcessing, setIsProcessing] = useState(false);
+
+  const { data } = useQuery(ProfileDocument, {
+    variables: { id: session?.user.id ?? "" },
+    skip: !session,
+    fetchPolicy: "cache-and-network",
+  });
+  const nickname = data?.profilesByPk?.nickname;
+
+  const handleLogout = async () => {
+    setIsProcessing(true);
+    try {
+      await supabase.auth.signOut();
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const handleWithdraw = () => {
+    Alert.alert("정말 탈퇴하시겠어요?", "계정과 모든 데이터가 삭제되며 되돌릴 수 없어요.", [
+      { text: "취소", style: "cancel" },
+      {
+        text: "탈퇴",
+        style: "destructive",
+        onPress: async () => {
+          setIsProcessing(true);
+          try {
+            await deleteAccount();
+          } catch (error) {
+            Alert.alert("탈퇴 실패", error instanceof Error ? error.message : "잠시 후 다시 시도해주세요.");
+          } finally {
+            setIsProcessing(false);
+          }
+        },
+      },
+    ]);
+  };
 
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
       <Header title="계정 관리 설정" onBackPress={() => router.back()} />
-      <View style={styles.content}>
-        <Text variant="bodyRegular" color="subtle" align="center">
-          계정 관리 설정이 들어갈 자리입니다.
+      <ScrollView contentContainerStyle={styles.content}>
+        <View style={styles.rows}>
+          <SettingRow
+            title="닉네임 변경"
+            subtitle={nickname ? `${nickname} · 변경 가능` : undefined}
+            onPress={() => router.push({ pathname: "/mypage/nickname", params: { nickname: nickname ?? "" } })}
+          />
+          <SettingRow title="로그아웃" onPress={handleLogout} />
+          <SettingRow title="회원탈퇴" showChevron={false} variant="danger" onPress={handleWithdraw} />
+        </View>
+        <View style={styles.spacer} />
+        <Text variant="footnoteRegular" color="subtle" align="center">
+          더 이상 여행 예산을 관리하지 않으시나요? 언제든지 탈퇴할 수 있습니다.
         </Text>
-        <Text variant="footnoteRegular" color="subtlest" align="center">
-          (아직 미구현 — 로그아웃/회원탈퇴는 마이페이지에서 바로 가능해요)
-        </Text>
-      </View>
+      </ScrollView>
+      {isProcessing ? (
+        <View style={styles.overlay}>
+          <Text color="inverse">처리 중...</Text>
+        </View>
+      ) : null}
     </View>
   );
 }
@@ -30,10 +85,21 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface.neutral.default,
   },
   content: {
+    flexGrow: 1,
+    padding: spacing[16],
+    paddingTop: spacing[14],
+  },
+  rows: {
+    gap: spacing[10],
+  },
+  spacer: {
     flex: 1,
+    minHeight: spacing[24],
+  },
+  overlay: {
+    ...StyleSheet.absoluteFill,
     alignItems: "center",
     justifyContent: "center",
-    gap: spacing[4],
-    paddingHorizontal: spacing[24],
+    backgroundColor: colors.surface.neutral.alpha["inverse-alpha-30"],
   },
 });

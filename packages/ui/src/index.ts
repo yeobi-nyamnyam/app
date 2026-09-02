@@ -51,6 +51,8 @@ export { Badge } from "./components/Badge";
 export type { BadgeProps, BadgeVariant } from "./components/Badge";
 export { TripSummaryCard } from "./components/TripSummaryCard";
 export type { TripSummaryCardProps } from "./components/TripSummaryCard";
+export { SettingRow } from "./components/SettingRow";
+export type { SettingRowProps, SettingRowVariant } from "./components/SettingRow";
 export { MealCard } from "./components/MealCard";
 export type { MealCardProps, MealCardState } from "./components/MealCard";
 export { DayCard } from "./components/DayCard";
