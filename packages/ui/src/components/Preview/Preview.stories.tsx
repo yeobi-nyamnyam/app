@@ -10,6 +10,7 @@ const meta: Meta<typeof Preview> = {
     category: '한식',
     distance: '0.3km',
     price: '6,000원',
+    imageUrl: 'https://picsum.photos/200',
     showPrice: true,
     onPressDetail: action('onPressDetail'),
   },
@@ -23,4 +24,8 @@ export const Default: Story = {}
 
 export const WithoutPrice: Story = {
   args: { showPrice: false },
+}
+
+export const WithoutImage: Story = {
+  args: { imageUrl: undefined },
 }

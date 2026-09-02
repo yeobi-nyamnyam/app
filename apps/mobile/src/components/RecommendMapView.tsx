@@ -22,6 +22,8 @@ export interface RecommendMapMarker {
   distance: string;
   /** good_price 업소만 값이 있음 (착한가격업소만 가격 정보 보장, docs/schema-design.md §12 참고) */
   price?: string;
+  /** tour_api 업소만 값이 있음 — 착한가격업소 API는 사진을 제공하지 않아 항상 없음 */
+  imageUrl?: string;
   latitude: number;
   longitude: number;
 }
@@ -176,6 +178,7 @@ export const RecommendMapView = ({
             category={selectedMarker.category}
             distance={selectedMarker.distance}
             price={selectedMarker.price ?? ""}
+            imageUrl={selectedMarker.imageUrl}
             showPrice={selectedMarker.source === "good_price"}
             onPressDetail={onPressDetail}
           />

@@ -209,6 +209,7 @@ export default function RecommendScreen() {
         name: edge.node.name,
         category: edge.node.category ?? "",
         distance: "-",
+        imageUrl: edge.node.image_url ?? undefined,
         latitude,
         longitude,
       };

@@ -10,6 +10,7 @@ query TourApiRestaurants($regionSido: String!) {
         category
         latitude
         longitude
+        image_url
       }
     }
   }
