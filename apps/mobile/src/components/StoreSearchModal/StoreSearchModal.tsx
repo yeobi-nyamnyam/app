@@ -17,6 +17,8 @@ import { searchPlaces } from "@/lib/places";
 export interface StoreSearchResult {
   name: string;
   address: string;
+  latitude: number;
+  longitude: number;
 }
 
 const SEARCH_DEBOUNCE_MS = 300;

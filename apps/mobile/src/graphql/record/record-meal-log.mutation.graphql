@@ -4,6 +4,8 @@ mutation RecordMealLog(
   $amount: Int!
   $storeName: String
   $storeAddress: String
+  $storeLatitude: BigFloat
+  $storeLongitude: BigFloat
   $memo: String
   $source: String!
 ) {
@@ -13,6 +15,8 @@ mutation RecordMealLog(
     p_amount: $amount
     p_store_name: $storeName
     p_store_address: $storeAddress
+    p_store_latitude: $storeLatitude
+    p_store_longitude: $storeLongitude
     p_memo: $memo
     p_source: $source
   ) {
@@ -23,6 +27,8 @@ mutation RecordMealLog(
     amount
     store_name
     store_address
+    store_latitude
+    store_longitude
     memo
     source
     visit_date

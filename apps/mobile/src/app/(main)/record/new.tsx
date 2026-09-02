@@ -73,6 +73,8 @@ export default function RecordNewScreen() {
             amount: Number(values.amount),
             storeName: values.storeName || null,
             storeAddress: values.storeAddress || null,
+            storeLatitude: values.storeLatitude != null ? String(values.storeLatitude) : null,
+            storeLongitude: values.storeLongitude != null ? String(values.storeLongitude) : null,
             memo: values.memo || null,
             source,
           },
