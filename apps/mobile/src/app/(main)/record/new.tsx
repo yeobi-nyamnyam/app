@@ -125,6 +125,14 @@ export default function RecordNewScreen() {
       router.push("/record");
       return;
     }
+    if (key === "chat") {
+      router.push("/chat");
+      return;
+    }
+    if (key === "profile") {
+      router.push("/mypage");
+      return;
+    }
     Alert.alert("준비 중", "아직 구현되지 않은 탭이에요.");
   };
 

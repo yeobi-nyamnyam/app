@@ -50,9 +50,13 @@ export default function MyPageScreen() {
   const badgeCount = data?.user_badgesCollection.edges.length ?? 0;
   const trips = data?.tripsCollection.edges ?? [];
   const completedTripCount = trips.filter((edge) => edge.node.status === "completed").length;
+  // "방문 매장"은 끼니 소비(식비)만 센다 — 기타소비(교통/숙박/기념품/기타)의
+  // "이용 내역"은 자유 텍스트를 같은 store_name 컬럼에 저장할 뿐 실제 매장이
+  // 아닐 수 있어서(예: "택시", "고속버스터미널") 방문 매장으로 잘못 집계되면 안 됨.
   const storeNames = new Set(
     trips.flatMap((tripEdge) =>
       (tripEdge.node.meal_logsCollection?.edges ?? [])
+        .filter((logEdge) => logEdge.node.category === "식비")
         .map((logEdge) => logEdge.node.store_name)
         .filter((name): name is string => Boolean(name)),
     ),
