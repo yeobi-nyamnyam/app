@@ -8,7 +8,6 @@ import {
   View,
   type LayoutChangeEvent,
   type NativeScrollEvent,
-  type NativeSyntheticEvent,
 } from "react-native";
 import { StatusBar } from "expo-status-bar";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -129,17 +128,20 @@ export const RestaurantDetailView = ({
     Share.share({ message: restaurant.name }).catch(() => {});
   };
 
+  // 히어로 사진은 safe area 아래(status bar 영역 제외)부터 시작한다 (Figma
+  // node 733:16597 "Hero Photo" — floating 버튼 줄과 같은 top 오프셋). status
+  // bar 영역은 항상 흰 배경이라 아이콘은 항상 dark로 고정한다.
+  //
   // 스크롤에 따라 상단 플로팅 버튼 줄 뒤 배경을 투명→흰색으로 전환 (Figma
   // "cuisine-detail (good-price) (middle)" node 743:20390). 히어로 사진이
-  // 버튼 줄 뒤로 완전히 지나가는 스크롤 거리(HERO_HEIGHT - 버튼 줄 하단
-  // 위치)에 맞춰 페이드가 끝나도록 계산. 히어로가 없으면 처음부터 흰 배경
-  // 고정이라 페이드/전환이 필요 없다.
+  // 버튼 줄 뒤로 완전히 지나가는 스크롤 거리(HERO_HEIGHT - 버튼 줄 높이)에
+  // 맞춰 페이드가 끝나도록 계산. 히어로가 없으면 처음부터 흰 배경 고정이라
+  // 페이드/전환이 필요 없다.
   const scrollY = useRef(new Animated.Value(0)).current;
   const [floatingRowHeight, setFloatingRowHeight] = useState(0);
-  const [isHeaderSolid, setIsHeaderSolid] = useState(!hasHero);
 
   const headerBackgroundHeight = spacing[16] + floatingRowHeight + spacing[12];
-  const headerFadeDistance = Math.max(HERO_HEIGHT - (insets.top + headerBackgroundHeight), 1);
+  const headerFadeDistance = Math.max(HERO_HEIGHT - headerBackgroundHeight, 1);
 
   const headerBackgroundOpacity = hasHero
     ? scrollY.interpolate({
@@ -155,23 +157,15 @@ export const RestaurantDetailView = ({
 
   const handleScroll = Animated.event<NativeScrollEvent>(
     [{ nativeEvent: { contentOffset: { y: scrollY } } }],
-    {
-      useNativeDriver: true,
-      listener: hasHero
-        ? (event: NativeSyntheticEvent<NativeScrollEvent>) => {
-            const solid = event.nativeEvent.contentOffset.y >= headerFadeDistance;
-            setIsHeaderSolid((prev) => (prev === solid ? prev : solid));
-          }
-        : undefined,
-    },
+    { useNativeDriver: true },
   );
 
   return (
     <View style={styles.container}>
-      <StatusBar style={isHeaderSolid ? "dark" : "light"} />
+      <StatusBar style="dark" />
       <Animated.ScrollView style={styles.scroll} onScroll={handleScroll} scrollEventThrottle={16}>
         {hasHero ? (
-          <View style={styles.hero}>
+          <View style={[styles.hero, { marginTop: insets.top }]}>
             <Image
               source={{ uri: restaurant.imageUrl }}
               style={StyleSheet.absoluteFill}
