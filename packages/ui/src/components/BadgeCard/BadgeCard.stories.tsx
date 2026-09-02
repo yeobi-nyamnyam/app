@@ -39,7 +39,7 @@ const meta: Meta<typeof BadgeCard> = {
   },
   args: {
     title: 'Title',
-    point: '+0pt',
+    subtitle: '+0pt',
   },
 }
 
@@ -47,17 +47,28 @@ export default meta
 
 type Story = StoryObj<typeof BadgeCard>
 
-export const Locked: Story = {}
+export const Locked: Story = {
+  args: { locked: true, subtitle: '조건 미달' },
+}
+
+export const LockedWithProgress: Story = {
+  args: {
+    title: badgeNames['nationwide-gourmet'],
+    subtitle: '3/17개 지역',
+    badgeId: 'nationwide-gourmet',
+    locked: true,
+  },
+}
 
 export const Earned: Story = {
-  args: { title: badgeNames['nationwide-gourmet'], point: '+10pt', badgeId: 'nationwide-gourmet' },
+  args: { title: badgeNames['nationwide-gourmet'], subtitle: '+10pt', badgeId: 'nationwide-gourmet' },
 }
 
 export const AllBadges: Story = {
   render: () => (
     <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12 }}>
       {badgeIds.map((badgeId) => (
-        <BadgeCard key={badgeId} title={badgeNames[badgeId]} point="+10pt" badgeId={badgeId} />
+        <BadgeCard key={badgeId} title={badgeNames[badgeId]} subtitle="+10pt" badgeId={badgeId} />
       ))}
     </View>
   ),
