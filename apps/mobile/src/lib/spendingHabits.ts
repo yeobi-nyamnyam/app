@@ -54,12 +54,12 @@ const sortByEndDateDesc = (trips: TripInput[]): TripInput[] =>
   [...trips].sort((a, b) => (a.endDate < b.endDate ? 1 : a.endDate > b.endDate ? -1 : 0));
 
 // 여행 종료일 최신순으로 정렬한 여행별 예산 대비 소비율. "전체" 합산 행 없음(각
-// 여행 개별 정보만 보여주는 목적, 탭/선택 UI와는 무관).
+// 여행 개별 정보만 보여주는 목적, 탭/선택 UI와는 무관). 호출부에서 이미 완료된
+// (status='completed') 여행만 걸러서 넘긴다 — 소비 습관은 종료된 여행만 조회 대상.
 export const buildTripRatios = (trips: TripInput[], mealLogs: MealLogInput[]): TripRatio[] =>
   sortByEndDateDesc(trips).map((trip) => {
     const spent = sum(mealLogs.filter((log) => log.tripId === trip.id).map((log) => log.amount));
-    const label = trip.status === "ongoing" ? `${trip.name} (진행)` : trip.name;
-    return { id: trip.id, label, spent, budget: trip.totalBudget, ratio: ratioOf(spent, trip.totalBudget) };
+    return { id: trip.id, label: trip.name, spent, budget: trip.totalBudget, ratio: ratioOf(spent, trip.totalBudget) };
   });
 
 export interface TripSelectOption {
@@ -73,12 +73,13 @@ const formatDate = (date: string): string => {
   return `${year}.${month}.${day}`;
 };
 
-// 여행 선택 드롭다운 목록. 종료일 최신순(위가 최신)으로 정렬한다.
+// 여행 선택 드롭다운 목록. 종료일 최신순(위가 최신)으로 정렬한다. 대상이 이미
+// 종료된 여행뿐이라 "종료" 문구는 붙이지 않고 날짜만 표시한다.
 export const buildTripOptions = (trips: TripInput[]): TripSelectOption[] =>
   sortByEndDateDesc(trips).map((trip) => ({
     id: trip.id,
     label: trip.name,
-    endDateLabel: trip.status === "ongoing" ? "진행 중" : `${formatDate(trip.endDate)} 종료`,
+    endDateLabel: formatDate(trip.endDate),
   }));
 
 export const filterMealLogsByScope = (mealLogs: MealLogInput[], scopeTripId: string): MealLogInput[] =>

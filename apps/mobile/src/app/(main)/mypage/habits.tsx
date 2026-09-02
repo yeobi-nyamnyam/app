@@ -25,7 +25,7 @@ import { useSession } from "@/hooks/useSession";
 import { formatWon } from "@/lib/format";
 import type { MealLogCategory } from "@/components/RecordForm";
 import type { MealType } from "@/lib/budget";
-import { TripSelectDropdown } from "@/components/TripSelectDropdown";
+import { DropdownField, type DropdownOption } from "@/components/DropdownField";
 import {
   CATEGORY_COLORS,
   buildCategoryBreakdown,
@@ -38,10 +38,11 @@ import {
   type TripInput,
 } from "@/lib/spendingHabits";
 
-// 소비 습관 대시보드 (M1, Figma node 408:2212). "여행별 예산 대비 소비율" 카드는
-// 각 여행의 소비율을 보여주기만 하는 정보성 리스트이고(탭/선택 기능 없음), 아래
-// 요약카드/카테고리/끼니차트를 어느 여행 기준으로 볼지는 별도의 드롭다운으로
-// 고른다 — 여행이 많아져도 스크롤되는 목록으로 대응(사용자 확인 완료).
+// 소비 습관 대시보드 (M1, Figma node 408:2212). 종료된(status='completed') 여행만
+// 조회 대상 — 진행 중인 여행은 제외한다. "여행별 예산 대비 소비율" 카드는 각
+// 여행의 소비율을 보여주기만 하는 정보성 리스트이고(탭/선택 기능 없음), 아래
+// 요약카드/카테고리/끼니차트를 어느 여행 기준으로 볼지는 기록 화면의 방문 날짜/
+// 끼니 때 선택과 동일한 DropdownField로 고른다.
 export default function HabitsScreen() {
   const insets = useSafeAreaInsets();
   const { session } = useSession();
@@ -55,33 +56,41 @@ export default function HabitsScreen() {
 
   const trips: TripInput[] = useMemo(
     () =>
-      (data?.tripsCollection.edges ?? []).map((edge) => ({
-        id: edge.node.id,
-        name: edge.node.name,
-        status: edge.node.status,
-        startDate: edge.node.start_date,
-        endDate: edge.node.end_date,
-        totalBudget: edge.node.total_budget,
-      })),
+      (data?.tripsCollection.edges ?? [])
+        .filter((edge) => edge.node.status === "completed")
+        .map((edge) => ({
+          id: edge.node.id,
+          name: edge.node.name,
+          status: edge.node.status,
+          startDate: edge.node.start_date,
+          endDate: edge.node.end_date,
+          totalBudget: edge.node.total_budget,
+        })),
     [data],
   );
 
   const mealLogs: MealLogInput[] = useMemo(
     () =>
-      (data?.tripsCollection.edges ?? []).flatMap((tripEdge) =>
-        (tripEdge.node.meal_logsCollection?.edges ?? []).map((logEdge) => ({
-          tripId: tripEdge.node.id,
-          amount: logEdge.node.amount,
-          category: logEdge.node.category as MealLogCategory,
-          hasReceipt: Boolean(logEdge.node.receipt_image_url),
-          mealType: (logEdge.node.meal_slots?.meal_type as MealType | undefined) ?? null,
-        })),
-      ),
+      (data?.tripsCollection.edges ?? [])
+        .filter((edge) => edge.node.status === "completed")
+        .flatMap((tripEdge) =>
+          (tripEdge.node.meal_logsCollection?.edges ?? []).map((logEdge) => ({
+            tripId: tripEdge.node.id,
+            amount: logEdge.node.amount,
+            category: logEdge.node.category as MealLogCategory,
+            hasReceipt: Boolean(logEdge.node.receipt_image_url),
+            mealType: (logEdge.node.meal_slots?.meal_type as MealType | undefined) ?? null,
+          })),
+        ),
     [data],
   );
 
   const tripRatios = useMemo(() => buildTripRatios(trips, mealLogs), [trips, mealLogs]);
   const tripOptions = useMemo(() => buildTripOptions(trips), [trips]);
+  const dropdownOptions: DropdownOption[] = useMemo(
+    () => tripOptions.map((option) => ({ value: option.id, label: `${option.label} · ${option.endDateLabel}` })),
+    [tripOptions],
+  );
   const effectiveTripId = selectedTripId ?? tripOptions[0]?.id ?? "";
   const selected = tripRatios.find((trip) => trip.id === effectiveTripId);
   const scopedLogs = useMemo(
@@ -147,7 +156,14 @@ export default function HabitsScreen() {
             </View>
           </View>
 
-          <TripSelectDropdown options={tripOptions} selectedId={effectiveTripId} onChange={setSelectedTripId} />
+          <DropdownField
+            placeholder="여행을 선택하세요"
+            options={dropdownOptions}
+            value={effectiveTripId}
+            onChange={setSelectedTripId}
+            hideSelectedInMenu
+            disabled={tripOptions.length <= 1}
+          />
 
           <SummaryStatsCard stats={summaryStats} />
 
