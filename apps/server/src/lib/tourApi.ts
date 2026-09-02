@@ -111,11 +111,11 @@ export interface TourApiIntro {
   phone: string | null;
 }
 
-// TourAPI 텍스트 필드는 줄바꿈을 <br> HTML 태그로 넣어서 준다 — 화면에 그대로
-// 노출되지 않도록 " / "로 펼치고, 남은 태그는 방어적으로 제거한다.
+// TourAPI 텍스트 필드는 줄바꿈을 <br> HTML 태그로 넣어서 준다 — 실제 개행
+// 문자로 바꾸고, 남은 태그는 방어적으로 제거한다.
 const cleanTourApiText = (raw: string): string =>
   raw
-    .replace(/<br\s*\/?>/gi, " / ")
+    .replace(/<br\s*\/?>/gi, "\n")
     .replace(/<[^>]+>/g, "")
     .trim();
 

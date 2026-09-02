@@ -24,7 +24,9 @@ export interface DataCardRowProps {
 }
 
 const containerVariants: Record<DataCardRowVariant, ViewStyle> = {
-  info: {},
+  // value가 길어져 여러 줄로 감싸일 수 있어(영업시간/휴일/주소 등)
+  // label을 첫 줄에 맞춰 위쪽 정렬한다.
+  info: { alignItems: 'flex-start' },
   menu: {
     borderBottomWidth: stroke.default,
     borderBottomColor: colors.border.neutral.default,
@@ -59,9 +61,7 @@ export const DataCardRow = ({
           <Text style={styles.label} numberOfLines={1}>
             {label}
           </Text>
-          <Text style={styles.value} numberOfLines={1}>
-            {value}
-          </Text>
+          <Text style={styles.value}>{value}</Text>
         </>
       )}
     </View>
