@@ -42,12 +42,11 @@ export const isLocalToday = (isoDateTime: string): boolean => {
 };
 
 /**
- * @param isoDateTime ISO timestamptz 문자열
+ * @param date "YYYY-MM-DD" 형식 날짜 문자열 (예: meal_logs.visit_date) — "MM.DD"로 변환
  */
-export const formatTime = (isoDateTime: string): string => {
-  const date = new Date(isoDateTime);
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return `${pad(date.getHours())}:${pad(date.getMinutes())}`;
+export const formatMonthDay = (date: string): string => {
+  const [, month, day] = date.split("-");
+  return `${month}.${day}`;
 };
 
 const WEEKDAY_LABEL = ["일", "월", "화", "수", "목", "금", "토"];
