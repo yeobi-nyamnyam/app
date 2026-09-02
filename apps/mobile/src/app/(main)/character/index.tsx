@@ -89,8 +89,10 @@ export default function CharacterScreen() {
       ) : (
         <ScrollView contentContainerStyle={styles.content}>
           <View style={styles.heroSection}>
-            <View style={styles.glowOuter} />
-            <View style={styles.glowInner} />
+            <View style={styles.glow1} />
+            <View style={styles.glow2} />
+            <View style={styles.glow3} />
+            <View style={styles.glow4} />
             <CharacterGrowth stage={stage} size={130} />
           </View>
 
@@ -157,19 +159,26 @@ const StageItem = ({
   active: boolean;
 }) => (
   <View style={[styles.stageItem, active && styles.stageItemActive]}>
-    <View style={[styles.stageIconSlot, active && styles.stageIconSlotActive]}>
-      <CharacterGrowth stage={stage} size={28} />
+    <View
+      style={[
+        styles.stageIconSlot,
+        // Lv1~2(새싹)만 아이콘 자체가 44px 전체를 채우는 에셋이라 원형 배경이 없다 —
+        // 나머지 단계는 28px 아이콘을 원형 배경 위에 얹는다 (Figma node 428:6172).
+        stage !== 1 && (active ? styles.stageIconSlotActive : styles.stageIconSlotInactive),
+      ]}
+    >
+      <CharacterGrowth stage={stage} size={stage === 1 ? 44 : 28} />
     </View>
     <Text variant="footnoteRegular" color="subtlest">
       {levelRangeLabel}
     </Text>
-    <Text
-      variant={active ? "footnoteEmphasized" : "footnoteRegular"}
-      color={active ? "default" : "subtlest"}
-      align="center"
+    <RNText
+      style={[styles.stageLabel, active && styles.stageLabelActive]}
+      numberOfLines={2}
+      textBreakStrategy="balanced"
     >
       {label}
-    </Text>
+    </RNText>
   </View>
 );
 
@@ -191,24 +200,43 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     paddingVertical: spacing[24],
   },
-  glowOuter: {
+  // 캐릭터 뒤 배경 글로우 — Figma node 428:6162("bg")가 동심원 4겹으로 이루어진
+  // 단일 SVG라, 안쪽으로 갈수록 진해지는 원 4개로 재현한다. packages/tokens에
+  // primary 계열 밝기가 3단계(subtlest/subtle/default)뿐이라 가장 안쪽 원만
+  // Figma 실제 값에 가까운 색을 직접 지정했다.
+  glow1: {
     position: "absolute",
     width: 220,
     height: 220,
     borderRadius: radius.full,
     backgroundColor: colors.surface.primary.subtlest,
   },
-  glowInner: {
+  glow2: {
     position: "absolute",
-    width: 160,
-    height: 160,
+    width: 180,
+    height: 180,
     borderRadius: radius.full,
     backgroundColor: colors.surface.primary.subtle,
+  },
+  glow3: {
+    position: "absolute",
+    width: 145,
+    height: 145,
+    borderRadius: radius.full,
+    backgroundColor: colors.surface.primary.default,
+  },
+  glow4: {
+    position: "absolute",
+    width: 115,
+    height: 115,
+    borderRadius: radius.full,
+    backgroundColor: "#7FE8FA",
   },
   card: {
     gap: spacing[12],
     marginHorizontal: spacing[16],
-    padding: spacing[16],
+    paddingHorizontal: spacing[8],
+    paddingVertical: spacing[16],
     borderRadius: radius[20],
     backgroundColor: colors.surface.neutral.subtlest,
   },
@@ -269,9 +297,33 @@ const styles = StyleSheet.create({
     borderRadius: radius.full,
     backgroundColor: colors.surface.primary.subtlest,
   },
+  stageIconSlotInactive: {
+    borderRadius: radius.full,
+    backgroundColor: colors.surface.neutral.subtlest,
+  },
+  stageLabel: {
+    fontFamily: getFontFamily(typography.footnoteRegular.fontWeight),
+    fontSize: typography.footnoteRegular.fontSize,
+    lineHeight: typography.footnoteRegular.lineHeight,
+    letterSpacing: typography.footnoteRegular.letterSpacing,
+    fontWeight: typography.footnoteRegular.fontWeight,
+    color: colors.content.neutral.subtlest,
+    textAlign: "center",
+  },
+  stageLabelActive: {
+    fontFamily: getFontFamily(typography.footnoteEmphasized.fontWeight),
+    fontSize: typography.footnoteEmphasized.fontSize,
+    lineHeight: typography.footnoteEmphasized.lineHeight,
+    letterSpacing: typography.footnoteEmphasized.letterSpacing,
+    fontWeight: typography.footnoteEmphasized.fontWeight,
+    // Figma가 이 텍스트만 별도 다크 톤(--primitive/grey/dark-active, #2f353c)을
+    // 지정해서, content.neutral.default(#424344)보다 한 단계 더 진하게 둔다.
+    color: "#2f353c",
+  },
   criteriaCard: {
     gap: spacing[6],
-    padding: spacing[14],
+    paddingHorizontal: spacing[16],
+    paddingVertical: spacing[14],
     borderRadius: radius[16],
     backgroundColor: colors.surface.neutral.default,
   },
