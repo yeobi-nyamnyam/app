@@ -31,11 +31,5 @@
   "packageManager": "pnpm@9.0.0",
   "engines": {
     "node": ">=18"
-  },
-  "pnpm": {
-    "patchedDependencies": {
-      "expo-modules-autolinking@2.0.8": "patches/expo-modules-autolinking@2.0.8.patch",
-      "@mj-studio/react-native-naver-map@1.5.10": "patches/@mj-studio__react-native-naver-map@1.5.10.patch"
-    }
   }
 }
