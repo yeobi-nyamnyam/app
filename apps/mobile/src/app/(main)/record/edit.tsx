@@ -54,6 +54,7 @@ export default function RecordEditScreen() {
   const [category, setCategory] = useState<MealLogCategory>(params.category);
   const [amount, setAmount] = useState(params.amount);
   const [storeName, setStoreName] = useState(params.storeName ?? "");
+  const [storeAddress, setStoreAddress] = useState(params.storeAddress ?? "");
   const [memo, setMemo] = useState(params.memo ?? "");
   const [isDeleteConfirmVisible, setIsDeleteConfirmVisible] = useState(false);
 
@@ -75,6 +76,15 @@ export default function RecordEditScreen() {
     setAmount(digits > 0 ? String(digits) : "");
   };
 
+  // 주소는 매장명 검색 결과로만 채워지는 값(F6-10)이라 매장명을 지우면 더는
+  // 유효하지 않다 — 같이 초기화한다.
+  const handleStoreNameChange = (text: string) => {
+    setStoreName(text);
+    if (!text) {
+      setStoreAddress("");
+    }
+  };
+
   const handleSave = async () => {
     try {
       await updateMealLog({
@@ -82,7 +92,7 @@ export default function RecordEditScreen() {
           mealLogId: params.logId,
           amount: amountValue,
           storeName: storeName || null,
-          storeAddress: params.storeAddress || null,
+          storeAddress: storeAddress || null,
           memo: memo || null,
           category: isMeal ? null : category,
         },
@@ -165,12 +175,12 @@ export default function RecordEditScreen() {
           ) : null}
 
           <FormField label={isMeal ? "매장 이름" : "이용 내역"}>
-            <TextField value={storeName} onChangeText={setStoreName} placeholder="예: 북구네 돼지국밥" />
+            <TextField value={storeName} onChangeText={handleStoreNameChange} placeholder="예: 북구네 돼지국밥" />
           </FormField>
 
-          {isMeal && params.storeAddress ? (
+          {isMeal && storeAddress ? (
             <FormField label="주소">
-              <TextField value={params.storeAddress} onChangeText={() => {}} disabled />
+              <TextField value={storeAddress} onChangeText={() => {}} disabled />
             </FormField>
           ) : null}
 
