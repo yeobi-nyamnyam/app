@@ -13,6 +13,8 @@ export type {
 } from "./components/ListRow";
 export { Character } from "./components/Character";
 export type { CharacterProps, CharacterShadow, CharacterVariant } from "./components/Character";
+export { CharacterGrowth } from "./components/CharacterGrowth";
+export type { CharacterGrowthProps, GrowthStage } from "./components/CharacterGrowth";
 export { Header } from "./components/Header";
 export type { HeaderProps, HeaderTextAlign, HeaderTailing } from "./components/Header";
 export { Footer } from "./components/Footer";
