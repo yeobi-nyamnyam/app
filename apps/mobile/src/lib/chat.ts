@@ -1,6 +1,7 @@
 import EventSource from "react-native-sse";
 import { supabase } from "@/lib/supabase";
 import type { MealLogCategory } from "@/components/RecordForm";
+import type { MealType } from "@/lib/budget";
 
 // apps/server 채팅 SSE 엔드포인트. lib/account.ts와 동일한 패턴.
 const serverUrl = process.env.EXPO_PUBLIC_SERVER_URL ?? "http://localhost:4000";
@@ -17,6 +18,7 @@ export interface ChatParsedResult {
   hasExpense: boolean;
   amount: number | null;
   category: MealLogCategory | null;
+  mealType: MealType | null;
 }
 
 /**

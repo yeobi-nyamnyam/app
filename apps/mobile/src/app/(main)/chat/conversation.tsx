@@ -24,7 +24,7 @@ import {
 import type { MealLogCategory } from "@/components/RecordForm";
 
 import { formatWon, todayDate } from "@/lib/format";
-import { MEAL_TYPES } from "@/lib/budget";
+import { MEAL_TYPES, MEAL_TYPE_LABEL, type MealType } from "@/lib/budget";
 import {
   formatChatTime,
   streamChatReply,
@@ -109,6 +109,9 @@ export default function ChatConversationScreen() {
   // F6-4 캐스케이드 확정분(0원)도 is_recorded=true라 오늘 끼니가 전부 막혔는지 여기서 같이 판단된다.
   const allMealsRecorded =
     todaySlots.length === MEAL_TYPES.length && todaySlots.every((slot) => slot.is_recorded);
+  const recordedMealTypes = todaySlots
+    .filter((slot) => slot.is_recorded)
+    .map((slot) => slot.meal_type as MealType);
 
   return (
     <ActiveConversation
@@ -118,6 +121,7 @@ export default function ChatConversationScreen() {
       dayBudget={dayBudget}
       consumed={consumed}
       allMealsRecorded={allMealsRecorded}
+      recordedMealTypes={recordedMealTypes}
     />
   );
 }
@@ -135,6 +139,7 @@ function ActiveConversation({
   dayBudget,
   consumed,
   allMealsRecorded,
+  recordedMealTypes,
 }: {
   tripId: string;
   tripName: string;
@@ -142,6 +147,7 @@ function ActiveConversation({
   dayBudget: number;
   consumed: number;
   allMealsRecorded: boolean;
+  recordedMealTypes: MealType[];
 }) {
   const insets = useSafeAreaInsets();
   const scrollRef = useRef<ScrollView>(null);
@@ -189,9 +195,16 @@ function ActiveConversation({
 
   // 끼니 소비(식비)는 슬롯 연결·캐스케이드 확정(F6-4)이 아직 없어 RecordForm에서도
   // 저장을 막아둔 상태라, 채팅에서 확정하지 않고 기록 화면(F6-1 chat 경로)으로 보낸다.
-  const goToRecordScreen = (amount?: string) => {
-    const params = new URLSearchParams({ tripId, source: "chat" });
-    if (amount) params.set("presetAmount", amount);
+  // 채팅은 항상 "지금, 오늘" 맥락이라 방문 날짜는 항상 오늘로 채워 보낸다.
+  const goToRecordScreen = (options: {
+    amount?: string;
+    category?: MealLogCategory;
+    mealType?: MealType | null;
+  }) => {
+    const params = new URLSearchParams({ tripId, source: "chat", presetVisitDate: todayDate() });
+    if (options.amount) params.set("presetAmount", options.amount);
+    if (options.category) params.set("presetCategory", options.category);
+    if (options.mealType) params.set("presetMealType", options.mealType);
     setPendingExpense(null);
     router.push(`/record/new?${params.toString()}`);
   };
@@ -258,6 +271,16 @@ function ActiveConversation({
         });
         return;
       }
+      // 메시지에서 끼니 때(아침/점심/저녁)가 특정됐는데 그 끼니가 이미 기록돼 있으면
+      // (다른 끼니는 안 끝났어도) 그 끼니로는 더 기록할 슬롯이 없으므로 마찬가지로 막는다.
+      if (result.mealType && recordedMealTypes.includes(result.mealType)) {
+        appendMessage({
+          id: `ai-locked-${Date.now()}`,
+          sender: "ai",
+          text: `오늘 ${MEAL_TYPE_LABEL[result.mealType]} 기록은 이미 있어요. 수정하려면 기록보기에서 오늘 기록을 삭제한 뒤 다시 입력해주세요.`,
+        });
+        return;
+      }
       // "새 추천 보기" 카드는 여기서 바로 띄우지 않는다 — 사용자가 기록 화면에서
       // 실제로 저장하고 돌아와 오늘 남은 식비가 진짜로 줄었을 때만
       // (위 useFocusEffect + useEffect가 감지) 뜨도록 분리했다.
@@ -267,7 +290,8 @@ function ActiveConversation({
         variant: "cta",
         description: `${formatWon(result.amount)} 썼군요! 끼니 소비는 채팅에서 바로 저장할 수 없어서, 기록 화면에서 확인하고 남겨주세요.`,
         buttonLabel: "메뉴 기록",
-        onButtonPress: () => goToRecordScreen(String(result.amount)),
+        onButtonPress: () =>
+          goToRecordScreen({ amount: String(result.amount), category: "식비", mealType: result.mealType }),
       });
       return;
     }
@@ -388,7 +412,9 @@ function ActiveConversation({
             <View style={{ paddingBottom: insets.bottom }}>
               <ChatRecordSheet
                 title="끼니 기록"
-                onTitlePress={() => goToRecordScreen(pendingExpense.amount)}
+                onTitlePress={() =>
+                  goToRecordScreen({ amount: pendingExpense.amount, category: pendingExpense.category })
+                }
                 categories={CATEGORY_OPTIONS}
                 selectedCategory={pendingExpense.category}
                 onSelectCategory={(value) =>
