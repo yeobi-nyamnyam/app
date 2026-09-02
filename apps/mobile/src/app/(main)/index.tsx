@@ -15,7 +15,7 @@ import {
   spacing,
   type NavBarItemKey,
 } from "@repo/ui";
-import { ActiveTripDocument, UpdateMealSlotWeightDocument } from "@repo/types";
+import { ActiveTripDocument, TripMealLogsDocument, UpdateMealSlotWeightDocument } from "@repo/types";
 
 import { formatWon, todayDate } from "@/lib/format";
 import {
@@ -31,6 +31,7 @@ import {
 import { useSession } from "@/hooks/useSession";
 
 interface ActiveTrip {
+  id: string;
   name: string;
   startDate: string;
   endDate: string;
@@ -97,6 +98,7 @@ export default function HomeScreen() {
   }
 
   const trip: ActiveTrip = {
+    id: tripNode.id,
     name: tripNode.name,
     startDate: tripNode.start_date,
     endDate: tripNode.end_date,
@@ -197,6 +199,9 @@ function ActiveTripHome({
   const insets = useSafeAreaInsets();
   const [expanded, setExpanded] = useState(true);
   const [updateMealSlotWeight] = useMutation(UpdateMealSlotWeightDocument);
+  const { data: mealLogsData } = useQuery(TripMealLogsDocument, {
+    variables: { tripId: trip.id },
+  });
 
   const today = todayDate();
   const dayIndex = getTripDates(trip).indexOf(today);
@@ -231,11 +236,59 @@ function ActiveTripHome({
 
   const [, month, day] = today.split("-");
 
-  const handleMealPress = (mealType: MealType) => {
-    Alert.alert(
-      `${MEAL_TYPE_LABEL[mealType]} 소비 기록`,
-      "소비 기록 화면은 아직 준비 중이에요. 곧 여기서 바로 기록할 수 있게 연결될 예정입니다.",
-    );
+  const mealLogByMealSlotId = new Map(
+    (mealLogsData?.meal_logsCollection.edges ?? [])
+      .filter((edge) => edge.node.meal_slot_id != null)
+      .map((edge) => [edge.node.meal_slot_id as string, edge.node]),
+  );
+  // record/history.tsx와 동일: 바로 다음 끼니가 이미 기록되어 있으면 삭제 불가.
+  // 오늘 슬롯만이 아니라 여행 전체 슬롯 기준으로 판단해야 해서 mealSlots를 그대로 정렬해 쓴다.
+  const sortedMealSlots = [...mealSlots].sort((a, b) => {
+    if (a.date !== b.date) return a.date < b.date ? -1 : 1;
+    return MEAL_TYPES.indexOf(a.mealType) - MEAL_TYPES.indexOf(b.mealType);
+  });
+  const isMealSlotDeletable = (mealSlotId: string) => {
+    const index = sortedMealSlots.findIndex((slot) => slot.id === mealSlotId);
+    const nextSlot = sortedMealSlots[index + 1];
+    return !nextSlot || !nextSlot.isRecorded;
+  };
+
+  const handleMealPress = (slot: ActiveMealSlot) => {
+    if (slot.isRecorded) {
+      const log = mealLogByMealSlotId.get(slot.id);
+      if (!log) {
+        Alert.alert("기록을 불러오지 못했어요", "잠시 후 다시 시도해주세요.");
+        return;
+      }
+      router.push({
+        pathname: "/record/edit",
+        params: {
+          logId: log.id,
+          title: log.store_name || MEAL_TYPE_LABEL[slot.mealType],
+          category: log.category,
+          mealTypeLabel: MEAL_TYPE_LABEL[slot.mealType],
+          createdAt: log.created_at,
+          visitDate: log.visit_date,
+          amount: String(log.amount),
+          storeName: log.store_name ?? "",
+          storeAddress: log.store_address ?? "",
+          memo: log.memo ?? "",
+          canDelete: String(isMealSlotDeletable(slot.id)),
+        },
+      });
+      return;
+    }
+
+    router.push({
+      pathname: "/record/new",
+      params: {
+        tripId: trip.id,
+        source: "home",
+        presetVisitDate: slot.date,
+        presetMealType: slot.mealType,
+        presetCategory: "식비",
+      },
+    });
   };
 
   const handleChangeWeight = async (mealKey: string, weightLabel: string) => {
@@ -312,7 +365,7 @@ function ActiveTripHome({
           {todaySlots.map((slot, index) => (
             <Pressable
               key={slot.id}
-              onPress={() => handleMealPress(slot.mealType)}
+              onPress={() => handleMealPress(slot)}
             >
               <MealCard
                 meal={MEAL_TYPE_LABEL[slot.mealType]}
