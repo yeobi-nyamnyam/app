@@ -1,15 +1,23 @@
 import { useState } from "react";
-import { Alert, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Alert, Linking, ScrollView, StyleSheet, Text, View } from "react-native";
 import { router } from "expo-router";
 import { CheckBox, Footer, Header, ListRow, colors, getFontFamily, spacing, typography } from "@repo/ui";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { TermsModal } from "@/components/TermsModal";
 import { useSession } from "@/hooks/useSession";
 import { markSignUpTermsAgreed } from "@/lib/onboarding";
 import { supabase } from "@/lib/supabase";
 
 type TermKey = "service" | "privacy" | "age" | "location" | "marketing";
+
+// docs/terms.md 내용을 그대로 옮긴 노션 페이지. 약관별로 페이지가 나뉘어 있다.
+const TERM_URLS: Record<TermKey, string> = {
+  service: "https://yeobi-nyamnyam.notion.site/3cfabe76127480eb9244c6634c1750c3?source=copy_link",
+  privacy: "https://yeobi-nyamnyam.notion.site/3cfabe76127480948bedc41a385f245a?source=copy_link",
+  age: "https://yeobi-nyamnyam.notion.site/14-3cfabe76127480a6883efd8d4edafe71?source=copy_link",
+  location: "https://yeobi-nyamnyam.notion.site/3cfabe76127480df8b1af47fdc8d9dce?source=copy_link",
+  marketing: "https://yeobi-nyamnyam.notion.site/3cfabe76127480338560c08cf2fa2108?source=copy_link",
+};
 
 const TERMS: { key: TermKey; title: string; required: boolean }[] = [
   { key: "service", title: "서비스 이용약관", required: true },
@@ -29,7 +37,6 @@ export default function SignUpTermsScreen() {
     location: false,
     marketing: false,
   });
-  const [detailTerm, setDetailTerm] = useState<TermKey | null>(null);
 
   const toggle = (key: TermKey) => setChecked((prev) => ({ ...prev, [key]: !prev[key] }));
 
@@ -50,8 +57,6 @@ export default function SignUpTermsScreen() {
     }
   };
 
-  const detailTitle = TERMS.find((term) => term.key === detailTerm)?.title ?? "";
-
   return (
     <View style={styles.container}>
       <Header title="약관 동의" onBackPress={() => supabase.auth.signOut()} topInset={insets.top} />
@@ -69,13 +74,12 @@ export default function SignUpTermsScreen() {
               backgroundColor="white"
               icon={<CheckBox checked={checked[term.key]} />}
               onPress={() => toggle(term.key)}
-              onTailingPress={() => setDetailTerm(term.key)}
+              onTailingPress={() => Linking.openURL(TERM_URLS[term.key])}
             />
           ))}
         </View>
       </ScrollView>
       <Footer disabled={!canConfirm} onPress={handleConfirm} bottomInset={insets.bottom} />
-      <TermsModal visible={detailTerm !== null} title={detailTitle} onClose={() => setDetailTerm(null)} />
     </View>
   );
 }
