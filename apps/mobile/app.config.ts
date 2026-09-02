@@ -94,6 +94,10 @@ const config: ExpoConfig = {
             "https://devrepo.kakao.com/nexus/content/groups/public/",
             "https://repository.map.naver.com/archive/maven",
           ],
+          // 이슈 #143: New Architecture 적용 검토/전환 작업 중. 지금까지는
+          // android/gradle.properties에만 수동으로 박혀 있어서 expo prebuild
+          // 재실행 시 SDK 기본값으로 덮어써질 위험이 있었음 — 여기서 명시 관리.
+          newArchEnabled: true,
         },
       },
     ],
