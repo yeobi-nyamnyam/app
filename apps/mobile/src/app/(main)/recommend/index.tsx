@@ -16,10 +16,16 @@ import {
   spacing,
   type NavBarItemKey,
 } from "@repo/ui";
-import { ActiveTripDocument, GoodPriceRestaurantsDocument, RegionNameDocument } from "@repo/types";
+import {
+  ActiveTripDocument,
+  GoodPriceRestaurantsDocument,
+  RegionNameDocument,
+  TourApiRestaurantsDocument,
+} from "@repo/types";
 
 import { RecommendMapView, type RecommendMapMarker } from "@/components/RecommendMapView";
 import { SortSheet, type SortOption } from "@/components/SortSheet";
+import { useCurrentLocation } from "@/hooks/useCurrentLocation";
 import { useSession } from "@/hooks/useSession";
 import { formatWon } from "@/lib/format";
 import {
@@ -28,54 +34,10 @@ import {
   getRecommendBudgetAmount,
   type MealType,
 } from "@/lib/budget";
-import { getCheapestMenuPrice, parsePriceMenus } from "@/lib/restaurant";
+import { getCheapestMenuPrice, parseCoordinate, parsePriceMenus } from "@/lib/restaurant";
 
-// TODO(F3-1/F3-2 데이터 연동): 지도보기·상세 화면은 이번 F3-5 범위에서 제외 —
-// restaurants GraphQL 쿼리(실제 latitude/longitude, tour_api 포함)로 교체 예정.
-// 지금은 약수역(서울) 인근 좌표를 임의로 흩뿌린 정적 mock (Figma "recommand-map" 화면,
-// node 733:15646, 733:15879의 마커 배치 예시를 좌표로 옮김).
-const CURRENT_LOCATION = { latitude: 37.5544, longitude: 127.0098 };
-
-const MOCK_MAP_MARKERS: RecommendMapMarker[] = [
-  {
-    id: "m1",
-    source: "good_price",
-    name: "대명돼지국밥",
-    category: "한식",
-    distance: "0.5km",
-    price: "6,500원",
-    latitude: 37.5559,
-    longitude: 127.0083,
-  },
-  {
-    id: "m2",
-    source: "good_price",
-    name: "윤소인남산고단백장어죽집",
-    category: "한식",
-    distance: "0.8km",
-    price: "15,000원",
-    latitude: 37.5528,
-    longitude: 127.0117,
-  },
-  {
-    id: "m3",
-    source: "tour_api",
-    name: "가마솥 순대국밥",
-    category: "한식",
-    distance: "0.1km",
-    latitude: 37.5567,
-    longitude: 127.0106,
-  },
-  {
-    id: "m4",
-    source: "tour_api",
-    name: "둔산식당",
-    category: "한식",
-    distance: "0.6km",
-    latitude: 37.5519,
-    longitude: 127.0072,
-  },
-];
+// 위치 권한이 없거나 측위 실패 시 지도 초기 카메라로 쓸 최후 폴백(서울시청).
+const FALLBACK_LOCATION = { latitude: 37.5665, longitude: 126.978 };
 
 const DEFAULT_SORT_VALUE = "price-asc";
 const SORT_OPTIONS: SortOption[] = [
@@ -204,6 +166,65 @@ export default function RecommendScreen() {
   const sortedRestaurants = sortByValue(priceListRestaurants, sortValue);
   const sortLabel = SORT_OPTIONS.find((option) => option.value === sortValue)?.label ?? "";
 
+  // F3-1: 지도보기는 가격보기와 달리 예산과 무관하게, 좌표가 있는 착한가격업소를
+  // 전부 마커로 띄운다 (좌표 없는 업소는 지오코딩 실패분이라 지도에 표시 불가).
+  const goodPriceMapMarkers: RecommendMapMarker[] = (restaurantsData?.restaurantsCollection.edges ?? [])
+    .map((edge) => {
+      const latitude = parseCoordinate(edge.node.latitude);
+      const longitude = parseCoordinate(edge.node.longitude);
+      if (latitude == null || longitude == null) return null;
+
+      const cheapestPrice = getCheapestMenuPrice(parsePriceMenus(edge.node.price_menus));
+      const marker: RecommendMapMarker = {
+        id: edge.node.id,
+        source: "good_price",
+        name: edge.node.name,
+        category: edge.node.category ?? "",
+        // TODO(F3 후속): 사용자 실시간 위치 기반 거리 계산은 별도 스코프.
+        distance: "-",
+        price: cheapestPrice != null ? formatWon(cheapestPrice) : undefined,
+        latitude,
+        longitude,
+      };
+      return marker;
+    })
+    .filter((marker): marker is RecommendMapMarker => marker !== null);
+
+  // F3-1 2단계: 일반 업소(source=tour_api, TourAPI contentTypeId=39)도 가격과
+  // 무관하게 좌표가 있는 것 전부 마커로 띄운다. 지도보기(viewMode===1)에서만
+  // 쓰는 데이터라 가격보기에서까지 불필요하게 조회하지 않도록 skip한다.
+  const { data: tourApiData } = useQuery(TourApiRestaurantsDocument, {
+    variables: { regionSido: regionSido ?? "" },
+    skip: !regionSido || viewMode !== 1,
+    fetchPolicy: "cache-and-network",
+  });
+  const tourApiMapMarkers: RecommendMapMarker[] = (tourApiData?.restaurantsCollection.edges ?? [])
+    .map((edge) => {
+      const latitude = parseCoordinate(edge.node.latitude);
+      const longitude = parseCoordinate(edge.node.longitude);
+      if (latitude == null || longitude == null) return null;
+
+      const marker: RecommendMapMarker = {
+        id: edge.node.id,
+        source: "tour_api",
+        name: edge.node.name,
+        category: edge.node.category ?? "",
+        distance: "-",
+        imageUrl: edge.node.image_url ?? undefined,
+        latitude,
+        longitude,
+      };
+      return marker;
+    })
+    .filter((marker): marker is RecommendMapMarker => marker !== null);
+
+  const mapMarkers = [...goodPriceMapMarkers, ...tourApiMapMarkers];
+
+  // 지도 초기 카메라는 마커 좌표가 아니라 사용자의 실제 현재 위치를 기준으로 삼는다
+  // (권한 거부/측위 실패 시에만 FALLBACK_LOCATION으로 대체).
+  const deviceLocation = useCurrentLocation();
+  const mapCurrentLocation = deviceLocation ?? FALLBACK_LOCATION;
+
   if (loading && !data) {
     return (
       <View style={styles.screen}>
@@ -301,8 +322,8 @@ export default function RecommendScreen() {
         </>
       ) : (
         <RecommendMapView
-          markers={MOCK_MAP_MARKERS}
-          currentLocation={CURRENT_LOCATION}
+          markers={mapMarkers}
+          currentLocation={mapCurrentLocation}
           selectedMarkerId={selectedMarkerId}
           onSelectMarker={setSelectedMarkerId}
           onPressDetail={() => {

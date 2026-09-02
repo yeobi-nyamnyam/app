@@ -1,0 +1,17 @@
+query TourApiRestaurants($regionSido: String!) {
+  restaurantsCollection(
+    filter: { source: { eq: "tour_api" }, region_sido: { eq: $regionSido } }
+    orderBy: [{ name: AscNullsLast }]
+  ) {
+    edges {
+      node {
+        id
+        name
+        category
+        latitude
+        longitude
+        image_url
+      }
+    }
+  }
+}

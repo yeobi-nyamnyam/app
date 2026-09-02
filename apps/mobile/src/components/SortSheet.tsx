@@ -11,7 +11,6 @@ export interface SortOption {
  * 같은 grabber/radius/backdrop 패턴을 그대로 따른다.
  *
  * @param visible 시트가 열려있는지
- * @param title 시트 상단 제목 (optional, 기본값 "정렬")
  * @param options 정렬 선택지 목록, 각 항목은 { value, label }
  * @param selectedValue 현재 선택된 옵션의 value
  * @param onSelect 옵션을 선택할 때 발생하는 event 명시, 선택한 value를 전달
@@ -19,7 +18,6 @@ export interface SortOption {
  */
 export interface SortSheetProps {
   visible: boolean;
-  title?: string;
   options: SortOption[];
   selectedValue: string;
   onSelect: (value: string) => void;
@@ -28,7 +26,6 @@ export interface SortSheetProps {
 
 export const SortSheet = ({
   visible,
-  title = "정렬",
   options,
   selectedValue,
   onSelect,
@@ -42,7 +39,6 @@ export const SortSheet = ({
           <View style={styles.grabberRow}>
             <View style={styles.grabber} />
           </View>
-          <Text variant="title3Emphasized">{title}</Text>
           <View style={styles.optionList}>
             {options.map((option) => {
               const selected = option.value === selectedValue;

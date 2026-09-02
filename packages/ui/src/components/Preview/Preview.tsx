@@ -1,4 +1,4 @@
-import { StyleSheet, Text, View } from 'react-native'
+import { Image, StyleSheet, Text, View } from 'react-native'
 import { colors, radius, spacing, typography } from '@repo/tokens'
 import { Button } from '../Button'
 import { getFontFamily } from '../../typography/getFontFamily'
@@ -10,6 +10,7 @@ import { getFontFamily } from '../../typography/getFontFamily'
  * @param category 카테고리 텍스트 (예: "한식")
  * @param distance 거리 텍스트 (예: "0.3km")
  * @param price 가격 텍스트 (예: "6,000원")
+ * @param imageUrl 썸네일 사진 URL (optional, 없으면 썸네일 영역 자체를 표시하지 않음)
  * @param showPrice 가격을 표시할지: true | false (optional, 기본값 true)
  * @param onPressDetail "상세 보기" 버튼을 클릭할 때 발생하는 event 명시 (optional)
  */
@@ -18,6 +19,7 @@ export interface PreviewProps {
   category: string
   distance: string
   price: string
+  imageUrl?: string
   showPrice?: boolean
   onPressDetail?: () => void
 }
@@ -27,13 +29,16 @@ export const Preview = ({
   category,
   distance,
   price,
+  imageUrl,
   showPrice = true,
   onPressDetail,
 }: PreviewProps) => {
   return (
     <View style={styles.container}>
       <View style={styles.topFrame}>
-        <View style={styles.thumbnail} />
+        {imageUrl ? (
+          <Image source={{ uri: imageUrl }} style={styles.thumbnail} resizeMode="cover" />
+        ) : null}
         <View style={styles.info}>
           <View style={styles.titleBlock}>
             <Text style={styles.name} numberOfLines={1}>

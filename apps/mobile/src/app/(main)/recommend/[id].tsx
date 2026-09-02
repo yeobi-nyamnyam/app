@@ -1,4 +1,4 @@
-import { useCallback } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Alert, View } from "react-native";
 import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import { useQuery } from "@apollo/client/react";
@@ -19,6 +19,7 @@ import {
   type MealType,
 } from "@/lib/budget";
 import { formatWon } from "@/lib/format";
+import { fetchRestaurantDetail, type RestaurantDetailFromApi } from "@/lib/recommend";
 import { getCheapestMenuPrice, parsePriceMenus } from "@/lib/restaurant";
 
 const parsePrice = (price: string) => Number(price.replace(/[^0-9]/g, ""));
@@ -132,6 +133,29 @@ export default function RestaurantDetailScreen() {
   });
   const restaurantNode = restaurantData?.restaurantsCollection.edges[0]?.node;
 
+  // F3-2: 일반 업소(tour_api)의 영업시간/휴일은 목록에 없어 상세 진입 시에만
+  // 서버 경유로 지연 로딩한다 (서버가 24시간 캐시).
+  const [tourApiDetail, setTourApiDetail] = useState<RestaurantDetailFromApi | null>(null);
+  const restaurantNodeId = restaurantNode?.id;
+  const restaurantNodeSource = restaurantNode?.source;
+  useEffect(() => {
+    if (!restaurantNodeId || restaurantNodeSource !== "tour_api") {
+      setTourApiDetail(null);
+      return;
+    }
+    let cancelled = false;
+    fetchRestaurantDetail(restaurantNodeId)
+      .then((detail) => {
+        if (!cancelled) setTourApiDetail(detail);
+      })
+      .catch(() => {
+        // 영업시간/휴일 없이도 나머지 정보는 그대로 보여준다.
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [restaurantNodeId, restaurantNodeSource]);
+
   const { session } = useSession();
   const { data, refetch: refetchActiveTrip } = useQuery(ActiveTripDocument, {
     variables: { userId: session?.user.id ?? "" },
@@ -169,12 +193,20 @@ export default function RestaurantDetailScreen() {
           category: restaurantNode.category ?? "",
           // TODO(F3 후속): 사용자 실시간 위치 기반 거리 계산은 별도 스코프.
           distance: "-",
-          phone: restaurantNode.phone ?? "-",
+          phone: tourApiDetail?.phone ?? restaurantNode.phone ?? "-",
           address: restaurantNode.address,
-          menu: parsePriceMenus(restaurantNode.price_menus).map((menuItem) => ({
-            name: menuItem.name,
-            price: formatWon(menuItem.price),
-          })),
+          imageUrl: restaurantNode.image_url ?? undefined,
+          hours: tourApiDetail?.businessHours ?? undefined,
+          holiday: tourApiDetail?.holiday ?? undefined,
+          // good_price는 price_menus(가격 포함), tour_api는 TourAPI 소개정보의
+          // 취급메뉴(가격 없이 이름만)에서 메뉴를 가져온다.
+          menu:
+            restaurantNode.source === "tour_api"
+              ? (tourApiDetail?.menu ?? []).map((name) => ({ name }))
+              : parsePriceMenus(restaurantNode.price_menus).map((menuItem) => ({
+                  name: menuItem.name,
+                  price: formatWon(menuItem.price),
+                })),
         }
       : undefined;
   const restaurantCheapestPrice = restaurantNode

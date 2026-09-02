@@ -30,3 +30,13 @@ export const parsePriceMenus = (raw: unknown): RestaurantMenuItem[] => {
  */
 export const getCheapestMenuPrice = (menus: RestaurantMenuItem[]): number | null =>
   menus.length > 0 ? Math.min(...menus.map((menu) => menu.price)) : null;
+
+// restaurants.latitude/longitude는 GraphQL BigFloat(numeric 컬럼) 스칼라라
+// pg_graphql이 정밀도 손실 방지를 위해 JSON 문자열로 내려준다 — codegen 타입은
+// number라 적혀 있지만 실제로는 문자열이라, 파싱하지 않고 그대로 네이티브 지도
+// 마커에 넘기면 "latitude cannot be cast from String to double" 오류가 난다.
+export const parseCoordinate = (raw: unknown): number | null => {
+  if (raw == null) return null;
+  const value = Number(raw);
+  return Number.isNaN(value) ? null : value;
+};
