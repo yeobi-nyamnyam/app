@@ -1,3 +1,5 @@
+import { fetchWithTimeout } from "./fetchWithTimeout";
+
 export interface PlaceSearchResult {
   name: string;
   address: string;
@@ -14,7 +16,7 @@ const serverUrl = process.env.EXPO_PUBLIC_SERVER_URL ?? "http://localhost:4000";
 export async function searchPlaces(query: string): Promise<PlaceSearchResult[]> {
   // React Native(Hermes)의 URL/URLSearchParams가 유니코드(한글) 쿼리 파라미터를
   // 안정적으로 인코딩하지 못해 직접 문자열로 만든다.
-  const response = await fetch(
+  const response = await fetchWithTimeout(
     `${serverUrl}/record/places/search?query=${encodeURIComponent(query)}`,
   );
   if (!response.ok) {

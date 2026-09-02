@@ -142,7 +142,8 @@ chatRouter.post("/chat", async (req, res) => {
         },
       },
     });
-  } catch {
+  } catch (error) {
+    console.error("[chat] Gemini 클라이언트 생성 실패", error);
     const body: z.infer<typeof ErrorResponseSchema> = { message: "AI 채팅 서비스를 사용할 수 없습니다." };
     return res.status(500).json(body);
   }
@@ -159,7 +160,8 @@ chatRouter.post("/chat", async (req, res) => {
   try {
     const result = await model.generateContent({ contents });
     rawText = result.response.text();
-  } catch {
+  } catch (error) {
+    console.error("[chat] Gemini 응답 수신 실패", error);
     const body: z.infer<typeof ErrorResponseSchema> = { message: "AI 응답을 받아오지 못했습니다." };
     return res.status(502).json(body);
   }
@@ -167,7 +169,8 @@ chatRouter.post("/chat", async (req, res) => {
   let rawJson: unknown;
   try {
     rawJson = JSON.parse(rawText);
-  } catch {
+  } catch (error) {
+    console.error("[chat] Gemini 응답 JSON 파싱 실패", error, "rawText:", rawText);
     const body: z.infer<typeof ErrorResponseSchema> = { message: "AI 응답 형식이 올바르지 않습니다." };
     return res.status(502).json(body);
   }

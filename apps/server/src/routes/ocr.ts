@@ -127,7 +127,8 @@ ocrRouter.post("/record/ocr/receipt", async (req, res) => {
       raw: data,
     };
     return res.json(body);
-  } catch {
+  } catch (error) {
+    console.error("[ocr] 영수증 인식 실패", error);
     const body: z.infer<typeof ErrorResponseSchema> = { message: "영수증 인식에 실패했습니다." };
     return res.status(500).json(body);
   }

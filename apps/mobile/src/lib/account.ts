@@ -1,4 +1,5 @@
 import { supabase } from "@/lib/supabase";
+import { fetchWithTimeout } from "@/lib/fetchWithTimeout";
 
 // apps/server 계정 삭제 엔드포인트. Override with EXPO_PUBLIC_SERVER_URL for staging/prod.
 const serverUrl = process.env.EXPO_PUBLIC_SERVER_URL ?? "http://localhost:4000";
@@ -10,7 +11,7 @@ export async function deleteAccount(): Promise<void> {
     throw new Error("로그인이 필요합니다.");
   }
 
-  const response = await fetch(`${serverUrl}/auth/me`, {
+  const response = await fetchWithTimeout(`${serverUrl}/auth/me`, {
     method: "DELETE",
     headers: { Authorization: `Bearer ${accessToken}` },
   });
