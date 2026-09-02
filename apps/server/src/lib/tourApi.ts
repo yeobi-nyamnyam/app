@@ -94,6 +94,8 @@ interface TourApiIntroItem {
   opentimefood?: string;
   restdatefood?: string;
   infocenterfood?: string;
+  firstmenu?: string;
+  treatmenu?: string;
 }
 
 interface TourApiIntroResponse {
@@ -109,6 +111,8 @@ export interface TourApiIntro {
   businessHours: string | null;
   holiday: string | null;
   phone: string | null;
+  /** 착한가격업소(price_menus)와 달리 가격 정보 없이 메뉴명만 제공됨 */
+  menu: string[];
 }
 
 // TourAPI 텍스트 필드는 줄바꿈을 <br> HTML 태그로 넣어서 준다 — 실제 개행
@@ -118,6 +122,15 @@ const cleanTourApiText = (raw: string): string =>
     .replace(/<br\s*\/?>/gi, "\n")
     .replace(/<[^>]+>/g, "")
     .trim();
+
+// firstmenu(대표메뉴 1개)와 treatmenu(취급메뉴, "/"로 구분된 목록)를 합쳐
+// 메뉴명 목록으로 만든다. 중복은 제거.
+const parseTourApiMenu = (firstmenu?: string, treatmenu?: string): string[] => {
+  const names = [...(firstmenu ? [firstmenu] : []), ...(treatmenu ? treatmenu.split("/") : [])]
+    .map((name) => cleanTourApiText(name))
+    .filter((name) => name.length > 0);
+  return Array.from(new Set(names));
+};
 
 /**
  * F3-2 지연 로딩: 목록 조회(areaBasedList2)에는 영업시간/휴일이 없어, 상세
@@ -154,5 +167,6 @@ export const fetchTourApiIntro = async (contentId: string): Promise<TourApiIntro
     businessHours: item?.opentimefood ? cleanTourApiText(item.opentimefood) : null,
     holiday: item?.restdatefood ? cleanTourApiText(item.restdatefood) : null,
     phone: item?.infocenterfood ? cleanTourApiText(item.infocenterfood) : null,
+    menu: parseTourApiMenu(item?.firstmenu, item?.treatmenu),
   };
 };

@@ -2,6 +2,7 @@ export interface RestaurantDetailFromApi {
   businessHours: string | null;
   holiday: string | null;
   phone: string | null;
+  menu: string[];
 }
 
 // apps/server의 TourAPI 상세(영업시간/휴일) 지연 로딩 프록시 엔드포인트.

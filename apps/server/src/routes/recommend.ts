@@ -15,6 +15,7 @@ const RestaurantDetailResponseSchema = z.object({
   businessHours: z.string().nullable().openapi({ example: "11:30~20:30" }),
   holiday: z.string().nullable().openapi({ example: "매주 화요일" }),
   phone: z.string().nullable().openapi({ example: "053-814-0640" }),
+  menu: z.array(z.string()).openapi({ example: ["정식까스", "육개장", "생선까스"] }),
 });
 
 const ErrorResponseSchema = z.object({
@@ -25,17 +26,18 @@ registry.registerPath({
   method: "get",
   path: "/recommend/restaurants/{id}/detail",
   tags: ["Recommend"],
-  summary: "일반 업소(TourAPI) 영업시간/휴일 지연 로딩 (F3-2)",
+  summary: "일반 업소(TourAPI) 영업시간/휴일/메뉴 지연 로딩 (F3-2)",
   description:
-    "restaurants.source='tour_api' 업소의 영업시간/휴일/전화는 지역기반 목록 조회에는 " +
+    "restaurants.source='tour_api' 업소의 영업시간/휴일/전화/메뉴는 지역기반 목록 조회에는 " +
     "없어 상세 화면 진입 시에만 조회한다. detail_synced_at이 24시간 이내면 캐시된 값을 " +
-    "그대로 반환하고, 아니면 TourAPI detailIntro2를 호출해 restaurants를 갱신한 뒤 반환한다.",
+    "그대로 반환하고, 아니면 TourAPI detailIntro2를 호출해 restaurants를 갱신한 뒤 반환한다. " +
+    "메뉴는 firstmenu(대표메뉴)+treatmenu(취급메뉴)를 합친 이름 목록이며 가격 정보는 없다.",
   request: {
     params: RestaurantDetailParamsSchema,
   },
   responses: {
     200: {
-      description: "영업시간/휴일/전화",
+      description: "영업시간/휴일/전화/메뉴",
       content: { "application/json": { schema: RestaurantDetailResponseSchema } },
     },
     404: {
@@ -54,7 +56,7 @@ export const recommendRouter = Router();
 interface RestaurantRow {
   source: string;
   external_id: string;
-  business_hours: { businessHours: string | null; holiday: string | null } | null;
+  business_hours: { businessHours: string | null; holiday: string | null; menu?: string[] } | null;
   phone: string | null;
   detail_synced_at: string | null;
 }
@@ -85,6 +87,7 @@ recommendRouter.get("/recommend/restaurants/:id/detail", async (req, res) => {
         businessHours: restaurant.business_hours?.businessHours ?? null,
         holiday: restaurant.business_hours?.holiday ?? null,
         phone: restaurant.phone,
+        menu: restaurant.business_hours?.menu ?? [],
       };
       return res.json(body);
     }
@@ -98,6 +101,7 @@ recommendRouter.get("/recommend/restaurants/:id/detail", async (req, res) => {
         businessHours: restaurant.business_hours?.businessHours ?? null,
         holiday: restaurant.business_hours?.holiday ?? null,
         phone: restaurant.phone,
+        menu: restaurant.business_hours?.menu ?? [],
       };
       return res.json(body);
     }
@@ -106,7 +110,7 @@ recommendRouter.get("/recommend/restaurants/:id/detail", async (req, res) => {
     await supabase
       .from("restaurants")
       .update({
-        business_hours: { businessHours: intro.businessHours, holiday: intro.holiday },
+        business_hours: { businessHours: intro.businessHours, holiday: intro.holiday, menu: intro.menu },
         phone: intro.phone ?? restaurant.phone,
         detail_synced_at: new Date().toISOString(),
       })
@@ -116,6 +120,7 @@ recommendRouter.get("/recommend/restaurants/:id/detail", async (req, res) => {
       businessHours: intro.businessHours,
       holiday: intro.holiday,
       phone: intro.phone ?? restaurant.phone,
+      menu: intro.menu,
     };
     return res.json(body);
   } catch {

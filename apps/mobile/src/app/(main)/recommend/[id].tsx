@@ -198,10 +198,15 @@ export default function RestaurantDetailScreen() {
           imageUrl: restaurantNode.image_url ?? undefined,
           hours: tourApiDetail?.businessHours ?? undefined,
           holiday: tourApiDetail?.holiday ?? undefined,
-          menu: parsePriceMenus(restaurantNode.price_menus).map((menuItem) => ({
-            name: menuItem.name,
-            price: formatWon(menuItem.price),
-          })),
+          // good_price는 price_menus(가격 포함), tour_api는 TourAPI 소개정보의
+          // 취급메뉴(가격 없이 이름만)에서 메뉴를 가져온다.
+          menu:
+            restaurantNode.source === "tour_api"
+              ? (tourApiDetail?.menu ?? []).map((name) => ({ name }))
+              : parsePriceMenus(restaurantNode.price_menus).map((menuItem) => ({
+                  name: menuItem.name,
+                  price: formatWon(menuItem.price),
+                })),
         }
       : undefined;
   const restaurantCheapestPrice = restaurantNode
