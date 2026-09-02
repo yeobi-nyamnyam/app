@@ -12,11 +12,10 @@ export interface GrowthStageShape {
 // 미확정 — apps/mobile/src/lib/character.ts에서 관리.
 export const GROWTH_STAGE_SHAPES: Record<GrowthStage, GrowthStageShape> = {
   1: {
-    viewBoxSize: 44,
+    viewBoxSize: 28,
     paths: [
-      { d: 'M0 22C0 9.84974 9.84974 0 22 0V0C34.1503 0 44 9.84974 44 22V22C44 34.1503 34.1503 44 22 44V44C9.84974 44 0 34.1503 0 22V22Z', fill: '#ECF0F2' },
       {
-        d: 'M22 36C29.732 36 36 29.732 36 22V15C36 11.134 32.866 8 29 8C25.134 8 22 11.134 22 15C22 11.134 18.866 8 15 8C11.134 8 8 11.134 8 15V22C8 29.732 14.268 36 22 36Z',
+        d: 'M14 28C21.732 28 28 21.732 28 14V7C28 3.13399 24.866 0 21 0C17.134 0 14 3.13399 14 7C14 3.13399 10.866 0 7 0C3.13401 0 0 3.13399 0 7V14C0 21.732 6.26801 28 14 28Z',
         fill: '#FFC067',
       },
     ],
