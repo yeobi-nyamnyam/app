@@ -204,22 +204,24 @@ export const RestaurantDetailView = ({
             </FieldCard>
           </View>
 
-          <View style={styles.section}>
-            <Text variant="title3Emphasized">메뉴</Text>
-            <View style={styles.menuCardSlot}>
-              <FieldCard radiusValue={radius[26]}>
-                {restaurant.menu.map((item) => (
-                  <DataCardRow
-                    key={item.name}
-                    variant="menu"
-                    cuisine={item.name}
-                    price={item.price}
-                    showPrice={isGoodPrice}
-                  />
-                ))}
-              </FieldCard>
+          {restaurant.menu.length > 0 ? (
+            <View style={styles.section}>
+              <Text variant="title3Emphasized">메뉴</Text>
+              <View style={styles.menuCardSlot}>
+                <FieldCard radiusValue={radius[26]}>
+                  {restaurant.menu.map((item) => (
+                    <DataCardRow
+                      key={item.name}
+                      variant="menu"
+                      cuisine={item.name}
+                      price={item.price}
+                      showPrice={isGoodPrice}
+                    />
+                  ))}
+                </FieldCard>
+              </View>
             </View>
-          </View>
+          ) : null}
 
           <View style={styles.ctaSlot}>
             <Button label="여기로 정하고 기록" variant="primary" onPress={onPressCTA} />
