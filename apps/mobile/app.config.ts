@@ -73,8 +73,14 @@ const config: ExpoConfig = {
     ],
     "@react-native-google-signin/google-signin",
     [
-      "@react-native-seoul/kakao-login",
-      { kakaoAppKey: process.env.KAKAO_NATIVE_APP_KEY ?? "" },
+      "@react-native-kakao/core",
+      {
+        nativeAppKey: process.env.KAKAO_NATIVE_APP_KEY ?? "",
+        // 카카오 로그인 인가 코드 리다이렉트("kakao{앱키}://oauth")를 받으려면
+        // AuthCodeHandlerActivity가 AndroidManifest에 있어야 하는데, 이 플러그인은
+        // 기본값이 false라 명시하지 않으면 매니페스트에 아예 안 들어간다.
+        android: { authCodeHandlerActivity: true },
+      },
     ],
     [
       "@mj-studio/react-native-naver-map",
