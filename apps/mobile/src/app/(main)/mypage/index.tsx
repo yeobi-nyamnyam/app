@@ -1,11 +1,20 @@
 import { useState } from "react";
-import { Alert, Pressable, ScrollView, StyleSheet, Text as RNText, View } from "react-native";
+import {
+  Alert,
+  Modal as RNModal,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text as RNText,
+  View,
+} from "react-native";
 import { router } from "expo-router";
 import { useQuery } from "@apollo/client/react";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
   CharacterGrowth,
   Icon,
+  Modal,
   NavBar,
   Text,
   colors,
@@ -37,6 +46,7 @@ export default function MyPageScreen() {
   const insets = useSafeAreaInsets();
   const { session } = useSession();
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isWithdrawConfirmVisible, setIsWithdrawConfirmVisible] = useState(false);
 
   const { data, loading } = useQuery(MyPageDashboardDocument, {
     variables: { userId: session?.user.id ?? "" },
@@ -92,24 +102,18 @@ export default function MyPageScreen() {
     }
   };
 
-  const handleWithdraw = () => {
-    Alert.alert("정말 탈퇴하시겠어요?", "계정과 모든 데이터가 삭제되며 되돌릴 수 없어요.", [
-      { text: "취소", style: "cancel" },
-      {
-        text: "탈퇴",
-        style: "destructive",
-        onPress: async () => {
-          setIsProcessing(true);
-          try {
-            await deleteAccount();
-          } catch (error) {
-            Alert.alert("탈퇴 실패", error instanceof Error ? error.message : "잠시 후 다시 시도해주세요.");
-          } finally {
-            setIsProcessing(false);
-          }
-        },
-      },
-    ]);
+  const handleWithdrawPress = () => setIsWithdrawConfirmVisible(true);
+
+  const handleWithdraw = async () => {
+    setIsWithdrawConfirmVisible(false);
+    setIsProcessing(true);
+    try {
+      await deleteAccount();
+    } catch (error) {
+      Alert.alert("탈퇴 실패", error instanceof Error ? error.message : "잠시 후 다시 시도해주세요.");
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   return (
@@ -170,7 +174,7 @@ export default function MyPageScreen() {
               로그아웃
             </Text>
           </Pressable>
-          <Pressable disabled={isProcessing} onPress={handleWithdraw}>
+          <Pressable disabled={isProcessing} onPress={handleWithdrawPress}>
             <Text variant="footnoteEmphasized" color="error">
               회원탈퇴
             </Text>
@@ -178,6 +182,24 @@ export default function MyPageScreen() {
         </View>
       </ScrollView>
       <NavBar active="profile" onChange={handleNavChange} />
+
+      <RNModal
+        visible={isWithdrawConfirmVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setIsWithdrawConfirmVisible(false)}
+      >
+        <Pressable style={styles.backdrop} onPress={() => setIsWithdrawConfirmVisible(false)} />
+        <View style={styles.modalCenter}>
+          <Modal
+            title="정말 탈퇴하시겠어요?"
+            content="계정과 모든 데이터가 삭제되며 되돌릴 수 없어요."
+            confirmLabel="탈퇴"
+            onCancel={() => setIsWithdrawConfirmVisible(false)}
+            onConfirm={handleWithdraw}
+          />
+        </View>
+      </RNModal>
     </View>
   );
 }
@@ -288,5 +310,15 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     gap: spacing[16],
     paddingTop: spacing[4],
+  },
+  backdrop: {
+    ...StyleSheet.absoluteFill,
+    backgroundColor: colors.surface.neutral.alpha["inverse-alpha-30"],
+  },
+  modalCenter: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: spacing[24],
   },
 });
