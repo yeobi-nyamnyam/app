@@ -123,7 +123,7 @@ export const StoreSearchModal = ({ visible, onClose, onSelect }: StoreSearchModa
 
 const styles = StyleSheet.create({
   backdrop: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     backgroundColor: colors.surface.neutral.alpha["inverse-alpha-30"],
   },
   sheet: {

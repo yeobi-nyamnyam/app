@@ -270,7 +270,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   backdrop: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     backgroundColor: colors.surface.neutral.alpha["inverse-alpha-30"],
   },
   modalCenter: {
