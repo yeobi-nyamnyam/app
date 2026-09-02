@@ -34,7 +34,7 @@ export const BadgeCard = ({ title, point, badgeId }: BadgeCardProps) => {
 
 const styles = StyleSheet.create({
   container: {
-    width: 120,
+    flexBasis: '48%',
     minWidth: 120,
     alignItems: 'center',
     justifyContent: 'center',
