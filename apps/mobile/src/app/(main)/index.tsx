@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Alert, Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { Redirect, router } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -15,7 +15,12 @@ import {
   spacing,
   type NavBarItemKey,
 } from "@repo/ui";
-import { ActiveTripDocument, TripMealLogsDocument, UpdateMealSlotWeightDocument } from "@repo/types";
+import {
+  ActiveTripDocument,
+  CompleteTripDocument,
+  TripMealLogsDocument,
+  UpdateMealSlotWeightDocument,
+} from "@repo/types";
 
 import { formatWon, todayDate } from "@/lib/format";
 import {
@@ -75,6 +80,29 @@ export default function HomeScreen() {
     skip: !session,
     fetchPolicy: "cache-and-network",
   });
+  const [completeTrip] = useMutation(CompleteTripDocument);
+  const [completedTripId, setCompletedTripId] = useState<string | null>(null);
+
+  const tripNode = data?.tripsCollection.edges[0]?.node;
+  // ActiveTrip 쿼리가 status: {eq: "ongoing"}으로만 조회하므로, 종료일이 지났는데도
+  // 여전히 ongoing인 여행을 여기서 감지해 F7(여행 자동 완료) RPC를 호출한다.
+  // 완료 처리 후에는 이 쿼리가 더 이상 이 여행을 돌려주지 않으므로, 응답을 기다렸다가
+  // 로컬 state로 완료 화면 리다이렉트를 트리거한다.
+  const isOverdue = tripNode != null && tripNode.end_date < todayDate();
+
+  useEffect(() => {
+    if (!isOverdue || !tripNode) return;
+    completeTrip({ variables: { tripId: tripNode.id } })
+      .then(() => setCompletedTripId(tripNode.id))
+      .catch((error) => {
+        Alert.alert("여행 완료 처리 실패", error instanceof Error ? error.message : "잠시 후 다시 시도해주세요.");
+      });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOverdue, tripNode?.id]);
+
+  if (completedTripId) {
+    return <Redirect href={{ pathname: "/trip-complete", params: { tripId: completedTripId } }} />;
+  }
 
   if (loading && !data) {
     return (
@@ -87,14 +115,19 @@ export default function HomeScreen() {
     );
   }
 
-  const tripNode = data?.tripsCollection.edges[0]?.node;
   if (!tripNode) {
     return <EmptyHome />;
   }
-  // F7(여행 자동 완료) 판정 로직 자체는 수진 담당이라 손대지 않고, trips.status
-  // 필드만 읽어서 완료 화면으로 보낸다.
-  if (tripNode.status === "completed") {
-    return <Redirect href="/trip-complete" />;
+
+  if (isOverdue) {
+    return (
+      <View style={styles.container}>
+        <View style={styles.emptyContent}>
+          <Text color="subtlest">여행을 마무리하는 중...</Text>
+        </View>
+        <NavBar active="home" onChange={handleNavChange} />
+      </View>
+    );
   }
 
   const trip: ActiveTrip = {
