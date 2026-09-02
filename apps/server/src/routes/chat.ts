@@ -6,6 +6,7 @@ import { getSupabaseAdmin } from "../lib/supabase";
 import { GEMINI_CHAT_MODEL, getGeminiClient } from "../lib/gemini";
 
 const EXPENSE_CATEGORIES = ["식비", "교통", "숙박", "기념품", "기타"] as const;
+const MEAL_TYPES = ["breakfast", "lunch", "dinner"] as const;
 
 const ChatHistoryItemSchema = z.object({
   role: z.enum(["user", "ai"]),
@@ -25,6 +26,7 @@ const ChatParsedResultSchema = z.object({
   hasExpense: z.boolean(),
   amount: z.number().int().nullable(),
   category: z.enum(EXPENSE_CATEGORIES).nullable(),
+  mealType: z.enum(MEAL_TYPES).nullable(),
 });
 
 const ErrorResponseSchema = z.object({
@@ -85,13 +87,17 @@ const buildSystemInstruction = ({
     `오늘 식비 예산은 ${todayBudget}원, 지금까지 ${todayConsumed}원을 썼어.`,
     "사용자가 얼마를 썼는지 자유롭게 말하면 금액과 카테고리를 파악하고, 그렇지 않으면 자연스럽게 대화해줘.",
     `카테고리는 반드시 다음 중 하나만 써: ${EXPENSE_CATEGORIES.join(", ")}.`,
-    "금액이 드러난 지출 이야기가 아니면 hasExpense는 false, amount/category는 null로 응답해.",
+    "카테고리가 식비이고, 메시지에 '아침'/'점심'/'저녁'이거나 그와 명백히 같은 뜻의 단어(예: 브런치→점심,",
+    "저녁밥→저녁)가 있으면 mealType을 breakfast/lunch/dinner 중 하나로 채워. '밥', '식사', '먹다'처럼",
+    "구체적인 끼니가 특정되지 않으면 mealType은 반드시 null로 둬 — 짐작해서 채우지 마.",
+    "카테고리가 식비가 아니면 mealType은 항상 null이야.",
+    "금액이 드러난 지출 이야기가 아니면 hasExpense는 false, amount/category/mealType은 null로 응답해.",
     "금액은 있는데 정확히 파악이 안 되면 hasExpense는 false로 두고 reply에서 다시 물어봐.",
     "너는 금액/카테고리를 파악만 할 뿐 실제로 저장하지 않아 — 저장은 앱이 사용자 확인을 거쳐 별도로 처리해.",
     "그러니 hasExpense가 true여도 reply에서 '입력해 드릴게요', '기록해 두었습니다', '저장했어요'처럼",
     "네가 직접 저장/기록했다는 표현은 절대 쓰지 마. 사용자가 말한 내용을 자연스럽게 되짚어주는 정도로만 답해.",
     "reply는 한국어 존댓말로, 짧고 친근하게 1~2문장으로 작성해.",
-    "반드시 { reply, hasExpense, amount, category } 형태의 JSON으로만 응답해.",
+    "반드시 { reply, hasExpense, amount, category, mealType } 형태의 JSON으로만 응답해.",
   ].join(" ");
 
 chatRouter.post("/chat", async (req, res) => {
@@ -130,6 +136,7 @@ chatRouter.post("/chat", async (req, res) => {
             hasExpense: { type: SchemaType.BOOLEAN },
             amount: { type: SchemaType.INTEGER, nullable: true },
             category: { type: SchemaType.STRING, format: "enum", enum: [...EXPENSE_CATEGORIES], nullable: true },
+            mealType: { type: SchemaType.STRING, format: "enum", enum: [...MEAL_TYPES], nullable: true },
           },
           required: ["reply", "hasExpense"],
         },
