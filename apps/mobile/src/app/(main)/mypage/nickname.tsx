@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Alert, StyleSheet, View } from "react-native";
+import { StyleSheet, View } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useMutation } from "@apollo/client/react";
@@ -18,12 +18,28 @@ export default function NicknameScreen() {
   const { session } = useSession();
   const params = useLocalSearchParams<{ nickname?: string }>();
   const [nickname, setNickname] = useState(params.nickname ?? "");
+  const [saveError, setSaveError] = useState<string | undefined>(undefined);
   const [updateNickname, { loading }] = useMutation(UpdateNicknameDocument);
 
   const trimmed = nickname.trim();
-  const isValid = trimmed.length > 0 && trimmed.length <= MAX_NICKNAME_LENGTH;
+  const isEmpty = trimmed.length === 0;
+  const isTooLong = trimmed.length > MAX_NICKNAME_LENGTH;
+  const isValid = !isEmpty && !isTooLong;
   const isUnchanged = trimmed === (params.nickname ?? "");
   const canSave = isValid && !isUnchanged && !loading;
+
+  const fieldError = saveError
+    ? saveError
+    : isTooLong
+      ? `${MAX_NICKNAME_LENGTH}자 이내로 입력해주세요.`
+      : isEmpty
+        ? "닉네임을 입력해주세요."
+        : undefined;
+
+  const handleChangeText = (text: string) => {
+    setNickname(text);
+    setSaveError(undefined);
+  };
 
   const handleSave = async () => {
     if (!session || !canSave) return;
@@ -31,7 +47,7 @@ export default function NicknameScreen() {
       await updateNickname({ variables: { id: session.user.id, nickname: trimmed } });
       router.back();
     } catch (error) {
-      Alert.alert("변경 실패", error instanceof Error ? error.message : "잠시 후 다시 시도해주세요.");
+      setSaveError(error instanceof Error ? error.message : "잠시 후 다시 시도해주세요.");
     }
   };
 
@@ -42,14 +58,16 @@ export default function NicknameScreen() {
         <FormField label="닉네임">
           <TextField
             value={nickname}
-            onChangeText={setNickname}
+            onChangeText={handleChangeText}
             placeholder="닉네임을 입력하세요"
-            error={trimmed.length > MAX_NICKNAME_LENGTH ? `${MAX_NICKNAME_LENGTH}자 이내로 입력해주세요.` : undefined}
+            error={fieldError}
           />
         </FormField>
-        <Text variant="footnoteRegular" color="subtle">
-          {`${trimmed.length}/${MAX_NICKNAME_LENGTH}자`}
-        </Text>
+        <View style={styles.counterRow}>
+          <Text variant="footnoteRegular" color="subtle">
+            {`${trimmed.length}/${MAX_NICKNAME_LENGTH}자`}
+          </Text>
+        </View>
       </View>
       <View style={styles.footer}>
         <Button label={loading ? "저장 중..." : "저장하기"} disabled={!canSave} onPress={handleSave} />
@@ -67,6 +85,10 @@ const styles = StyleSheet.create({
     flex: 1,
     gap: spacing[8],
     padding: spacing[16],
+    paddingTop: spacing[14],
+  },
+  counterRow: {
+    alignItems: "flex-end",
   },
   footer: {
     padding: spacing[16],
