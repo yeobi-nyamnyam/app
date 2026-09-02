@@ -111,5 +111,7 @@ export { SummaryStatsCard } from "./components/SummaryStatsCard";
 export type { SummaryStatsCardProps, SummaryStat, SummaryStatTone } from "./components/SummaryStatsCard";
 export { MealTimeBarChart } from "./components/MealTimeBarChart";
 export type { MealTimeBarChartProps, MealTimeBarItem } from "./components/MealTimeBarChart";
+export { DropdownField } from "./components/DropdownField";
+export type { DropdownFieldProps, DropdownOption } from "./components/DropdownField";
 export { colors, typography, spacing, radius, stroke, icon } from "@repo/tokens";
 export { getFontFamily } from "./typography/getFontFamily";

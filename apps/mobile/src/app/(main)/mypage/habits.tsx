@@ -6,6 +6,7 @@ import { useQuery } from "@apollo/client/react";
 import {
   BudgetRatioRow,
   CategoryBreakdownRow,
+  DropdownField,
   Header,
   MealTimeBarChart,
   NavBar,
@@ -14,6 +15,7 @@ import {
   radius,
   spacing,
   stroke,
+  type DropdownOption,
   type MealTimeBarItem,
   type NavBarItemKey,
   type SummaryStat,
@@ -25,7 +27,6 @@ import { useSession } from "@/hooks/useSession";
 import { formatWon } from "@/lib/format";
 import type { MealLogCategory } from "@/components/RecordForm";
 import type { MealType } from "@/lib/budget";
-import { DropdownField, type DropdownOption } from "@/components/DropdownField";
 import {
   CATEGORY_COLORS,
   buildCategoryBreakdown,

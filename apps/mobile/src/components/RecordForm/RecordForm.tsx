@@ -11,6 +11,7 @@ import { router } from 'expo-router'
 import {
   Button,
   Chip,
+  DropdownField,
   FormField,
   Icon,
   Modal,
@@ -20,6 +21,7 @@ import {
   getFontFamily,
   spacing,
   typography,
+  type DropdownOption,
 } from '@repo/ui'
 
 import { MEAL_TYPES, MEAL_TYPE_LABEL, type MealType } from '@/lib/budget'
@@ -29,7 +31,6 @@ import { setReceiptOcrResolver, type ReceiptOcrFillResult } from '@/lib/receiptO
 
 import { ReceiptUploadBox } from '../ReceiptUploadBox'
 import { StoreSearchModal, type StoreSearchResult } from '../StoreSearchModal'
-import { DropdownField, type DropdownOption } from '../DropdownField'
 
 export type MealLogCategory = '식비' | '교통' | '숙박' | '기념품' | '기타'
 

@@ -1,10 +1,13 @@
-import { useState } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
-import { Icon, TextField, colors, getFontFamily, radius, spacing, stroke, typography } from "@repo/ui";
+import { useState } from 'react'
+import { Pressable, StyleSheet, Text, View } from 'react-native'
+import { colors, radius, spacing, stroke, typography } from '@repo/tokens'
+import { getFontFamily } from '../../typography/getFontFamily'
+import { Icon } from '../Icon'
+import { TextField } from '../TextField'
 
 export interface DropdownOption {
-  label: string;
-  value: string;
+  label: string
+  value: string
 }
 
 /**
@@ -19,12 +22,12 @@ export interface DropdownOption {
  * 기본값 false) — 선택지가 1개 이하라 고를 필요가 없을 때 사용
  */
 export interface DropdownFieldProps {
-  placeholder: string;
-  options: DropdownOption[];
-  value: string;
-  onChange: (value: string) => void;
-  hideSelectedInMenu?: boolean;
-  disabled?: boolean;
+  placeholder: string
+  options: DropdownOption[]
+  value: string
+  onChange: (value: string) => void
+  hideSelectedInMenu?: boolean
+  disabled?: boolean
 }
 
 /**
@@ -39,9 +42,9 @@ export const DropdownField = ({
   hideSelectedInMenu = false,
   disabled = false,
 }: DropdownFieldProps) => {
-  const [isOpen, setIsOpen] = useState(false);
-  const selectedLabel = options.find((option) => option.value === value)?.label ?? "";
-  const menuOptions = hideSelectedInMenu ? options.filter((option) => option.value !== value) : options;
+  const [isOpen, setIsOpen] = useState(false)
+  const selectedLabel = options.find((option) => option.value === value)?.label ?? ''
+  const menuOptions = hideSelectedInMenu ? options.filter((option) => option.value !== value) : options
 
   return (
     <View style={styles.container}>
@@ -51,7 +54,7 @@ export const DropdownField = ({
             value={selectedLabel}
             onChangeText={() => {}}
             placeholder={placeholder}
-            tailingIcon={disabled ? undefined : <Icon name={isOpen ? "chevron-up" : "chevron-down"} size="medium" />}
+            tailingIcon={disabled ? undefined : <Icon name={isOpen ? 'chevron-up' : 'chevron-down'} size="medium" />}
           />
         </View>
       </Pressable>
@@ -59,31 +62,31 @@ export const DropdownField = ({
       {isOpen && !disabled ? (
         <View style={styles.menu}>
           {menuOptions.map((option, index) => {
-            const selected = option.value === value;
+            const selected = option.value === value
             return (
               <Pressable
                 key={option.value}
                 style={[styles.menuItem, index > 0 && styles.menuItemDivider]}
                 onPress={() => {
-                  onChange(option.value);
-                  setIsOpen(false);
+                  onChange(option.value)
+                  setIsOpen(false)
                 }}
               >
                 <Text style={[styles.menuItemLabel, selected && styles.menuItemLabelSelected]}>
                   {option.label}
                 </Text>
               </Pressable>
-            );
+            )
           })}
         </View>
       ) : null}
     </View>
-  );
-};
+  )
+}
 
 const styles = StyleSheet.create({
   container: {
-    width: "100%",
+    width: '100%',
   },
   menu: {
     marginTop: spacing[4],
@@ -91,7 +94,7 @@ const styles = StyleSheet.create({
     borderColor: colors.border.neutral.default,
     borderRadius: radius[10],
     backgroundColor: colors.surface.neutral.default,
-    overflow: "hidden",
+    overflow: 'hidden',
   },
   menuItem: {
     paddingHorizontal: spacing[12],
@@ -114,4 +117,4 @@ const styles = StyleSheet.create({
     fontWeight: typography.bodyEmphasized.fontWeight,
     color: colors.content.primary.bold,
   },
-});
+})
