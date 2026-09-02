@@ -154,6 +154,7 @@ export default function MyPageScreen() {
 
         <SectionLabel label="기록 · 분석" />
         <View style={styles.menuSection}>
+          <MenuRow title="완료 여행" onPress={() => router.push("/mypage/completed-trips")} />
           <MenuRow title="소비 습관 대시보드" onPress={() => router.push("/mypage/habits")} />
           <MenuRow title="방문 매장 지도" onPress={() => router.push("/mypage/store-map")} />
         </View>

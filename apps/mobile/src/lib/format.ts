@@ -49,6 +49,18 @@ export const formatMonthDay = (date: string): string => {
   return `${month}.${day}`;
 };
 
+/**
+ * @param startDate 여행 시작일 "YYYY-MM-DD"
+ * @param endDate 여행 종료일 "YYYY-MM-DD" — startDate와 같으면 당일치기로 보고
+ * 날짜 하나만 표시 (예: "2026.02.03"), 다르면 범위로 표시 (예: "2026.04.11 - 04.14")
+ */
+export const formatTripPeriod = (startDate: string, endDate: string): string => {
+  const [year, month, day] = startDate.split("-");
+  const start = `${year}.${month}.${day}`;
+  if (startDate === endDate) return start;
+  return `${start} - ${formatMonthDay(endDate)}`;
+};
+
 const WEEKDAY_LABEL = ["일", "월", "화", "수", "목", "금", "토"];
 
 /**
