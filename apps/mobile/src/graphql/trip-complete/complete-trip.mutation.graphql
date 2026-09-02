@@ -1,0 +1,6 @@
+mutation CompleteTrip($tripId: UUID!) {
+  complete_trip(p_trip_id: $tripId) {
+    id
+    status
+  }
+}
