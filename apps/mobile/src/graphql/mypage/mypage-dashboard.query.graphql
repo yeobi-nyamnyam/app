@@ -1,0 +1,36 @@
+query MyPageDashboard($userId: UUID!) {
+  profilesByPk(id: $userId) {
+    id
+    nickname
+    handle
+  }
+  exp_ledgerCollection(filter: { user_id: { eq: $userId } }) {
+    edges {
+      node {
+        points
+      }
+    }
+  }
+  user_badgesCollection(filter: { user_id: { eq: $userId } }) {
+    edges {
+      node {
+        id
+      }
+    }
+  }
+  tripsCollection(filter: { user_id: { eq: $userId } }) {
+    edges {
+      node {
+        id
+        status
+        meal_logsCollection(first: 1000) {
+          edges {
+            node {
+              store_name
+            }
+          }
+        }
+      }
+    }
+  }
+}
