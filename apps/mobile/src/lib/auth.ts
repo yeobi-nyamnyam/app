@@ -1,15 +1,23 @@
 import type { User } from "@supabase/supabase-js";
 import { GoogleSignin, isSuccessResponse } from "@react-native-google-signin/google-signin";
-import { login as kakaoLogin } from "@react-native-seoul/kakao-login";
+import { initializeKakaoSDK } from "@react-native-kakao/core";
+import { login as kakaoLogin } from "@react-native-kakao/user";
 import Constants from "expo-constants";
 
 import { supabase } from "@/lib/supabase";
 
 const googleWebClientId = Constants.expoConfig?.extra?.googleClientId as string | undefined;
+const kakaoNativeAppKey = Constants.expoConfig?.extra?.kakaoNativeAppKey as string | undefined;
 
 GoogleSignin.configure({
   webClientId: googleWebClientId,
 });
+
+// 카카오 API를 하나라도 쓰기 전에 반드시 먼저 호출돼야 한다(공식 문서 요구사항) —
+// 이게 없으면 KakaoSdk가 미초기화 상태라 로그인 호출 시 네이티브에서 크래시난다.
+if (kakaoNativeAppKey) {
+  void initializeKakaoSDK(kakaoNativeAppKey);
+}
 
 export async function signInWithGoogle(): Promise<User | null> {
   await GoogleSignin.hasPlayServices();

@@ -13,6 +13,8 @@ export type {
 } from "./components/ListRow";
 export { Character } from "./components/Character";
 export type { CharacterProps, CharacterShadow, CharacterVariant } from "./components/Character";
+export { CharacterGrowth } from "./components/CharacterGrowth";
+export type { CharacterGrowthProps, GrowthStage } from "./components/CharacterGrowth";
 export { Header } from "./components/Header";
 export type { HeaderProps, HeaderTextAlign, HeaderTailing } from "./components/Header";
 export { Footer } from "./components/Footer";
@@ -29,6 +31,8 @@ export { UnderlineTabs } from "./components/UnderlineTabs";
 export type { UnderlineTabsProps } from "./components/UnderlineTabs";
 export { EmptyTripIllustration } from "./components/EmptyTripIllustration";
 export type { EmptyTripIllustrationProps } from "./components/EmptyTripIllustration";
+export { TripCompleteIllustration } from "./components/TripCompleteIllustration";
+export type { TripCompleteIllustrationProps } from "./components/TripCompleteIllustration";
 export { EmptyTripPrompt } from "./components/EmptyTripPrompt";
 export type { EmptyTripPromptProps } from "./components/EmptyTripPrompt";
 export { HeaderCard } from "./components/HeaderCard";

@@ -21,7 +21,6 @@
     "@react-native-google-signin/google-signin": "^16.1.4",
     "@react-native-kakao/core": "^2.4.6",
     "@react-native-kakao/user": "^2.4.6",
-    "@react-native-seoul/kakao-login": "^6.0.4",
     "@repo/types": "workspace:*",
     "@repo/ui": "workspace:*",
     "@supabase/supabase-js": "^2.112.3",

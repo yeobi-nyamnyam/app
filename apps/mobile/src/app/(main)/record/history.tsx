@@ -6,7 +6,7 @@ import { useQuery } from "@apollo/client/react";
 import { Chip, Header, NavBar, RecordCard, Text, colors, spacing, type NavBarItemKey } from "@repo/ui";
 import { TripDiariesDocument, TripHistoryDocument, TripMealLogsDocument } from "@repo/types";
 
-import { formatDateWithWeekday, formatTime, formatWon } from "@/lib/format";
+import { formatDateWithWeekday, formatMonthDay, formatWon } from "@/lib/format";
 import { MEAL_TYPES, MEAL_TYPE_LABEL, getTripDates, type MealType } from "@/lib/budget";
 
 type HistoryFilter = "전체" | "끼니" | "소비" | "일기";
@@ -225,7 +225,7 @@ export default function RecordHistoryScreen() {
                     <RecordCard
                       key={entry.mealNode.id}
                       title={entry.mealNode.store_name ?? entry.mealNode.memo ?? entry.mealNode.category}
-                      period={formatTime(entry.mealNode.created_at)}
+                      period={formatMonthDay(entry.mealNode.visit_date)}
                       budget={formatWon(entry.mealNode.amount)}
                       onPress={() => goToEdit(entry.mealNode)}
                     />
