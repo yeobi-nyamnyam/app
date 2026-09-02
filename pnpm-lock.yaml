@@ -4,6 +4,9 @@ settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
 
+overrides:
+  query-string: 7.1.3
+
 patchedDependencies:
   '@mj-studio/react-native-naver-map@1.5.10':
     hash: 23fqvzlwkm43oip7273zyatqna
@@ -85,9 +88,12 @@ importers:
       '@react-native-google-signin/google-signin':
         specifier: ^16.1.4
         version: 16.1.4(expo@52.0.49(@babel/core@7.29.7)(@babel/preset-env@7.29.7(@babel/core@7.29.7))(@expo/metro-runtime@4.0.1(react-native@0.76.9(@babel/core@7.29.7)(@babel/preset-env@7.29.7(@babel/core@7.29.7))(@types/react@18.3.31)(react@18.3.1)))(graphql@16.14.2)(react-native@0.76.9(@babel/core@7.29.7)(@babel/preset-env@7.29.7(@babel/core@7.29.7))(@types/react@18.3.31)(react@18.3.1))(react@18.3.1))(react-native@0.76.9(@babel/core@7.29.7)(@babel/preset-env@7.29.7(@babel/core@7.29.7))(@types/react@18.3.31)(react@18.3.1))(react@18.3.1)
-      '@react-native-seoul/kakao-login':
-        specifier: ^6.0.4
-        version: 6.0.4(react-native@0.76.9(@babel/core@7.29.7)(@babel/preset-env@7.29.7(@babel/core@7.29.7))(@types/react@18.3.31)(react@18.3.1))(react@18.3.1)
+      '@react-native-kakao/core':
+        specifier: ^2.4.6
+        version: 2.4.6(expo@52.0.49(@babel/core@7.29.7)(@babel/preset-env@7.29.7(@babel/core@7.29.7))(@expo/metro-runtime@4.0.1(react-native@0.76.9(@babel/core@7.29.7)(@babel/preset-env@7.29.7(@babel/core@7.29.7))(@types/react@18.3.31)(react@18.3.1)))(graphql@16.14.2)(react-native@0.76.9(@babel/core@7.29.7)(@babel/preset-env@7.29.7(@babel/core@7.29.7))(@types/react@18.3.31)(react@18.3.1))(react@18.3.1))(react-native@0.76.9(@babel/core@7.29.7)(@babel/preset-env@7.29.7(@babel/core@7.29.7))(@types/react@18.3.31)(react@18.3.1))(react@18.3.1)
+      '@react-native-kakao/user':
+        specifier: ^2.4.6
+        version: 2.4.6(@react-native-kakao/core@2.4.6(expo@52.0.49(@babel/core@7.29.7)(@babel/preset-env@7.29.7(@babel/core@7.29.7))(@expo/metro-runtime@4.0.1(react-native@0.76.9(@babel/core@7.29.7)(@babel/preset-env@7.29.7(@babel/core@7.29.7))(@types/react@18.3.31)(react@18.3.1)))(graphql@16.14.2)(react-native@0.76.9(@babel/core@7.29.7)(@babel/preset-env@7.29.7(@babel/core@7.29.7))(@types/react@18.3.31)(react@18.3.1))(react@18.3.1))(react-native@0.76.9(@babel/core@7.29.7)(@babel/preset-env@7.29.7(@babel/core@7.29.7))(@types/react@18.3.31)(react@18.3.1))(react@18.3.1))(react-native@0.76.9(@babel/core@7.29.7)(@babel/preset-env@7.29.7(@babel/core@7.29.7))(@types/react@18.3.31)(react@18.3.1))(react@18.3.1)
       '@repo/types':
         specifier: workspace:*
         version: link:../../packages/types
@@ -2070,6 +2076,9 @@ packages:
       '@types/react': '>=16'
       react: '>=16'
 
+  '@mj-studio/js-util@1.1.3':
+    resolution: {integrity: sha512-XZe1V3J1CJ9DbPY0GlPTOES7UdnWcoUe3kIjmUWMvwmunOb/kYuDWiswu5eogHhcPSlM3LpYQYU2HhMzf3N6tw==}
+
   '@mj-studio/react-native-naver-map@1.5.10':
     resolution: {integrity: sha512-1NG47eeGqMwn3par6RVHROKwejlrhJv4jcm7vHZzv5+cQrQlGWhz84fPcRlnRlsZcebKtElQLKVKAHtFICgGjA==}
     peerDependencies:
@@ -2127,9 +2136,20 @@ packages:
       expo:
         optional: true
 
-  '@react-native-seoul/kakao-login@6.0.4':
-    resolution: {integrity: sha512-/hvDiRNBvkqlK4sBhlGh4rFDkUoFhT/BBB9ALq0UkEoCH2Dpo5Vas5Bm8kJJVklJ5+EVxJUYY9tFuRcpZKm3Ug==}
+  '@react-native-kakao/core@2.4.6':
+    resolution: {integrity: sha512-Q72qXFGuh2Zott9vJ+fr9mv+DqYVhe+WdrW4//X9tZBO3FzZIDrVf96klPNB2RO9+redHSJHyAGO3XBa/qIZbQ==}
     peerDependencies:
+      expo: '>=47.0.0'
+      react: '*'
+      react-native: '*'
+    peerDependenciesMeta:
+      expo:
+        optional: true
+
+  '@react-native-kakao/user@2.4.6':
+    resolution: {integrity: sha512-M50MpHk7uJkwYubSfyBtHURx8wOKpN1d7IRMHkPHKQ66Z5LL/uYBcQsIzbSbHW7za5pY8TNzQEaT3gPxE91BOg==}
+    peerDependencies:
+      '@react-native-kakao/core': 2.4.6
       react: '*'
       react-native: '*'
 
@@ -3438,6 +3458,10 @@ packages:
   crypt@0.0.2:
     resolution: {integrity: sha512-mCxBlsHFYh9C+HVpiEacem8FEBnMXgU9gy4zmNC+SXAZNB/1idgp/aulFJ4FgCi7GPEVbfyng092GqL2k2rmow==}
 
+  crypto-js@4.2.0:
+    resolution: {integrity: sha512-KALDyEYgpY+Rlob/iriUtjV6d5Eq+Y191A5g4UqLAi8CyGP9N1+FdVbkc1SxKc2r4YAYqG8JzO2KGL+AizD70Q==}
+    deprecated: Active development of CryptoJS has been discontinued. This library is no longer maintained.
+
   crypto-random-string@2.0.0:
     resolution: {integrity: sha512-v1plID3y9r/lPhviJ1wrXpLeyUIGAZ2SHNYTEapm7/8A9nLPoyvVp3RK/EPFqn5kEznyWgYZNsRtYYIWbuG8KA==}
     engines: {node: '>=8'}
@@ -3976,6 +4000,9 @@ packages:
 
   expo-location@18.0.10:
     resolution: {integrity: sha512-R0Iioz0UZ9Ts8TACPngh8uDFbajJhVa5/igLqWB8Pq/gp8UHuwj7PC8XbZV7avsFoShYjaxrOhf4U7IONeKLgg==}
+    peerDependencies:
+      expo: '*'
+
   expo-manifests@0.15.8:
     resolution: {integrity: sha512-VuIyaMfRfLZeETNsRohqhy1l7iZ7I+HKMPfZXVL2Yn17TT0WkOhZoq1DzYwPbOHPgp1Uk6phNa86EyaHrD2DLw==}
     peerDependencies:
@@ -5863,6 +5890,9 @@ packages:
   restore-cursor@5.1.0:
     resolution: {integrity: sha512-oMA2dcrw6u0YfxJQXm342bFKX/E4sG9rbTzO9ptUcR/e8A33cHuvStiYOwH7fszkZlZ1z/ta9AAoPk2F4qIOHA==}
     engines: {node: '>=18'}
+
+  return-fetch@0.4.13:
+    resolution: {integrity: sha512-nYnhqe3RBs5gVMMiFT93K9U3+QMZ8F+5Wfv+sg+NZrA1D0WY6q/YObuNe51I9fhX968bq0X0XJI/GA0ylwFHGw==}
 
   reusify@1.1.0:
     resolution: {integrity: sha512-g6QUff04oZpHs0eG5p83rFLhHeV00ug/Yf9nZM6fLeUrPguBTkTQOdpAWWspMh55TZfVQDPaN3NQJfbVRAxdIw==}
@@ -8931,6 +8961,8 @@ snapshots:
       '@types/react': 18.3.31
       react: 18.3.1
 
+  '@mj-studio/js-util@1.1.3': {}
+
   '@mj-studio/react-native-naver-map@1.5.10(patch_hash=23fqvzlwkm43oip7273zyatqna)(react-native@0.76.9(@babel/core@7.29.7)(@babel/preset-env@7.29.7(@babel/core@7.29.7))(@types/react@18.3.31)(react@18.3.1))(react@18.3.1)':
     dependencies:
       object-hash: 3.0.0
@@ -8982,8 +9014,20 @@ snapshots:
     optionalDependencies:
       expo: 52.0.49(@babel/core@7.29.7)(@babel/preset-env@7.29.7(@babel/core@7.29.7))(@expo/metro-runtime@4.0.1(react-native@0.76.9(@babel/core@7.29.7)(@babel/preset-env@7.29.7(@babel/core@7.29.7))(@types/react@18.3.31)(react@18.3.1)))(graphql@16.14.2)(react-native@0.76.9(@babel/core@7.29.7)(@babel/preset-env@7.29.7(@babel/core@7.29.7))(@types/react@18.3.31)(react@18.3.1))(react@18.3.1)
 
-  '@react-native-seoul/kakao-login@6.0.4(react-native@0.76.9(@babel/core@7.29.7)(@babel/preset-env@7.29.7(@babel/core@7.29.7))(@types/react@18.3.31)(react@18.3.1))(react@18.3.1)':
+  '@react-native-kakao/core@2.4.6(expo@52.0.49(@babel/core@7.29.7)(@babel/preset-env@7.29.7(@babel/core@7.29.7))(@expo/metro-runtime@4.0.1(react-native@0.76.9(@babel/core@7.29.7)(@babel/preset-env@7.29.7(@babel/core@7.29.7))(@types/react@18.3.31)(react@18.3.1)))(graphql@16.14.2)(react-native@0.76.9(@babel/core@7.29.7)(@babel/preset-env@7.29.7(@babel/core@7.29.7))(@types/react@18.3.31)(react@18.3.1))(react@18.3.1))(react-native@0.76.9(@babel/core@7.29.7)(@babel/preset-env@7.29.7(@babel/core@7.29.7))(@types/react@18.3.31)(react@18.3.1))(react@18.3.1)':
     dependencies:
+      crypto-js: 4.2.0
+      query-string: 7.1.3
+      react: 18.3.1
+      react-native: 0.76.9(@babel/core@7.29.7)(@babel/preset-env@7.29.7(@babel/core@7.29.7))(@types/react@18.3.31)(react@18.3.1)
+      return-fetch: 0.4.13
+    optionalDependencies:
+      expo: 52.0.49(@babel/core@7.29.7)(@babel/preset-env@7.29.7(@babel/core@7.29.7))(@expo/metro-runtime@4.0.1(react-native@0.76.9(@babel/core@7.29.7)(@babel/preset-env@7.29.7(@babel/core@7.29.7))(@types/react@18.3.31)(react@18.3.1)))(graphql@16.14.2)(react-native@0.76.9(@babel/core@7.29.7)(@babel/preset-env@7.29.7(@babel/core@7.29.7))(@types/react@18.3.31)(react@18.3.1))(react@18.3.1)
+
+  '@react-native-kakao/user@2.4.6(@react-native-kakao/core@2.4.6(expo@52.0.49(@babel/core@7.29.7)(@babel/preset-env@7.29.7(@babel/core@7.29.7))(@expo/metro-runtime@4.0.1(react-native@0.76.9(@babel/core@7.29.7)(@babel/preset-env@7.29.7(@babel/core@7.29.7))(@types/react@18.3.31)(react@18.3.1)))(graphql@16.14.2)(react-native@0.76.9(@babel/core@7.29.7)(@babel/preset-env@7.29.7(@babel/core@7.29.7))(@types/react@18.3.31)(react@18.3.1))(react@18.3.1))(react-native@0.76.9(@babel/core@7.29.7)(@babel/preset-env@7.29.7(@babel/core@7.29.7))(@types/react@18.3.31)(react@18.3.1))(react@18.3.1))(react-native@0.76.9(@babel/core@7.29.7)(@babel/preset-env@7.29.7(@babel/core@7.29.7))(@types/react@18.3.31)(react@18.3.1))(react@18.3.1)':
+    dependencies:
+      '@mj-studio/js-util': 1.1.3
+      '@react-native-kakao/core': 2.4.6(expo@52.0.49(@babel/core@7.29.7)(@babel/preset-env@7.29.7(@babel/core@7.29.7))(@expo/metro-runtime@4.0.1(react-native@0.76.9(@babel/core@7.29.7)(@babel/preset-env@7.29.7(@babel/core@7.29.7))(@types/react@18.3.31)(react@18.3.1)))(graphql@16.14.2)(react-native@0.76.9(@babel/core@7.29.7)(@babel/preset-env@7.29.7(@babel/core@7.29.7))(@types/react@18.3.31)(react@18.3.1))(react@18.3.1))(react-native@0.76.9(@babel/core@7.29.7)(@babel/preset-env@7.29.7(@babel/core@7.29.7))(@types/react@18.3.31)(react@18.3.1))(react@18.3.1)
       react: 18.3.1
       react-native: 0.76.9(@babel/core@7.29.7)(@babel/preset-env@7.29.7(@babel/core@7.29.7))(@types/react@18.3.31)(react@18.3.1)
 
@@ -10568,6 +10612,8 @@ snapshots:
 
   crypt@0.0.2: {}
 
+  crypto-js@4.2.0: {}
+
   crypto-random-string@2.0.0: {}
 
   css-in-js-utils@3.1.0:
@@ -11328,6 +11374,7 @@ snapshots:
   expo-location@18.0.10(expo@52.0.49(@babel/core@7.29.7)(@babel/preset-env@7.29.7(@babel/core@7.29.7))(@expo/metro-runtime@4.0.1(react-native@0.76.9(@babel/core@7.29.7)(@babel/preset-env@7.29.7(@babel/core@7.29.7))(@types/react@18.3.31)(react@18.3.1)))(graphql@16.14.2)(react-native@0.76.9(@babel/core@7.29.7)(@babel/preset-env@7.29.7(@babel/core@7.29.7))(@types/react@18.3.31)(react@18.3.1))(react@18.3.1)):
     dependencies:
       expo: 52.0.49(@babel/core@7.29.7)(@babel/preset-env@7.29.7(@babel/core@7.29.7))(@expo/metro-runtime@4.0.1(react-native@0.76.9(@babel/core@7.29.7)(@babel/preset-env@7.29.7(@babel/core@7.29.7))(@types/react@18.3.31)(react@18.3.1)))(graphql@16.14.2)(react-native@0.76.9(@babel/core@7.29.7)(@babel/preset-env@7.29.7(@babel/core@7.29.7))(@types/react@18.3.31)(react@18.3.1))(react@18.3.1)
+
   expo-manifests@0.15.8(expo@52.0.49(@babel/core@7.29.7)(@babel/preset-env@7.29.7(@babel/core@7.29.7))(@expo/metro-runtime@4.0.1(react-native@0.76.9(@babel/core@7.29.7)(@babel/preset-env@7.29.7(@babel/core@7.29.7))(@types/react@18.3.31)(react@18.3.1)))(graphql@16.14.2)(react-native@0.76.9(@babel/core@7.29.7)(@babel/preset-env@7.29.7(@babel/core@7.29.7))(@types/react@18.3.31)(react@18.3.1))(react@18.3.1)):
     dependencies:
       '@expo/config': 10.0.11
@@ -13488,6 +13535,8 @@ snapshots:
     dependencies:
       onetime: 7.0.0
       signal-exit: 4.1.0
+
+  return-fetch@0.4.13: {}
 
   reusify@1.1.0: {}
 
