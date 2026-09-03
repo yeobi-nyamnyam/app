@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Alert as RNAlert, ScrollView, StyleSheet, TextInput, View } from "react-native";
+import { ScrollView, StyleSheet, TextInput, View } from "react-native";
 import { router } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useMutation, useQuery } from "@apollo/client/react";
@@ -21,6 +21,7 @@ import { ActiveTripDocument, EditTripBudgetDocument, RegionNameDocument } from "
 import { formatWon, parseDigits } from "@/lib/format";
 import { getTripDates, redistributeUnrecordedSlots, type WeightLevel } from "@/lib/budget";
 import { useSession } from "@/hooks/useSession";
+import { useAlertModal } from "@/hooks/useAlertModal";
 
 interface EditableBudget {
   name: string;
@@ -115,6 +116,7 @@ function TripEditForm({
   onSaved: () => void;
 }) {
   const insets = useSafeAreaInsets();
+  const { showAlert } = useAlertModal();
   const [editTripBudget, { loading: isSaving }] = useMutation(EditTripBudgetDocument);
   const { data: regionData } = useQuery(RegionNameDocument, {
     variables: { code: trip.regionCode },
@@ -228,7 +230,7 @@ function TripEditForm({
       setEditingField(null);
       onSaved();
     } catch (error) {
-      RNAlert.alert(
+      showAlert(
         "예산 수정 실패",
         error instanceof Error ? error.message : "잠시 후 다시 시도해주세요.",
       );
