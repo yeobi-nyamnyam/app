@@ -1,7 +1,8 @@
 import { useMemo, useState } from "react";
-import { ScrollView, StyleSheet, View } from "react-native";
+import { StyleSheet, View } from "react-native";
 import { router } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
 import {
   ChipList,
   FormField,
@@ -40,6 +41,9 @@ export default function TripNewScreen() {
   const [isValidatingRegion, setIsValidatingRegion] = useState(false);
   const [regionCandidates, setRegionCandidates] = useState<RegionMatch[]>([]);
   const [selectedCandidateCode, setSelectedCandidateCode] = useState<string | undefined>();
+  // Footer는 KeyboardAwareScrollView 밖(아래)에 있어서 화면 맨 밑이 아니다 — 키보드가
+  // 뜰 때 그만큼은 덜 밀어올려야 한다. 안 그러면 Footer 높이만큼 빈 공간이 남는다.
+  const [footerHeight, setFooterHeight] = useState(0);
   const [startDate, setStartDate] = useState<string | null>(null);
   const [endDate, setEndDate] = useState<string | null>(null);
   const [totalBudgetText, setTotalBudgetText] = useState("");
@@ -149,7 +153,10 @@ export default function TripNewScreen() {
         onBackPress={() => router.back()}
         topInset={insets.top}
       />
-      <ScrollView contentContainerStyle={styles.scrollContent}>
+      <KeyboardAwareScrollView
+        contentContainerStyle={styles.scrollContent}
+        extraKeyboardSpace={-footerHeight}
+      >
         <FormField label="여행 이름">
           <TextField
             value={name}
@@ -273,17 +280,19 @@ export default function TripNewScreen() {
             )}`}
           />
         ) : null}
-      </ScrollView>
-      <Footer
-        label={isValidatingRegion ? "확인 중..." : "확인"}
-        disabled={
-          !canConfirm ||
-          isValidatingRegion ||
-          (regionCandidates.length > 0 && !selectedCandidateCode)
-        }
-        onPress={handleConfirm}
-        bottomInset={insets.bottom}
-      />
+      </KeyboardAwareScrollView>
+      <View onLayout={(event) => setFooterHeight(event.nativeEvent.layout.height)}>
+        <Footer
+          label={isValidatingRegion ? "확인 중..." : "확인"}
+          disabled={
+            !canConfirm ||
+            isValidatingRegion ||
+            (regionCandidates.length > 0 && !selectedCandidateCode)
+          }
+          onPress={handleConfirm}
+          bottomInset={insets.bottom}
+        />
+      </View>
     </View>
   );
 }

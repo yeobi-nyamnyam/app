@@ -1,7 +1,8 @@
-import { useCallback, useEffect, useRef, useState } from "react";
-import { Alert, Modal, Pressable, ScrollView, StyleSheet, View } from "react-native";
+import { useCallback, useEffect, useRef, useState, type ComponentRef } from "react";
+import { Alert, Modal, Pressable, StyleSheet, View } from "react-native";
 import { Redirect, router, useFocusEffect } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { KeyboardChatScrollView, KeyboardStickyView } from "react-native-keyboard-controller";
 import { useMutation, useQuery } from "@apollo/client/react";
 import {
   ChatBubble,
@@ -150,7 +151,10 @@ function ActiveConversation({
   recordedMealTypes: MealType[];
 }) {
   const insets = useSafeAreaInsets();
-  const scrollRef = useRef<ScrollView>(null);
+  const scrollRef = useRef<ComponentRef<typeof KeyboardChatScrollView>>(null);
+  // ChatInputBar는 원래 NavBar 위에 얹혀있어서(화면 맨 밑이 아님), 키보드가 뜰 때
+  // NavBar 높이만큼은 덜 밀어올려야 한다 — 안 그러면 그만큼 빈 공간이 남는다.
+  const [navBarHeight, setNavBarHeight] = useState(0);
   const remaining = Math.max(dayBudget - consumed, 0);
   const [insertChatMessage] = useMutation(InsertChatMessageDocument);
   const [updateChatMessageStatus] = useMutation(UpdateChatMessageStatusDocument);
@@ -386,18 +390,24 @@ function ActiveConversation({
         topInset={insets.top}
         onBackPress={() => router.back()}
       />
-      <ScrollView
+      <KeyboardChatScrollView
         ref={scrollRef}
         style={styles.messages}
         contentContainerStyle={styles.messagesContent}
+        offset={navBarHeight}
         onContentSizeChange={() => scrollRef.current?.scrollToEnd({ animated: true })}
       >
         {messages.map(({ id, ...bubble }) => (
           <ChatBubble key={id} {...bubble} />
         ))}
-      </ScrollView>
-      <ChatInputBar value={inputValue} onChangeText={setInputValue} onSend={() => void handleSend()} />
-      <View style={{ paddingBottom: insets.bottom }}>
+      </KeyboardChatScrollView>
+      <KeyboardStickyView offset={{ opened: navBarHeight }}>
+        <ChatInputBar value={inputValue} onChangeText={setInputValue} onSend={() => void handleSend()} />
+      </KeyboardStickyView>
+      <View
+        style={{ paddingBottom: insets.bottom }}
+        onLayout={(event) => setNavBarHeight(event.nativeEvent.layout.height)}
+      >
         <NavBar active="chat" onChange={handleNavChange} />
       </View>
       <Modal
