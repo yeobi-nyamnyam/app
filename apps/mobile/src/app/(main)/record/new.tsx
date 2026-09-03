@@ -1,4 +1,4 @@
-import { Alert, StyleSheet, View } from "react-native";
+import { StyleSheet, View } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useMutation, useQuery } from "@apollo/client/react";
@@ -12,6 +12,7 @@ import {
 
 import { RecordForm, type RecordFormValues, type MealLogCategory } from "@/components/RecordForm";
 import { useSession } from "@/hooks/useSession";
+import { useAlertModal } from "@/hooks/useAlertModal";
 import { getTripDates, type MealType } from "@/lib/budget";
 
 type RecordSource = "home" | "recommend" | "chat" | "record";
@@ -38,6 +39,7 @@ export default function RecordNewScreen() {
   const source: RecordSource = params.source ?? "record";
 
   const { session } = useSession();
+  const { showAlert } = useAlertModal();
   const { data } = useQuery(ActiveTripDocument, {
     variables: { userId: session?.user.id ?? "" },
     skip: !session,
@@ -108,7 +110,7 @@ export default function RecordNewScreen() {
       router.dismissAll();
       router.replace("/");
     } catch (error) {
-      Alert.alert("저장 실패", error instanceof Error ? error.message : "잠시 후 다시 시도해주세요.");
+      showAlert("저장 실패", error instanceof Error ? error.message : "잠시 후 다시 시도해주세요.");
     }
   };
 
@@ -133,7 +135,7 @@ export default function RecordNewScreen() {
       router.push("/mypage");
       return;
     }
-    Alert.alert("준비 중", "아직 구현되지 않은 탭이에요.");
+    showAlert("준비 중", "아직 구현되지 않은 탭이에요.");
   };
 
   return (

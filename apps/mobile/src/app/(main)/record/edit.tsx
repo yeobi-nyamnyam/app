@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Alert, Modal as RNModal, Pressable, ScrollView, StyleSheet, View } from "react-native";
+import { Modal as RNModal, Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useMutation } from "@apollo/client/react";
@@ -24,6 +24,7 @@ import { DeleteMealLogDocument, UpdateMealLogDocument } from "@repo/types";
 
 import { formatDateTime, formatDigitsForDisplay, formatWon, parseDigits } from "@/lib/format";
 import type { MealLogCategory } from "@/components/RecordForm";
+import { useAlertModal } from "@/hooks/useAlertModal";
 
 const OTHER_CATEGORY_OPTIONS: MealLogCategory[] = ["교통", "숙박", "기념품", "기타"];
 
@@ -34,6 +35,7 @@ const OTHER_CATEGORY_OPTIONS: MealLogCategory[] = ["교통", "숙박", "기념�
  */
 export default function RecordEditScreen() {
   const insets = useSafeAreaInsets();
+  const { showAlert } = useAlertModal();
   const params = useLocalSearchParams<{
     logId: string;
     title: string;
@@ -99,7 +101,7 @@ export default function RecordEditScreen() {
       });
       router.back();
     } catch (error) {
-      Alert.alert("수정 실패", error instanceof Error ? error.message : "잠시 후 다시 시도해주세요.");
+      showAlert("수정 실패", error instanceof Error ? error.message : "잠시 후 다시 시도해주세요.");
     }
   };
 
@@ -111,7 +113,7 @@ export default function RecordEditScreen() {
       await deleteMealLog({ variables: { mealLogId: params.logId } });
       router.back();
     } catch (error) {
-      Alert.alert("삭제 실패", error instanceof Error ? error.message : "잠시 후 다시 시도해주세요.");
+      showAlert("삭제 실패", error instanceof Error ? error.message : "잠시 후 다시 시도해주세요.");
     }
   };
 
@@ -136,7 +138,7 @@ export default function RecordEditScreen() {
       router.push("/mypage");
       return;
     }
-    Alert.alert("준비 중", "아직 구현되지 않은 탭이에요.");
+    showAlert("준비 중", "아직 구현되지 않은 탭이에요.");
   };
 
   return (

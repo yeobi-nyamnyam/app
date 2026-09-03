@@ -1,11 +1,12 @@
 import { useState } from "react";
-import { Alert, ScrollView, StyleSheet, View } from "react-native";
+import { ScrollView, StyleSheet, View } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Button, FormField, Header, Icon, NavBar, Text, TextField, colors, spacing, type NavBarItemKey } from "@repo/ui";
 
 import { formatDigitsForDisplay, parseDigits } from "@/lib/format";
 import { pickReceiptImage, uploadReceiptImage } from "@/lib/receipts";
+import { useAlertModal } from "@/hooks/useAlertModal";
 
 /**
  * F6-3 영수증 인식 실패/수정 페이지 (Figma "spent-write-recipt-edit"). 상호명/
@@ -14,6 +15,7 @@ import { pickReceiptImage, uploadReceiptImage } from "@/lib/receipts";
  */
 export default function RecordOcrEditScreen() {
   const insets = useSafeAreaInsets();
+  const { showAlert } = useAlertModal();
   const params = useLocalSearchParams<{
     tripId: string;
     localUri: string;
@@ -45,7 +47,7 @@ export default function RecordOcrEditScreen() {
       setLocalUri(encodeURIComponent(uri));
       setStoragePath(path);
     } catch (error) {
-      Alert.alert("오류", error instanceof Error ? error.message : "잠시 후 다시 시도해주세요.");
+      showAlert("오류", error instanceof Error ? error.message : "잠시 후 다시 시도해주세요.");
     } finally {
       setReprocessing(false);
     }
