@@ -1,4 +1,4 @@
-import { Alert, ScrollView, StyleSheet, Text as RNText, View } from "react-native";
+import { ScrollView, StyleSheet, Text as RNText, View } from "react-native";
 import { router } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useQuery } from "@apollo/client/react";
@@ -19,6 +19,7 @@ import {
 import { CharacterGrowthDocument } from "@repo/types";
 
 import { useSession } from "@/hooks/useSession";
+import { useAlertModal } from "@/hooks/useAlertModal";
 import {
   EVOLUTION_STAGES,
   getCharacterLevel,
@@ -34,6 +35,7 @@ import {
 export default function CharacterScreen() {
   const insets = useSafeAreaInsets();
   const { session } = useSession();
+  const { showAlert } = useAlertModal();
 
   const { data, loading } = useQuery(CharacterGrowthDocument, {
     variables: { userId: session?.user.id ?? "" },
@@ -78,7 +80,7 @@ export default function CharacterScreen() {
       router.push("/record");
       return;
     }
-    Alert.alert("준비 중", "아직 구현되지 않은 탭이에요.");
+    showAlert("준비 중", "아직 구현되지 않은 탭이에요.");
   };
 
   return (

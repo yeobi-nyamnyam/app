@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Alert, ScrollView, StyleSheet, Text as RNText, View } from "react-native";
+import { ScrollView, StyleSheet, Text as RNText, View } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useQuery } from "@apollo/client/react";
@@ -23,6 +23,7 @@ import { BadgeCollectionDocument } from "@repo/types";
 
 import { BadgeAnnounceIcon } from "@/components/BadgeAnnounceIcon";
 import { useSession } from "@/hooks/useSession";
+import { useAlertModal } from "@/hooks/useAlertModal";
 
 // 배지 보관함 (G0, Figma node 407:2177 "User_4 - 배지 / 포인트 현황"). mypage/index.tsx와
 // 마찬가지로 이 프레임도 packages/tokens에 없는 별도 팔레트(text/strong, semantic/
@@ -61,6 +62,7 @@ export default function BadgesScreen() {
   const insets = useSafeAreaInsets();
   const params = useLocalSearchParams<{ from?: string }>();
   const { session } = useSession();
+  const { showAlert } = useAlertModal();
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
 
   const { data, loading } = useQuery(BadgeCollectionDocument, {
@@ -179,7 +181,7 @@ export default function BadgesScreen() {
       router.push("/record");
       return;
     }
-    Alert.alert("준비 중", "아직 구현되지 않은 탭이에요.");
+    showAlert("준비 중", "아직 구현되지 않은 탭이에요.");
   };
 
   return (

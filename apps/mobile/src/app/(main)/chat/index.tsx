@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useState } from "react";
-import { Alert, ScrollView, StyleSheet, View } from "react-native";
+import { ScrollView, StyleSheet, View } from "react-native";
 import { router, useFocusEffect } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useQuery } from "@apollo/client/react";
@@ -24,6 +24,7 @@ import { formatWon } from "@/lib/format";
 import { formatChatTime, toChatLogFilterCategory, type ChatLogFilterCategory } from "@/lib/chat";
 import { getTripDates } from "@/lib/budget";
 import { useSession } from "@/hooks/useSession";
+import { useAlertModal } from "@/hooks/useAlertModal";
 
 type FilterKey = "전체" | ChatLogFilterCategory;
 
@@ -34,7 +35,7 @@ const FILTER_LABEL: Record<FilterKey, string> = {
   기타소비: "기타 소비",
 };
 
-const handleNavChange = (key: NavBarItemKey) => {
+const handleNavChange = (key: NavBarItemKey, showAlert: (title: string, content: string) => void) => {
   if (key === "chat") return;
   if (key === "home") {
     router.push("/");
@@ -52,7 +53,7 @@ const handleNavChange = (key: NavBarItemKey) => {
     router.push("/mypage");
     return;
   }
-  Alert.alert("준비 중", "아직 구현되지 않은 탭이에요.");
+  showAlert("준비 중", "아직 구현되지 않은 탭이에요.");
 };
 
 interface ChatLogEntry {
@@ -76,6 +77,7 @@ export default function ChatScreen() {
   const [filter, setFilter] = useState<FilterKey>("전체");
 
   const { session } = useSession();
+  const { showAlert } = useAlertModal();
   const { data: tripData, loading: tripLoading } = useQuery(ActiveTripDocument, {
     variables: { userId: session?.user.id ?? "" },
     skip: !session,
@@ -152,7 +154,7 @@ export default function ChatScreen() {
         <View style={styles.emptyContent}>
           <Text color="subtlest">여행 정보 불러오는 중...</Text>
         </View>
-        <NavBar active="chat" onChange={handleNavChange} />
+        <NavBar active="chat" onChange={(key) => handleNavChange(key, showAlert)} />
       </View>
     );
   }
@@ -163,7 +165,7 @@ export default function ChatScreen() {
         <View style={styles.emptyContent}>
           <EmptyTripPrompt onCreateTrip={() => router.push("/trip-create")} />
         </View>
-        <NavBar active="chat" onChange={handleNavChange} />
+        <NavBar active="chat" onChange={(key) => handleNavChange(key, showAlert)} />
       </View>
     );
   }
@@ -212,7 +214,7 @@ export default function ChatScreen() {
         <Button label="대화 하기" onPress={() => router.push("/chat/conversation")} />
       </View>
       <View style={{ paddingBottom: insets.bottom }}>
-        <NavBar active="chat" onChange={handleNavChange} />
+        <NavBar active="chat" onChange={(key) => handleNavChange(key, showAlert)} />
       </View>
     </View>
   );
