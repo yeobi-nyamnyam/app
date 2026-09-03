@@ -161,12 +161,7 @@ export default function ChatScreen() {
     return (
       <View style={styles.container}>
         <View style={styles.emptyContent}>
-          <EmptyTripPrompt
-            onCreateTrip={() => router.push("/trip-create")}
-            onLoadPastTrip={() =>
-              Alert.alert("준비 중", "과거 여행 불러오기는 아직 준비 중이에요.")
-            }
-          />
+          <EmptyTripPrompt onCreateTrip={() => router.push("/trip-create")} />
         </View>
         <NavBar active="chat" onChange={handleNavChange} />
       </View>
