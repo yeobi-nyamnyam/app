@@ -35,6 +35,7 @@ interface EditTrip {
   id: string;
   name: string;
   regionCode: string;
+  regionDisplayName: string | null;
   startDate: string;
   endDate: string;
   totalBudget: number;
@@ -86,6 +87,7 @@ export default function TripEditScreen() {
     id: tripNode.id,
     name: tripNode.name,
     regionCode: tripNode.region_code,
+    regionDisplayName: tripNode.region_display_name ?? null,
     startDate: tripNode.start_date,
     endDate: tripNode.end_date,
     totalBudget: tripNode.total_budget,
@@ -117,7 +119,10 @@ function TripEditForm({
   const { data: regionData } = useQuery(RegionNameDocument, {
     variables: { code: trip.regionCode },
   });
-  const regionName = regionData?.region_cacheCollection.edges[0]?.node.region_name ?? trip.regionCode;
+  const regionName =
+    trip.regionDisplayName ??
+    regionData?.region_cacheCollection.edges[0]?.node.region_name ??
+    trip.regionCode;
 
   const [committed, setCommitted] = useState<EditableBudget>(() => toEditableBudget(trip));
   const [draft, setDraft] = useState<EditableBudget>(() => toEditableBudget(trip));

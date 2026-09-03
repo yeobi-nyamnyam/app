@@ -1,6 +1,7 @@
 mutation CreateTripWithMealSlots(
   $name: String!
   $regionCode: String!
+  $regionDisplayName: String!
   $startDate: Date!
   $endDate: Date!
   $totalBudget: Int!
@@ -15,6 +16,7 @@ mutation CreateTripWithMealSlots(
   create_trip_with_meal_slots(
     p_name: $name
     p_region_code: $regionCode
+    p_region_display_name: $regionDisplayName
     p_start_date: $startDate
     p_end_date: $endDate
     p_total_budget: $totalBudget
@@ -29,6 +31,7 @@ mutation CreateTripWithMealSlots(
     id
     name
     region_code
+    region_display_name
     start_date
     end_date
     status
