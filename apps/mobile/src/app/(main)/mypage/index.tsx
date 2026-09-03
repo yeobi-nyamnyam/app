@@ -1,6 +1,5 @@
 import { useState } from "react";
 import {
-  Alert,
   Modal as RNModal,
   Pressable,
   ScrollView,
@@ -30,6 +29,7 @@ import { MyPageDashboardDocument } from "@repo/types";
 import { deleteAccount } from "@/lib/account";
 import { supabase } from "@/lib/supabase";
 import { useSession } from "@/hooks/useSession";
+import { useAlertModal } from "@/hooks/useAlertModal";
 import { getCharacterLevel, getCharacterStage, getGrowthStage } from "@/lib/character";
 
 /**
@@ -45,6 +45,7 @@ import { getCharacterLevel, getCharacterStage, getGrowthStage } from "@/lib/char
 export default function MyPageScreen() {
   const insets = useSafeAreaInsets();
   const { session } = useSession();
+  const { showAlert } = useAlertModal();
   const [isProcessing, setIsProcessing] = useState(false);
   const [isWithdrawConfirmVisible, setIsWithdrawConfirmVisible] = useState(false);
 
@@ -90,7 +91,7 @@ export default function MyPageScreen() {
       router.push("/record");
       return;
     }
-    Alert.alert("준비 중", "아직 구현되지 않은 탭이에요.");
+    showAlert("준비 중", "아직 구현되지 않은 탭이에요.");
   };
 
   const handleLogout = async () => {
@@ -110,7 +111,7 @@ export default function MyPageScreen() {
     try {
       await deleteAccount();
     } catch (error) {
-      Alert.alert("탈퇴 실패", error instanceof Error ? error.message : "잠시 후 다시 시도해주세요.");
+      showAlert("탈퇴 실패", error instanceof Error ? error.message : "잠시 후 다시 시도해주세요.");
     } finally {
       setIsProcessing(false);
     }
