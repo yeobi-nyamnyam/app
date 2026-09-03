@@ -227,8 +227,12 @@ function ActiveTripHome({
   const insets = useSafeAreaInsets();
   const [expanded, setExpanded] = useState(true);
   const [updateMealSlotWeight] = useMutation(UpdateMealSlotWeightDocument);
+  // record/new.tsx의 기록 저장 뮤테이션이 이 쿼리를 refetch하지 않아서, 기본
+  // fetchPolicy(cache-first)로는 방금 기록한 끼니가 캐시에 없어 "기록을 불러오지
+  // 못했어요"로 잘못 뜬다 — record/history.tsx와 동일하게 맞춘다.
   const { data: mealLogsData } = useQuery(TripMealLogsDocument, {
     variables: { tripId: trip.id },
+    fetchPolicy: "cache-and-network",
   });
 
   const today = todayDate();
