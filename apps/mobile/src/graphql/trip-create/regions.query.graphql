@@ -5,6 +5,7 @@ query Regions {
         id
         region_code
         region_name
+        tour_api_snapshot
       }
     }
   }

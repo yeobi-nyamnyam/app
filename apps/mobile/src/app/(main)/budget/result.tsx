@@ -25,6 +25,7 @@ export default function BudgetResultScreen() {
   const params = useLocalSearchParams<{
     name: string;
     regionCode: string;
+    regionDisplayName: string;
     startDate: string;
     endDate: string;
     totalBudget: string;
@@ -80,6 +81,7 @@ export default function BudgetResultScreen() {
       await createTrip({
         name: params.name,
         regionCode: params.regionCode,
+        regionDisplayName: params.regionDisplayName,
         startDate: params.startDate,
         endDate: params.endDate,
         totalBudget,
