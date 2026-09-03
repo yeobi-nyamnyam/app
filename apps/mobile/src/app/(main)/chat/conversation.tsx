@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState, type ComponentRef } from "react";
-import { Alert, Modal, Pressable, StyleSheet, View } from "react-native";
+import { Modal, Pressable, StyleSheet, View } from "react-native";
 import { Redirect, router, useFocusEffect } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { KeyboardChatScrollView, KeyboardStickyView } from "react-native-keyboard-controller";
@@ -33,6 +33,7 @@ import {
   type ChatParsedResult,
 } from "@/lib/chat";
 import { useSession } from "@/hooks/useSession";
+import { useAlertModal } from "@/hooks/useAlertModal";
 
 // Figma 카테고리 라벨("숙소")과 달리 DB CHECK 제약(schema-design.md §4)은 '숙박'이라,
 // 실제 저장값(RecordForm과 동일한 MealLogCategory)을 그대로 라벨로 쓴다.
@@ -43,7 +44,7 @@ const CATEGORY_OPTIONS: { label: string; value: MealLogCategory }[] = [
   { label: "기타", value: "기타" },
 ];
 
-const handleNavChange = (key: NavBarItemKey) => {
+const handleNavChange = (key: NavBarItemKey, showAlert: (title: string, content: string) => void) => {
   if (key === "chat") return;
   if (key === "home") {
     router.push("/");
@@ -61,7 +62,7 @@ const handleNavChange = (key: NavBarItemKey) => {
     router.push("/mypage");
     return;
   }
-  Alert.alert("준비 중", "아직 구현되지 않은 탭이에요.");
+  showAlert("준비 중", "아직 구현되지 않은 탭이에요.");
 };
 
 /**
@@ -70,6 +71,7 @@ const handleNavChange = (key: NavBarItemKey) => {
  */
 export default function ChatConversationScreen() {
   const { session } = useSession();
+  const { showAlert } = useAlertModal();
   const { data, loading, refetch } = useQuery(ActiveTripDocument, {
     variables: { userId: session?.user.id ?? "" },
     skip: !session,
@@ -91,7 +93,7 @@ export default function ChatConversationScreen() {
         <View style={styles.emptyContent}>
           <Text color="subtlest">여행 정보 불러오는 중...</Text>
         </View>
-        <NavBar active="chat" onChange={handleNavChange} />
+        <NavBar active="chat" onChange={(key) => handleNavChange(key, showAlert)} />
       </View>
     );
   }
@@ -151,6 +153,7 @@ function ActiveConversation({
   recordedMealTypes: MealType[];
 }) {
   const insets = useSafeAreaInsets();
+  const { showAlert } = useAlertModal();
   const scrollRef = useRef<ComponentRef<typeof KeyboardChatScrollView>>(null);
   // ChatInputBar는 원래 NavBar 위에 얹혀있어서(화면 맨 밑이 아님), 키보드가 뜰 때
   // NavBar 높이만큼은 덜 밀어올려야 한다 — 안 그러면 그만큼 빈 공간이 남는다.
@@ -191,11 +194,11 @@ function ActiveConversation({
         title: formatWon(remaining),
         description: "오늘 남은 식비가 줄었어요. 추천에서 다시 골라보세요.",
         buttonLabel: "새 추천 보기",
-        onButtonPress: () => Alert.alert("준비 중", "추천 화면은 아직 준비 중이에요."),
+        onButtonPress: () => showAlert("준비 중", "추천 화면은 아직 준비 중이에요."),
       });
     }
     previousRemainingRef.current = remaining;
-  }, [remaining]);
+  }, [remaining, showAlert]);
 
   // 끼니 소비(식비)는 슬롯 연결·캐스케이드 확정(F6-4)이 아직 없어 RecordForm에서도
   // 저장을 막아둔 상태라, 채팅에서 확정하지 않고 기록 화면(F6-1 chat 경로)으로 보낸다.
@@ -366,7 +369,7 @@ function ActiveConversation({
       });
       setPendingExpense(null);
     } catch (error) {
-      Alert.alert("저장 실패", error instanceof Error ? error.message : "잠시 후 다시 시도해주세요.");
+      showAlert("저장 실패", error instanceof Error ? error.message : "잠시 후 다시 시도해주세요.");
     }
   };
 
@@ -408,7 +411,7 @@ function ActiveConversation({
         style={{ paddingBottom: insets.bottom }}
         onLayout={(event) => setNavBarHeight(event.nativeEvent.layout.height)}
       >
-        <NavBar active="chat" onChange={handleNavChange} />
+        <NavBar active="chat" onChange={(key) => handleNavChange(key, showAlert)} />
       </View>
       <Modal
         visible={pendingExpense != null}

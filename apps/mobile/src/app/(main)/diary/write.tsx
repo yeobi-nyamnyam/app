@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Alert, Modal as RNModal, Pressable, ScrollView, StyleSheet, View } from "react-native";
+import { Modal as RNModal, Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useMutation, useQuery } from "@apollo/client/react";
@@ -20,6 +20,7 @@ import {
 import { ActiveTripDocument, CreateDiaryDocument, DiaryByDateDocument, TripMealLogsDocument } from "@repo/types";
 
 import { useSession } from "@/hooks/useSession";
+import { useAlertModal } from "@/hooks/useAlertModal";
 import { getTripDates } from "@/lib/budget";
 import { todayDate } from "@/lib/format";
 import { generateDiaryDraft, type MealLogSummary } from "@/lib/diary";
@@ -38,6 +39,7 @@ export default function DiaryWriteScreen() {
   const insets = useSafeAreaInsets();
   const params = useLocalSearchParams<{ tripId: string }>();
   const { session } = useSession();
+  const { showAlert } = useAlertModal();
 
   const [mode, setMode] = useState<DiaryMode>("ai");
   const [title, setTitle] = useState("");
@@ -132,7 +134,7 @@ export default function DiaryWriteScreen() {
       });
       router.back();
     } catch (error) {
-      Alert.alert("저장 실패", error instanceof Error ? error.message : "잠시 후 다시 시도해주세요.");
+      showAlert("저장 실패", error instanceof Error ? error.message : "잠시 후 다시 시도해주세요.");
     }
   };
 

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Alert, ScrollView, StyleSheet, View } from "react-native";
+import { ScrollView, StyleSheet, View } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useMutation } from "@apollo/client/react";
@@ -7,6 +7,7 @@ import { FormField, Header, NavBar, TextField, colors, spacing, type NavBarItemK
 import { UpdateDiaryDocument } from "@repo/types";
 
 import { DiaryTextArea } from "@/components/DiaryTextArea";
+import { useAlertModal } from "@/hooks/useAlertModal";
 
 const MAX_CONTENT_LENGTH = 300;
 
@@ -17,6 +18,7 @@ const MAX_CONTENT_LENGTH = 300;
  */
 export default function DiaryEditScreen() {
   const insets = useSafeAreaInsets();
+  const { showAlert } = useAlertModal();
   const params = useLocalSearchParams<{
     diaryId: string;
     tripId: string;
@@ -42,7 +44,7 @@ export default function DiaryEditScreen() {
       });
       router.back();
     } catch (error) {
-      Alert.alert("수정 실패", error instanceof Error ? error.message : "잠시 후 다시 시도해주세요.");
+      showAlert("수정 실패", error instanceof Error ? error.message : "잠시 후 다시 시도해주세요.");
     }
   };
 
@@ -67,7 +69,7 @@ export default function DiaryEditScreen() {
       router.push("/mypage");
       return;
     }
-    Alert.alert("준비 중", "아직 구현되지 않은 탭이에요.");
+    showAlert("준비 중", "아직 구현되지 않은 탭이에요.");
   };
 
   return (

@@ -1,4 +1,4 @@
-import { Alert, ScrollView, StyleSheet, Text as RNText, View } from "react-native";
+import { ScrollView, StyleSheet, Text as RNText, View } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useQuery } from "@apollo/client/react";
@@ -7,6 +7,7 @@ import { TripBudgetHistoryDocument } from "@repo/types";
 
 import { HistoryRow } from "@/components/HistoryRow";
 import { formatWon } from "@/lib/format";
+import { useAlertModal } from "@/hooks/useAlertModal";
 
 interface TripBudgetSnapshot {
   total_budget: number;
@@ -67,6 +68,7 @@ const formatHourMinute = (isoDateTime: string) => {
  */
 export default function BudgetHistoryScreen() {
   const insets = useSafeAreaInsets();
+  const { showAlert } = useAlertModal();
   const params = useLocalSearchParams<{ tripId: string }>();
 
   const { data, loading } = useQuery(TripBudgetHistoryDocument, {
@@ -106,7 +108,7 @@ export default function BudgetHistoryScreen() {
       router.push("/mypage");
       return;
     }
-    Alert.alert("준비 중", "아직 구현되지 않은 탭이에요.");
+    showAlert("준비 중", "아직 구현되지 않은 탭이에요.");
   };
 
   return (

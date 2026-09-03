@@ -9,6 +9,7 @@ import * as SplashScreen from "expo-splash-screen";
 
 import { apolloClient } from "@/lib/apollo";
 import { SessionProvider } from "@/hooks/useSession";
+import { AlertModalProvider } from "@/hooks/useAlertModal";
 import { Splash } from "@/components/Splash";
 
 SplashScreen.preventAutoHideAsync();
@@ -42,12 +43,14 @@ export default function RootLayout() {
       <ApolloProvider client={apolloClient}>
         <SafeAreaProvider>
           <KeyboardProvider>
-            <StatusBar style="auto" />
-            {showIntro ? (
-              <Splash onFinish={handleIntroFinish} />
-            ) : (
-              <Stack screenOptions={{ headerShown: false }} />
-            )}
+            <AlertModalProvider>
+              <StatusBar style="auto" />
+              {showIntro ? (
+                <Splash onFinish={handleIntroFinish} />
+              ) : (
+                <Stack screenOptions={{ headerShown: false }} />
+              )}
+            </AlertModalProvider>
           </KeyboardProvider>
         </SafeAreaProvider>
       </ApolloProvider>

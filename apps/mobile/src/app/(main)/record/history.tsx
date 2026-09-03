@@ -1,5 +1,5 @@
 import { useCallback, useState } from "react";
-import { Alert, ScrollView, StyleSheet, View } from "react-native";
+import { ScrollView, StyleSheet, View } from "react-native";
 import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useQuery } from "@apollo/client/react";
@@ -8,6 +8,7 @@ import { TripDiariesDocument, TripHistoryDocument, TripMealLogsDocument } from "
 
 import { formatDateWithWeekday, formatMonthDay, formatWon } from "@/lib/format";
 import { MEAL_TYPES, MEAL_TYPE_LABEL, getTripDates, type MealType } from "@/lib/budget";
+import { useAlertModal } from "@/hooks/useAlertModal";
 
 type HistoryFilter = "전체" | "끼니" | "소비" | "일기";
 
@@ -27,6 +28,7 @@ const DIARY_MODE_LABEL: Record<string, string> = {
  */
 export default function RecordHistoryScreen() {
   const insets = useSafeAreaInsets();
+  const { showAlert } = useAlertModal();
   const params = useLocalSearchParams<{ tripId: string; tripName: string }>();
   const [filter, setFilter] = useState<HistoryFilter>("전체");
 
@@ -188,7 +190,7 @@ export default function RecordHistoryScreen() {
       router.push("/mypage");
       return;
     }
-    Alert.alert("준비 중", "아직 구현되지 않은 탭이에요.");
+    showAlert("준비 중", "아직 구현되지 않은 탭이에요.");
   };
 
   return (

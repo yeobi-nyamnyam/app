@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Alert, Modal as RNModal, Pressable, ScrollView, StyleSheet, View } from "react-native";
+import { Modal as RNModal, Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { router } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useQuery } from "@apollo/client/react";
@@ -9,11 +9,13 @@ import { ProfileDocument } from "@repo/types";
 import { deleteAccount } from "@/lib/account";
 import { supabase } from "@/lib/supabase";
 import { useSession } from "@/hooks/useSession";
+import { useAlertModal } from "@/hooks/useAlertModal";
 
 // 계정 관리 설정 (Figma node 410:2346, "User_7 - 계정관리설정").
 export default function AccountScreen() {
   const insets = useSafeAreaInsets();
   const { session } = useSession();
+  const { showAlert } = useAlertModal();
   const [isProcessing, setIsProcessing] = useState(false);
   const [isWithdrawConfirmVisible, setIsWithdrawConfirmVisible] = useState(false);
 
@@ -41,7 +43,7 @@ export default function AccountScreen() {
     try {
       await deleteAccount();
     } catch (error) {
-      Alert.alert("탈퇴 실패", error instanceof Error ? error.message : "잠시 후 다시 시도해주세요.");
+      showAlert("탈퇴 실패", error instanceof Error ? error.message : "잠시 후 다시 시도해주세요.");
     } finally {
       setIsProcessing(false);
     }

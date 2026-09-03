@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Alert, ScrollView, StyleSheet, View } from "react-native";
+import { ScrollView, StyleSheet, View } from "react-native";
 import { router } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useQuery } from "@apollo/client/react";
@@ -17,6 +17,7 @@ import {
 import { CompletedTripsDocument } from "@repo/types";
 
 import { useSession } from "@/hooks/useSession";
+import { useAlertModal } from "@/hooks/useAlertModal";
 import { formatTripPeriod } from "@/lib/format";
 
 // 완료 여행 목록 (Figma node 410:2278, "User_5 - 완료 여행"). Figma 원본은 뒤로가기
@@ -25,6 +26,7 @@ import { formatTripPeriod } from "@/lib/format";
 export default function CompletedTripsScreen() {
   const insets = useSafeAreaInsets();
   const { session } = useSession();
+  const { showAlert } = useAlertModal();
   const [query, setQuery] = useState("");
 
   const { data, loading } = useQuery(CompletedTripsDocument, {
@@ -68,7 +70,7 @@ export default function CompletedTripsScreen() {
       router.push("/record");
       return;
     }
-    Alert.alert("준비 중", "아직 구현되지 않은 탭이에요.");
+    showAlert("준비 중", "아직 구현되지 않은 탭이에요.");
   };
 
   return (

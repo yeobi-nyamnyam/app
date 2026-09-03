@@ -1,10 +1,11 @@
 import { useCallback, useState } from "react";
-import { Alert, Modal as RNModal, Pressable, ScrollView, StyleSheet, View } from "react-native";
+import { Modal as RNModal, Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useMutation, useQuery } from "@apollo/client/react";
 import { Button, Header, Modal, NavBar, Text, colors, radius, spacing, stroke, type NavBarItemKey } from "@repo/ui";
 import { DeleteDiaryDocument, DiaryByIdDocument } from "@repo/types";
+import { useAlertModal } from "@/hooks/useAlertModal";
 
 /**
  * 일기 상세 화면 (D4, Figma "diary-detail"). record/history.tsx의 소비 기록
@@ -19,6 +20,7 @@ import { DeleteDiaryDocument, DiaryByIdDocument } from "@repo/types";
  */
 export default function DiaryDetailScreen() {
   const insets = useSafeAreaInsets();
+  const { showAlert } = useAlertModal();
   const params = useLocalSearchParams<{
     diaryId: string;
     tripId: string;
@@ -69,7 +71,7 @@ export default function DiaryDetailScreen() {
       await deleteDiary({ variables: { diaryId: params.diaryId } });
       router.back();
     } catch (error) {
-      Alert.alert("삭제 실패", error instanceof Error ? error.message : "잠시 후 다시 시도해주세요.");
+      showAlert("삭제 실패", error instanceof Error ? error.message : "잠시 후 다시 시도해주세요.");
     }
   };
 
@@ -94,7 +96,7 @@ export default function DiaryDetailScreen() {
       router.push("/mypage");
       return;
     }
-    Alert.alert("준비 중", "아직 구현되지 않은 탭이에요.");
+    showAlert("준비 중", "아직 구현되지 않은 탭이에요.");
   };
 
   return (

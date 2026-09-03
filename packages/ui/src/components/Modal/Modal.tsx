@@ -58,7 +58,8 @@ const styles = StyleSheet.create({
   container: {
     width: '100%',
     maxWidth: 318,
-    padding: spacing[14],
+    paddingHorizontal: spacing[20],
+    paddingVertical: spacing[14],
     borderRadius: radius[34],
     backgroundColor: colors.surface.neutral.default,
     shadowColor: colors.surface.neutral.inverse,

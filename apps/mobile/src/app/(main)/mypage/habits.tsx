@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Alert, ScrollView, StyleSheet, View } from "react-native";
+import { ScrollView, StyleSheet, View } from "react-native";
 import { router } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useQuery } from "@apollo/client/react";
@@ -24,6 +24,7 @@ import {
 import { SpendingHabitsDocument } from "@repo/types";
 
 import { useSession } from "@/hooks/useSession";
+import { useAlertModal } from "@/hooks/useAlertModal";
 import { formatWon } from "@/lib/format";
 import type { MealLogCategory } from "@/components/RecordForm";
 import type { MealType } from "@/lib/budget";
@@ -47,6 +48,7 @@ import {
 export default function HabitsScreen() {
   const insets = useSafeAreaInsets();
   const { session } = useSession();
+  const { showAlert } = useAlertModal();
   const [selectedTripId, setSelectedTripId] = useState<string | null>(null);
 
   const { data, loading } = useQuery(SpendingHabitsDocument, {
@@ -136,7 +138,7 @@ export default function HabitsScreen() {
       router.push("/record");
       return;
     }
-    Alert.alert("준비 중", "아직 구현되지 않은 탭이에요.");
+    showAlert("준비 중", "아직 구현되지 않은 탭이에요.");
   };
 
   return (
