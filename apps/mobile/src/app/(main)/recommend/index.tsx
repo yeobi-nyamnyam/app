@@ -1,5 +1,5 @@
 import { useCallback, useState } from "react";
-import { Alert, FlatList, Pressable, StyleSheet, View } from "react-native";
+import { FlatList, Pressable, StyleSheet, View } from "react-native";
 import { router, useFocusEffect } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useQuery } from "@apollo/client/react";
@@ -242,10 +242,7 @@ export default function RecommendScreen() {
     return (
       <View style={styles.screen}>
         <View style={styles.emptyState}>
-          <EmptyTripPrompt
-            onCreateTrip={() => router.push("/trip-create")}
-            onLoadPastTrip={() => Alert.alert("준비 중", "과거 여행 불러오기는 아직 준비 중이에요.")}
-          />
+          <EmptyTripPrompt onCreateTrip={() => router.push("/trip-create")} />
         </View>
         <NavBar active="recommend" onChange={handleNavChange} />
       </View>
