@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { ApolloProvider } from "@apollo/client/react";
 import { SafeAreaProvider } from "react-native-safe-area-context";
+import { KeyboardProvider } from "react-native-keyboard-controller";
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { useFonts } from "expo-font";
@@ -40,12 +41,14 @@ export default function RootLayout() {
     <SessionProvider>
       <ApolloProvider client={apolloClient}>
         <SafeAreaProvider>
-          <StatusBar style="auto" />
-          {showIntro ? (
-            <Splash onFinish={handleIntroFinish} />
-          ) : (
-            <Stack screenOptions={{ headerShown: false }} />
-          )}
+          <KeyboardProvider>
+            <StatusBar style="auto" />
+            {showIntro ? (
+              <Splash onFinish={handleIntroFinish} />
+            ) : (
+              <Stack screenOptions={{ headerShown: false }} />
+            )}
+          </KeyboardProvider>
         </SafeAreaProvider>
       </ApolloProvider>
     </SessionProvider>
