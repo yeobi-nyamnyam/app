@@ -166,9 +166,7 @@ export default function RecordWriteScreen() {
           ) : null}
         </ScrollView>
       )}
-      <View style={{ paddingBottom: insets.bottom }}>
-        <NavBar active="record" onChange={handleNavChange} />
-      </View>
+      <NavBar active="record" onChange={handleNavChange} bottomInset={insets.bottom} />
     </View>
   );
 }

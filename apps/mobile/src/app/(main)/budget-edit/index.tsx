@@ -1,7 +1,8 @@
 import { useState } from "react";
-import { ScrollView, StyleSheet, TextInput, View } from "react-native";
+import { StyleSheet, TextInput, View } from "react-native";
 import { router } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
 import { useMutation, useQuery } from "@apollo/client/react";
 import {
   Alert,
@@ -131,6 +132,9 @@ function TripEditForm({
   const [editingField, setEditingField] = useState<EditableField | null>(null);
   const [editingText, setEditingText] = useState("");
   const [changeLines, setChangeLines] = useState<string[]>([]);
+  // 에러 Alert + Footer는 스크롤 밖(아래)에 있어서 화면 맨 밑이 아니다 — 키보드가
+  // 뜰 때 그만큼은 덜 밀어올려야 한다. 안 그러면 그 높이만큼 빈 공간이 남는다.
+  const [belowScrollHeight, setBelowScrollHeight] = useState(0);
 
   const consumed = mealSlots.reduce(
     (sum, slot) => sum + (slot.recordedAmount ?? 0),
@@ -282,7 +286,10 @@ function TripEditForm({
         onBackPress={() => router.back()}
         topInset={insets.top}
       />
-      <ScrollView contentContainerStyle={styles.scrollContent}>
+      <KeyboardAwareScrollView
+        contentContainerStyle={styles.scrollContent}
+        extraKeyboardSpace={-belowScrollHeight}
+      >
         <View
           style={[styles.summaryCard, isOverBudget && styles.summaryCardOver]}
         >
@@ -315,20 +322,22 @@ function TripEditForm({
           {editableRow("fixedCost")}
           {editableRow("floatingBudget")}
         </View>
-      </ScrollView>
+      </KeyboardAwareScrollView>
 
-      {validationError ? (
-        <View style={styles.alertWrapper}>
-          <Alert variant="error" title={validationError} />
-        </View>
-      ) : null}
+      <View onLayout={(event) => setBelowScrollHeight(event.nativeEvent.layout.height)}>
+        {validationError ? (
+          <View style={styles.alertWrapper}>
+            <Alert variant="error" title={validationError} />
+          </View>
+        ) : null}
 
-      <Footer
-        label={isSaving ? "저장 중..." : "수정 완료"}
-        disabled={!hasPendingChanges || !isValid || isSaving}
-        onPress={handleConfirm}
-        bottomInset={insets.bottom}
-      />
+        <Footer
+          label={isSaving ? "저장 중..." : "수정 완료"}
+          disabled={!hasPendingChanges || !isValid || isSaving}
+          onPress={handleConfirm}
+          bottomInset={insets.bottom}
+        />
+      </View>
     </View>
   );
 }
@@ -375,7 +384,10 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingVertical: spacing[8],
+    // BudgetFieldRow(packages/ui)의 container와 같은 높이를 유지하려고 그쪽
+    // paddingVertical(spacing[12])을 그대로 맞춘다 — 다르면 수정 모드로 들어갈 때
+    // 행 높이가 눈에 띄게 줄어든다.
+    paddingVertical: spacing[12],
     borderBottomWidth: 1,
     borderBottomColor: colors.border.primary.default,
   },
@@ -384,6 +396,7 @@ const styles = StyleSheet.create({
     textAlign: "right",
     fontFamily: typography.fontFamily,
     fontSize: typography.bodyEmphasized.fontSize,
+    lineHeight: typography.bodyEmphasized.lineHeight,
     color: colors.content.primary.default,
     padding: 0,
   },

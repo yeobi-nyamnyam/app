@@ -246,9 +246,7 @@ export default function RecordOcrReviewScreen() {
           <Button label="확인" disabled={!result?.recognized || processing} onPress={handleConfirm} />
         </View>
       </View>
-      <View style={{ paddingBottom: insets.bottom }}>
-        <NavBar active="record" onChange={handleNavChange} />
-      </View>
+      <NavBar active="record" onChange={handleNavChange} bottomInset={insets.bottom} />
 
       <RNModal
         visible={errorMessage !== null}

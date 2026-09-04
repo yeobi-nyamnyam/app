@@ -154,7 +154,7 @@ export default function ChatScreen() {
         <View style={styles.emptyContent}>
           <Text color="subtlest">여행 정보 불러오는 중...</Text>
         </View>
-        <NavBar active="chat" onChange={(key) => handleNavChange(key, showAlert)} />
+        <NavBar active="chat" onChange={(key) => handleNavChange(key, showAlert)} bottomInset={insets.bottom} />
       </View>
     );
   }
@@ -165,7 +165,7 @@ export default function ChatScreen() {
         <View style={styles.emptyContent}>
           <EmptyTripPrompt onCreateTrip={() => router.push("/trip-create")} />
         </View>
-        <NavBar active="chat" onChange={(key) => handleNavChange(key, showAlert)} />
+        <NavBar active="chat" onChange={(key) => handleNavChange(key, showAlert)} bottomInset={insets.bottom} />
       </View>
     );
   }
@@ -213,9 +213,7 @@ export default function ChatScreen() {
       <View style={styles.footer}>
         <Button label="대화 하기" onPress={() => router.push("/chat/conversation")} />
       </View>
-      <View style={{ paddingBottom: insets.bottom }}>
-        <NavBar active="chat" onChange={(key) => handleNavChange(key, showAlert)} />
-      </View>
+      <NavBar active="chat" onChange={(key) => handleNavChange(key, showAlert)} bottomInset={insets.bottom} />
     </View>
   );
 }

@@ -124,9 +124,7 @@ export default function DiaryDetailScreen() {
         <Button label="일기 삭제" variant="outline" onPress={handleDeletePress} />
       </View>
 
-      <View style={{ paddingBottom: insets.bottom }}>
-        <NavBar active="record" onChange={handleNavChange} />
-      </View>
+      <NavBar active="record" onChange={handleNavChange} bottomInset={insets.bottom} />
 
       <RNModal
         visible={isDeleteConfirmVisible}

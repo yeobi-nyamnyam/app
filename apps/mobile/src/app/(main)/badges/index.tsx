@@ -258,9 +258,7 @@ export default function BadgesScreen() {
           </>
         )}
       </ScrollView>
-      <View style={{ paddingBottom: insets.bottom }}>
-        <NavBar active="profile" onChange={handleNavChange} />
-      </View>
+      <NavBar active="profile" onChange={handleNavChange} bottomInset={insets.bottom} />
     </View>
   );
 }

@@ -216,9 +216,7 @@ export default function RecordEditScreen() {
         </View>
       </View>
 
-      <View style={{ paddingBottom: insets.bottom }}>
-        <NavBar active="record" onChange={handleNavChange} />
-      </View>
+      <NavBar active="record" onChange={handleNavChange} bottomInset={insets.bottom} />
 
       <RNModal
         visible={isDeleteConfirmVisible}
