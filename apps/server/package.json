@@ -10,8 +10,7 @@
     "lint": "eslint . --max-warnings 0",
     "type-check": "tsc --noEmit",
     "sync:good-price": "tsx src/scripts/syncGoodPriceRestaurants.ts",
-    "sync:tour-api": "tsx src/scripts/syncTourApiRestaurants.ts",
-    "cleanup:unconsented-users": "tsx src/scripts/cleanupUnconsentedUsers.ts"
+    "sync:tour-api": "tsx src/scripts/syncTourApiRestaurants.ts"
   },
   "dependencies": {
     "@asteasolutions/zod-to-openapi": "^9.1.0",
