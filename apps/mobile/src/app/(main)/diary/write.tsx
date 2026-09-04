@@ -223,9 +223,7 @@ export default function DiaryWriteScreen() {
           <View style={styles.footer}>
             <Button label={saving ? "저장 중..." : "저장"} disabled={!canSave} onPress={handleSave} />
           </View>
-          <View style={{ paddingBottom: insets.bottom }}>
-            <NavBar active="record" onChange={handleNavChange} />
-          </View>
+          <NavBar active="record" onChange={handleNavChange} bottomInset={insets.bottom} />
         </>
       ) : null}
 

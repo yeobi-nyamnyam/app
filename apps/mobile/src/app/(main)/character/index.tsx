@@ -154,9 +154,7 @@ export default function CharacterScreen() {
           </View>
         </ScrollView>
       )}
-      <View style={{ paddingBottom: insets.bottom }}>
-        <NavBar active="profile" onChange={handleNavChange} />
-      </View>
+      <NavBar active="profile" onChange={handleNavChange} bottomInset={insets.bottom} />
     </View>
   );
 }

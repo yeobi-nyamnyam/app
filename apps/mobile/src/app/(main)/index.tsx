@@ -76,6 +76,7 @@ const handleNavChange = (key: NavBarItemKey, showAlert: (title: string, content:
 };
 
 export default function HomeScreen() {
+  const insets = useSafeAreaInsets();
   const { session } = useSession();
   const { showAlert } = useAlertModal();
   const { data, loading, refetch } = useQuery(ActiveTripDocument, {
@@ -113,7 +114,7 @@ export default function HomeScreen() {
         <View style={styles.emptyContent}>
           <Text color="subtlest">여행 정보 불러오는 중...</Text>
         </View>
-        <NavBar active="home" onChange={(key) => handleNavChange(key, showAlert)} />
+        <NavBar active="home" onChange={(key) => handleNavChange(key, showAlert)} bottomInset={insets.bottom} />
       </View>
     );
   }
@@ -128,7 +129,7 @@ export default function HomeScreen() {
         <View style={styles.emptyContent}>
           <Text color="subtlest">여행을 마무리하는 중...</Text>
         </View>
-        <NavBar active="home" onChange={(key) => handleNavChange(key, showAlert)} />
+        <NavBar active="home" onChange={(key) => handleNavChange(key, showAlert)} bottomInset={insets.bottom} />
       </View>
     );
   }
@@ -160,13 +161,14 @@ export default function HomeScreen() {
 }
 
 function EmptyHome() {
+  const insets = useSafeAreaInsets();
   const { showAlert } = useAlertModal();
   return (
     <View style={styles.container}>
       <View style={styles.emptyContent}>
         <EmptyTripPrompt onCreateTrip={() => router.push("/trip-create")} />
       </View>
-      <NavBar active="home" onChange={(key) => handleNavChange(key, showAlert)} />
+      <NavBar active="home" onChange={(key) => handleNavChange(key, showAlert)} bottomInset={insets.bottom} />
     </View>
   );
 }
@@ -216,7 +218,7 @@ function UpcomingTripHome({
           dinner={formatWon(budgetFor("dinner"))}
         />
       </ScrollView>
-      <NavBar active="home" onChange={(key) => handleNavChange(key, showAlert)} />
+      <NavBar active="home" onChange={(key) => handleNavChange(key, showAlert)} bottomInset={insets.bottom} />
     </View>
   );
 }
@@ -437,7 +439,7 @@ function ActiveTripHome({
           ))}
         </View>
       </ScrollView>
-      <NavBar active="home" onChange={(key) => handleNavChange(key, showAlert)} />
+      <NavBar active="home" onChange={(key) => handleNavChange(key, showAlert)} bottomInset={insets.bottom} />
     </View>
   );
 }

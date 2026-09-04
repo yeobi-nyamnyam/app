@@ -136,9 +136,7 @@ export default function RecordOcrEditScreen() {
       <View style={styles.footer}>
         <Button label="수동반영" disabled={!canSubmit} onPress={handleManualApply} />
       </View>
-      <View style={{ paddingBottom: insets.bottom }}>
-        <NavBar active="record" onChange={handleNavChange} />
-      </View>
+      <NavBar active="record" onChange={handleNavChange} bottomInset={insets.bottom} />
     </View>
   );
 }

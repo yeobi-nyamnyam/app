@@ -182,7 +182,7 @@ export default function MyPageScreen() {
           </Pressable>
         </View>
       </ScrollView>
-      <NavBar active="profile" onChange={handleNavChange} />
+      <NavBar active="profile" onChange={handleNavChange} bottomInset={insets.bottom} />
 
       <RNModal
         visible={isWithdrawConfirmVisible}

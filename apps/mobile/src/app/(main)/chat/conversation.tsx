@@ -70,6 +70,7 @@ const handleNavChange = (key: NavBarItemKey, showAlert: (title: string, content:
  * 채팅 로그 목록 화면(`/chat`)의 "대화 하기" 버튼으로 진입한다.
  */
 export default function ChatConversationScreen() {
+  const insets = useSafeAreaInsets();
   const { session } = useSession();
   const { showAlert } = useAlertModal();
   const { data, loading, refetch } = useQuery(ActiveTripDocument, {
@@ -93,7 +94,7 @@ export default function ChatConversationScreen() {
         <View style={styles.emptyContent}>
           <Text color="subtlest">여행 정보 불러오는 중...</Text>
         </View>
-        <NavBar active="chat" onChange={(key) => handleNavChange(key, showAlert)} />
+        <NavBar active="chat" onChange={(key) => handleNavChange(key, showAlert)} bottomInset={insets.bottom} />
       </View>
     );
   }
@@ -535,11 +536,8 @@ function ActiveConversation({
       <KeyboardStickyView offset={{ opened: navBarHeight }}>
         <ChatInputBar value={inputValue} onChangeText={setInputValue} onSend={() => void handleSend()} />
       </KeyboardStickyView>
-      <View
-        style={{ paddingBottom: insets.bottom }}
-        onLayout={(event) => setNavBarHeight(event.nativeEvent.layout.height)}
-      >
-        <NavBar active="chat" onChange={(key) => handleNavChange(key, showAlert)} />
+      <View onLayout={(event) => setNavBarHeight(event.nativeEvent.layout.height)}>
+        <NavBar active="chat" onChange={(key) => handleNavChange(key, showAlert)} bottomInset={insets.bottom} />
       </View>
       <Modal
         visible={pendingExpense != null}

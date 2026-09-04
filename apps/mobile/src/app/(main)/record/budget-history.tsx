@@ -159,9 +159,7 @@ export default function BudgetHistoryScreen() {
           </ScrollView>
         )}
       </View>
-      <View style={{ paddingBottom: insets.bottom }}>
-        <NavBar active="record" onChange={handleNavChange} />
-      </View>
+      <NavBar active="record" onChange={handleNavChange} bottomInset={insets.bottom} />
     </View>
   );
 }

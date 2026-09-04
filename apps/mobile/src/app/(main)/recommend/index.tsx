@@ -231,7 +231,7 @@ export default function RecommendScreen() {
         <View style={styles.emptyState}>
           <Text color="subtlest">여행 정보 불러오는 중...</Text>
         </View>
-        <NavBar active="recommend" onChange={handleNavChange} />
+        <NavBar active="recommend" onChange={handleNavChange} bottomInset={insets.bottom} />
       </View>
     );
   }
@@ -244,7 +244,7 @@ export default function RecommendScreen() {
         <View style={styles.emptyState}>
           <EmptyTripPrompt onCreateTrip={() => router.push("/trip-create")} />
         </View>
-        <NavBar active="recommend" onChange={handleNavChange} />
+        <NavBar active="recommend" onChange={handleNavChange} bottomInset={insets.bottom} />
       </View>
     );
   }
@@ -329,9 +329,7 @@ export default function RecommendScreen() {
           }}
         />
       )}
-      <View style={{ paddingBottom: insets.bottom }}>
-        <NavBar active="recommend" onChange={handleNavChange} />
-      </View>
+      <NavBar active="recommend" onChange={handleNavChange} bottomInset={insets.bottom} />
       <SortSheet
         visible={isSortSheetOpen}
         options={SORT_OPTIONS}

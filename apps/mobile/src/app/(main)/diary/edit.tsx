@@ -91,9 +91,7 @@ export default function DiaryEditScreen() {
         <DiaryTextArea value={content} onChangeText={setContent} maxLength={MAX_CONTENT_LENGTH} editable={!saving} />
       </ScrollView>
 
-      <View style={{ paddingBottom: insets.bottom }}>
-        <NavBar active="record" onChange={handleNavChange} />
-      </View>
+      <NavBar active="record" onChange={handleNavChange} bottomInset={insets.bottom} />
     </View>
   );
 }
