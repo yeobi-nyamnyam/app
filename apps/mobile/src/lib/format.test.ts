@@ -1,8 +1,10 @@
 import { formatDateWithWeekday, formatTripPeriod, isLocalToday, parseDigits, todayDate } from "./format";
 
-// 이 앱은 사용자가 전부 한국에 있다고 가정하는 로직(KST 자정 기준 "오늘")이라,
-// 실행 환경(CI 등)의 기본 타임존과 무관하게 KST로 고정해 검증한다.
-process.env.TZ = "Asia/Seoul";
+// 이 앱은 사용자가 전부 한국에 있다고 가정하는 로직(KST 자정 기준 "오늘")이라, 실행
+// 환경(CI 등)의 기본 타임존과 무관하게 KST로 고정해 검증한다. 단, Node/V8은 프로세스가
+// 시작된 뒤 process.env.TZ를 바꿔도 Date 계산에 반영하지 않아서(타임존을 프로세스 시작
+// 시점에 캐싱), 여기서 설정하는 건 아무 효과가 없다 — package.json의 test 스크립트에서
+// `TZ=Asia/Seoul jest`로 프로세스 시작 전에 미리 넘겨야 실제로 적용된다.
 
 describe("parseDigits", () => {
   it("숫자가 아닌 문자를 제거하고 숫자로 변환한다", () => {
