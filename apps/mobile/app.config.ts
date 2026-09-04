@@ -3,6 +3,11 @@ import type { ExpoConfig } from "expo/config";
 // .env의 NAVER_MAP_CLIENT_ID가 로컬에서 비어있을 때 쓰는 폴백 — 팀 공용 NCP 개발용 client id.
 const NAVER_MAP_CLIENT_ID_FALLBACK = "d568thotkp";
 
+// Sentry DSN은 비밀키가 아니라 "어디로 에러를 보낼지"를 가리키는 공개 식별자라
+// 클라이언트 코드/설정에 그대로 넣어도 안전하다 (서버 전용 API 키와는 다른 범주).
+const SENTRY_DSN_FALLBACK =
+  "https://f7ce740b38b913276d1c8376f729838b@o4512027946844160.ingest.us.sentry.io/4512027961524224";
+
 const config: ExpoConfig = {
   name: "mobile",
   slug: "mobile",
@@ -23,6 +28,7 @@ const config: ExpoConfig = {
     "expo-router",
     "expo-font",
     "expo-splash-screen",
+    "@sentry/react-native/expo",
     [
       "expo-image-picker",
       {
@@ -70,6 +76,7 @@ const config: ExpoConfig = {
     kakaoNativeAppKey: process.env.KAKAO_NATIVE_APP_KEY,
     naverMapClientId: process.env.NAVER_MAP_CLIENT_ID,
     naverMapStyleId: process.env.NAVER_MAP_STYLE_ID,
+    sentryDsn: process.env.SENTRY_DSN ?? SENTRY_DSN_FALLBACK,
   },
 };
 

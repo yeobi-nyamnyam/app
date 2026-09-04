@@ -17,6 +17,7 @@
     "@asteasolutions/zod-to-openapi": "^9.1.0",
     "@google/generative-ai": "^0.24.1",
     "@repo/types": "workspace:*",
+    "@sentry/node": "^10.73.0",
     "@supabase/supabase-js": "^2.112.3",
     "dotenv": "^17.4.2",
     "express": "^4.21.0",
