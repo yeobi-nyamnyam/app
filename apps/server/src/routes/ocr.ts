@@ -64,7 +64,7 @@ interface ClovaOcrResponse {
 }
 
 // 결제금액 텍스트에서 콤마/원 등을 떼고 숫자만 남긴다.
-const parseAmount = (text: string | undefined): number | null => {
+export const parseAmount = (text: string | undefined): number | null => {
   if (!text) return null;
   const digits = text.replace(/[^0-9]/g, "");
   return digits ? Number(digits) : null;

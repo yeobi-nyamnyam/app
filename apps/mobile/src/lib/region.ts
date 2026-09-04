@@ -15,12 +15,12 @@ export type RegionLookupResult =
   | { status: "ambiguous"; candidates: RegionMatch[] }
   | { status: "not_found" };
 
-interface TourApiSigunguEntry {
+export interface TourApiSigunguEntry {
   sigungu_code: string;
   sigungu_name: string;
 }
 
-interface RegionCacheRow {
+export interface RegionCacheRow {
   regionCode: string;
   regionName: string;
   // 시/군 단위 검색용 후보명 (구 단위는 제외, 중복 제거됨). see toSigunguLevelName
@@ -76,7 +76,7 @@ function isTourApiSigunguEntry(value: unknown): value is TourApiSigunguEntry {
 
 // pg_graphql의 JSON 스칼라(tour_api_snapshot)는 파싱된 배열이 아니라 JSON 텍스트가
 // 담긴 문자열로 내려온다. 문자열이면 먼저 JSON.parse로 풀어준다.
-function parseSigunguEntries(snapshot: unknown): TourApiSigunguEntry[] {
+export function parseSigunguEntries(snapshot: unknown): TourApiSigunguEntry[] {
   const value = typeof snapshot === "string" ? safeJsonParse(snapshot) : snapshot;
   if (!Array.isArray(value)) {
     return [];
@@ -96,7 +96,7 @@ function safeJsonParse(text: string): unknown {
 // 구 단위로만 존재해서, 앞의 시 이름만 뽑아 시 단위 검색 후보로 쓴다. 시/군 이름
 // 없이 구만 있는 경우(서울/부산 등 광역시 산하 "중구"/"남구" 등)는 여러 시/도에
 // 이름이 겹쳐 자유텍스트로는 모호하므로 구 단위 검색 자체를 지원하지 않는다.
-function toSigunguLevelName(sigunguName: string): string | null {
+export function toSigunguLevelName(sigunguName: string): string | null {
   const withCityPrefix = sigunguName.match(/^(.+시) .+구$/);
   if (withCityPrefix?.[1]) {
     return withCityPrefix[1];
@@ -128,7 +128,7 @@ async function getRegionRows(): Promise<RegionCacheRow[]> {
 
 // row가 query에 매칭되면 표시용 이름과 함께 RegionMatch를 돌려준다. 시/도 이름이
 // 먼저 매칭되면 그걸 쓰고, 아니면 시/군 후보명 중 첫 매칭을 표시용 이름으로 쓴다.
-function matchRow(row: RegionCacheRow, query: string): RegionMatch | null {
+export function matchRow(row: RegionCacheRow, query: string): RegionMatch | null {
   if (row.regionName === query || row.regionName.startsWith(query)) {
     return { regionCode: row.regionCode, regionName: row.regionName, displayName: row.regionName };
   }

@@ -8,6 +8,7 @@
     "lint": "turbo run lint",
     "format": "prettier --write \"**/*.{ts,tsx,md}\"",
     "type-check": "turbo run type-check",
+    "test": "turbo run test",
     "codegen": "graphql-codegen"
   },
   "devDependencies": {
