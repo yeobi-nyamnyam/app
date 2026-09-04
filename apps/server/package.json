@@ -9,6 +9,7 @@
     "start": "node dist/index.js",
     "lint": "eslint . --max-warnings 0",
     "type-check": "tsc --noEmit",
+    "test": "vitest run",
     "sync:good-price": "tsx src/scripts/syncGoodPriceRestaurants.ts",
     "sync:tour-api": "tsx src/scripts/syncTourApiRestaurants.ts"
   },
@@ -30,6 +31,7 @@
     "eslint": "^9.39.1",
     "tsx": "^4.19.0",
     "typescript": "^5.9.2",
-    "typescript-eslint": "^8.50.0"
+    "typescript-eslint": "^8.50.0",
+    "vitest": "^5.0.0"
   }
 }
