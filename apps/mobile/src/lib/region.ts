@@ -29,7 +29,8 @@ interface RegionCacheRow {
 
 // region_cache는 정식 명칭(예: "광주광역시")으로 시드돼 있지만, 사용자는 "광주"처럼
 // 줄여 쓰는 경우가 많다. "충북"/"충남"/"경북"/"경남"/"전남"처럼 정식 명칭의 접두어가
-// 아닌 옛 2글자 축약형만 별도 별칭으로 보정하고, 나머지(서울/부산/대구/인천/광주/
+// 아닌 옛 2글자 축약형과, "제주도"처럼 정식 명칭 중간에 다른 글자가 끼어들어 접두어
+// 매칭이 깨지는 경우만 별도 별칭으로 보정한다. 나머지(서울/부산/대구/인천/광주/
 // 대전/울산/세종/경기/제주/강원/전북)는 정식 명칭이 그 축약형으로 시작해서 접두어
 // 매칭만으로 충분하다.
 const REGION_NAME_ALIASES: Record<string, string> = {
@@ -38,6 +39,18 @@ const REGION_NAME_ALIASES: Record<string, string> = {
   경북: "경상북도",
   경남: "경상남도",
   전남: "전라남도",
+  제주도: "제주",
+};
+
+// "경상도"/"전라도"/"충청도"는 행정구역상 지역코드가 없는 옛 명칭이라 북/남(또는 북/남)
+// 두 시/도 중 하나로 특정할 수 없다 — 임의로 하나를 고르는 대신, 두 정식 명칭을 모두
+// 매칭시켜 기존 ambiguous 처리 경로(고성군/광주와 동일)로 사용자가 직접 고르게 한다.
+const REGION_NAME_MULTI_ALIASES: Record<string, string[]> = {
+  경상도: ["경상북도", "경상남도"],
+  // 전북은 2024년 행정구역 개편으로 정식 명칭이 "전북특별자치도"로 바뀌어
+  // region_cache에도 그 이름으로 시드돼 있다 — "전라북도"로는 매칭되지 않는다.
+  전라도: ["전북특별자치도", "전라남도"],
+  충청도: ["충청북도", "충청남도"],
 };
 
 function isTourApiSigunguEntry(value: unknown): value is TourApiSigunguEntry {
@@ -126,11 +139,11 @@ export async function lookupRegion(name: string): Promise<RegionLookupResult> {
   if (!query) {
     return { status: "not_found" };
   }
-  const aliased = REGION_NAME_ALIASES[query] ?? query;
+  const aliasedQueries = REGION_NAME_MULTI_ALIASES[query] ?? [REGION_NAME_ALIASES[query] ?? query];
 
   const rows = await getRegionRows();
-  const matches = rows
-    .map((row) => matchRow(row, aliased))
+  const matches = aliasedQueries
+    .flatMap((aliased) => rows.map((row) => matchRow(row, aliased)))
     .filter((match): match is RegionMatch => match !== null);
 
   const [firstMatch, ...restMatches] = matches;
