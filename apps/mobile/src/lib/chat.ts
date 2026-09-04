@@ -85,7 +85,18 @@ export async function streamChatReply({
   });
 
   es.addEventListener("error", (event) => {
-    const message = "message" in event ? event.message : "AI 응답을 받아오지 못했습니다.";
+    // 비정상 HTTP 응답(401/400/502/500)일 때 event.message는 서버가 내려준 응답 바디
+    // 원문(JSON 문자열)이 그대로 들어온다 — { message: "..." } 형태면 그 문구만 꺼내 쓴다.
+    const raw = "message" in event ? event.message : null;
+    let message = "AI 응답을 받아오지 못했습니다.";
+    if (raw) {
+      try {
+        const parsed = JSON.parse(raw) as { message?: unknown };
+        message = typeof parsed.message === "string" ? parsed.message : raw;
+      } catch {
+        message = raw;
+      }
+    }
     onError(new Error(message));
     es.close();
   });

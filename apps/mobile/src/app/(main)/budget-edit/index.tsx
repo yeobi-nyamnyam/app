@@ -165,7 +165,9 @@ function TripEditForm({
   const validationError = !isBudgetSumValid
     ? "전체 예산이 고정비용+유동비용 보다 적어요"
     : !isFoodBudgetValid
-      ? "식비가 이미 기록된 끼니 예산 합보다 적어요"
+      ? unrecordedCount === 0
+        ? "오늘처럼 이미 다 기록된 끼니의 예산은 못 줄여요"
+        : "식비가 이미 기록된 끼니 예산 합보다 적어요"
       : null;
   const isOverBudget = consumed > committedFoodBudget;
   const trackProgress =

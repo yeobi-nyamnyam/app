@@ -135,6 +135,32 @@ interface PendingExpense {
   chatMessageId: string | null;
 }
 
+// 오늘 끼니가 이미 다 찼을 때 "기타소비로 기록해드릴까요?" 제안에 대한 응답을
+// 기다리는 상태. 다음 사용자 메시지를 LLM에 보내지 않고 단순 긍정/부정으로만 판별한다.
+// declined는 한 번 거절한 뒤 "아니다 그냥 기록해줘"처럼 마음을 바꿀 여지를 딱 한 번만
+// 더 열어두기 위한 플래그 — 계속 열어두면 한참 뒤 무관한 메시지가 우연히 긍정/부정
+// 패턴에 걸려 오작동할 수 있어 창을 넓히지 않는다.
+// clarifyAttempts는 긍정/부정 어느 쪽으로도 판별 안 된 응답이 왔을 때, 금액을 잃고
+// 처음부터 다시 입력하게 만들지 않으려고 한 번 더 명확히 되묻는 횟수(최대 1회)다.
+interface PendingOtherExpenseSuggestion {
+  amount: number;
+  declined: boolean;
+  clarifyAttempts: number;
+}
+
+// "기록해줘"류는 앞에 "아니(다)"가 붙어도(마음을 바꾸는 흔한 화법) 실제로는 긍정 응답이라
+// 부정 패턴보다 먼저 검사한다.
+const RECORD_REQUEST_PATTERN = /(기록해|저장해|등록해|입력해|넣어|올려|적어)/;
+const AFFIRMATIVE_REPLY_PATTERN = /(응|네|넵|넹|그래|어|웅|좋아|좋지|콜|오케이|okay|ok|해줘|부탁|맞아|ㅇㅇ)/i;
+const NEGATIVE_REPLY_PATTERN = /(아니|안해|괜찮|됐어|말고|싫어|노|ㄴㄴ|no)/i;
+
+const parseYesNo = (text: string): "yes" | "no" | null => {
+  if (RECORD_REQUEST_PATTERN.test(text)) return "yes";
+  if (NEGATIVE_REPLY_PATTERN.test(text)) return "no";
+  if (AFFIRMATIVE_REPLY_PATTERN.test(text)) return "yes";
+  return null;
+};
+
 function ActiveConversation({
   tripId,
   tripName,
@@ -176,6 +202,8 @@ function ActiveConversation({
   const [history, setHistory] = useState<ChatHistoryItem[]>([]);
   const [inputValue, setInputValue] = useState("");
   const [pendingExpense, setPendingExpense] = useState<PendingExpense | null>(null);
+  const [pendingOtherExpenseSuggestion, setPendingOtherExpenseSuggestion] =
+    useState<PendingOtherExpenseSuggestion | null>(null);
 
   const appendMessage = (message: ChatBubbleProps & { id: string }) => {
     setMessages((prev) => [...prev, message]);
@@ -274,8 +302,9 @@ function ActiveConversation({
         appendMessage({
           id: `ai-locked-${Date.now()}`,
           sender: "ai",
-          text: "오늘 끼니 기록은 이미 다 끝났어요. 이 지출은 저장할 수 없어요 — 수정하려면 기록보기에서 오늘 기록을 삭제한 뒤 순서대로 다시 입력해주세요.",
+          text: "오늘 끼니 기록은 이미 다 끝났어요. 이 지출은 저장할 수 없어요 — 수정하려면 기록보기에서 오늘 기록을 삭제한 뒤 순서대로 다시 입력해주세요. 대신 이 지출은 기타소비로 기록해드릴까요?",
         });
+        setPendingOtherExpenseSuggestion({ amount: result.amount, declined: false, clarifyAttempts: 0 });
         return;
       }
       // 메시지에서 끼니 때(아침/점심/저녁)가 특정됐는데 그 끼니가 이미 기록돼 있으면
@@ -306,10 +335,108 @@ function ActiveConversation({
     setPendingExpense({ category: result.category, amount: String(result.amount), chatMessageId: userMessageId });
   };
 
+  // 끼니 슬롯이 다 차서 저장 못 한 지출을, 사용자 확인 후 슬롯 연결 없이(mealSlotId: null)
+  // 기타소비로 바로 기록한다. 카테고리·금액이 이미 확정돼 있어 handleConfirm과 달리
+  // 기록 시트를 다시 띄우지 않는다.
+  const recordAsOtherExpense = async (amount: number, userText: string) => {
+    let messageId: string | null = null;
+    try {
+      const { data } = await insertChatMessage({
+        variables: {
+          tripId,
+          userId,
+          role: "user",
+          content: userText,
+          parsedCategory: "기타",
+          parsedAmount: amount,
+          status: "pending",
+        },
+      });
+      messageId = data?.insertIntochat_messagesCollection?.records[0]?.id ?? null;
+    } catch {
+      // chat_messages 기록 실패로 대화 흐름 자체를 막지 않는다.
+    }
+
+    try {
+      await createMealLog({
+        variables: {
+          tripId,
+          mealSlotId: null,
+          category: "기타",
+          amount,
+          storeName: null,
+          storeAddress: null,
+          memo: null,
+          source: "chat",
+          visitDate: todayDate(),
+        },
+      });
+      if (messageId) {
+        await updateChatMessageStatus({ variables: { id: messageId, status: "confirmed" } });
+      }
+      appendMessage({
+        id: `confirmed-${Date.now()}`,
+        sender: "ai",
+        variant: "confirmed",
+        categoryLabel: "기타",
+        time: formatChatTime(new Date()),
+        price: amount.toLocaleString("ko-KR"),
+      });
+    } catch (error) {
+      showAlert("저장 실패", error instanceof Error ? error.message : "잠시 후 다시 시도해주세요.");
+    }
+  };
+
   const handleSend = async () => {
     const text = inputValue.trim();
     if (!text) return;
     setInputValue("");
+
+    if (pendingOtherExpenseSuggestion) {
+      const answer = parseYesNo(text);
+      const suggestion = pendingOtherExpenseSuggestion;
+
+      if (answer === "yes") {
+        appendMessage({ id: `user-${Date.now()}`, sender: "user", text });
+        setPendingOtherExpenseSuggestion(null);
+        await recordAsOtherExpense(suggestion.amount, text);
+        return;
+      }
+      if (answer === "no") {
+        appendMessage({ id: `user-${Date.now()}`, sender: "user", text });
+        if (suggestion.declined) {
+          // 이미 한 번 거절한 뒤 다시 거절 — 더 이상 번복 기회를 열어두지 않는다.
+          setPendingOtherExpenseSuggestion(null);
+          appendMessage({
+            id: `ai-declined-${Date.now()}`,
+            sender: "ai",
+            text: "네, 알겠어요. 이 지출은 기록하지 않을게요.",
+          });
+        } else {
+          setPendingOtherExpenseSuggestion({ ...suggestion, declined: true, clarifyAttempts: 0 });
+          appendMessage({
+            id: `ai-declined-${Date.now()}`,
+            sender: "ai",
+            text: "네, 알겠어요. 이 지출은 기록하지 않을게요. 마음이 바뀌면 언제든 말씀해주세요.",
+          });
+        }
+        return;
+      }
+      // 긍정/부정 어느 쪽도 아니면, 처음 한 번은 금액을 잃지 않도록 다시 명확히 물어본다.
+      if (suggestion.clarifyAttempts === 0) {
+        appendMessage({ id: `user-${Date.now()}`, sender: "user", text });
+        setPendingOtherExpenseSuggestion({ ...suggestion, clarifyAttempts: 1 });
+        appendMessage({
+          id: `ai-clarify-${Date.now()}`,
+          sender: "ai",
+          text: "죄송해요, 잘 이해하지 못했어요. 이 지출은 기타소비로 기록할까요? '네' 또는 '아니요'로 답해주세요.",
+        });
+        return;
+      }
+      // 두 번째도 애매하면 제안은 접고 평소처럼 처리한다 (아래에서 이 메시지를 새로 보낸다).
+      setPendingOtherExpenseSuggestion(null);
+    }
+
     const waitingId = `ai-${Date.now()}`;
     appendMessage({ id: `user-${Date.now()}`, sender: "user", text });
     appendMessage({ id: waitingId, sender: "ai", variant: "waiting" });
