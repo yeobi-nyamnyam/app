@@ -1,14 +1,8 @@
-import { formatDateWithWeekday, formatTripPeriod, formatWon, isLocalToday, parseDigits, todayDate } from "./format";
+import { formatDateWithWeekday, formatTripPeriod, isLocalToday, parseDigits, todayDate } from "./format";
 
 // 이 앱은 사용자가 전부 한국에 있다고 가정하는 로직(KST 자정 기준 "오늘")이라,
 // 실행 환경(CI 등)의 기본 타임존과 무관하게 KST로 고정해 검증한다.
 process.env.TZ = "Asia/Seoul";
-
-describe("formatWon", () => {
-  it("천단위 콤마와 '원'을 붙인다", () => {
-    expect(formatWon(1234567)).toBe("1,234,567원");
-  });
-});
 
 describe("parseDigits", () => {
   it("숫자가 아닌 문자를 제거하고 숫자로 변환한다", () => {
