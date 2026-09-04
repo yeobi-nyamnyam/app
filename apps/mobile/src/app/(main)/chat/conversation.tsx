@@ -515,6 +515,7 @@ function ActiveConversation({
     <View style={styles.container}>
       <Header
         title={tripName}
+        textAlign="start"
         tailing="text"
         tailingText={`오늘 남은 식비 ${formatWon(remaining)}`}
         topInset={insets.top}
