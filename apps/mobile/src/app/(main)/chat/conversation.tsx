@@ -26,12 +26,11 @@ import type { MealLogCategory } from "@/components/RecordForm";
 
 import { formatWon, todayDate } from "@/lib/format";
 import { MEAL_TYPES, MEAL_TYPE_LABEL, type MealType } from "@/lib/budget";
+import { formatChatTime, streamChatReply, type ChatHistoryItem, type ChatParsedResult } from "@/lib/chat";
 import {
-  formatChatTime,
-  streamChatReply,
-  type ChatHistoryItem,
-  type ChatParsedResult,
-} from "@/lib/chat";
+  resolvePendingConfirmation,
+  type PendingOtherExpenseSuggestion,
+} from "@/lib/chatConfirmation";
 import { useSession } from "@/hooks/useSession";
 import { useAlertModal } from "@/hooks/useAlertModal";
 
@@ -135,32 +134,6 @@ interface PendingExpense {
   amount: string;
   chatMessageId: string | null;
 }
-
-// 오늘 끼니가 이미 다 찼을 때 "기타소비로 기록해드릴까요?" 제안에 대한 응답을
-// 기다리는 상태. 다음 사용자 메시지를 LLM에 보내지 않고 단순 긍정/부정으로만 판별한다.
-// declined는 한 번 거절한 뒤 "아니다 그냥 기록해줘"처럼 마음을 바꿀 여지를 딱 한 번만
-// 더 열어두기 위한 플래그 — 계속 열어두면 한참 뒤 무관한 메시지가 우연히 긍정/부정
-// 패턴에 걸려 오작동할 수 있어 창을 넓히지 않는다.
-// clarifyAttempts는 긍정/부정 어느 쪽으로도 판별 안 된 응답이 왔을 때, 금액을 잃고
-// 처음부터 다시 입력하게 만들지 않으려고 한 번 더 명확히 되묻는 횟수(최대 1회)다.
-interface PendingOtherExpenseSuggestion {
-  amount: number;
-  declined: boolean;
-  clarifyAttempts: number;
-}
-
-// "기록해줘"류는 앞에 "아니(다)"가 붙어도(마음을 바꾸는 흔한 화법) 실제로는 긍정 응답이라
-// 부정 패턴보다 먼저 검사한다.
-const RECORD_REQUEST_PATTERN = /(기록해|저장해|등록해|입력해|넣어|올려|적어)/;
-const AFFIRMATIVE_REPLY_PATTERN = /(응|네|넵|넹|그래|어|웅|좋아|좋지|콜|오케이|okay|ok|해줘|부탁|맞아|ㅇㅇ)/i;
-const NEGATIVE_REPLY_PATTERN = /(아니|안해|괜찮|됐어|말고|싫어|노|ㄴㄴ|no)/i;
-
-const parseYesNo = (text: string): "yes" | "no" | null => {
-  if (RECORD_REQUEST_PATTERN.test(text)) return "yes";
-  if (NEGATIVE_REPLY_PATTERN.test(text)) return "no";
-  if (AFFIRMATIVE_REPLY_PATTERN.test(text)) return "yes";
-  return null;
-};
 
 function ActiveConversation({
   tripId,
@@ -388,59 +361,39 @@ function ActiveConversation({
     }
   };
 
+  // "기타소비로 기록할까요?" 확인 대기 중에 온 사용자 메시지의 처리 결과. confirmIntent는
+  // 이번 메시지가 LLM에 실어 보낸 pendingConfirmation 컨텍스트를 참고해 판단한 값이라,
+  // 거절과 함께 다른 질문이 섞여 있어도 reply가 그 질문에 자연스럽게 같이 답한다.
+  const handlePendingConfirmationResult = async (
+    userText: string,
+    result: ChatParsedResult,
+    suggestion: PendingOtherExpenseSuggestion,
+  ) => {
+    setHistory((prev) => [...prev, { role: "user", text: userText }, { role: "ai", text: result.reply }]);
+
+    const resolution = resolvePendingConfirmation(suggestion, result.confirmIntent ?? "unclear");
+    if (resolution.action === "record") {
+      setPendingOtherExpenseSuggestion(null);
+      await recordAsOtherExpense(suggestion.amount, userText);
+      return;
+    }
+    if (resolution.action === "close") {
+      setPendingOtherExpenseSuggestion(null);
+      return;
+    }
+    setPendingOtherExpenseSuggestion(resolution.suggestion);
+  };
+
   const handleSend = async () => {
     const text = inputValue.trim();
     if (!text) return;
     setInputValue("");
 
-    if (pendingOtherExpenseSuggestion) {
-      const answer = parseYesNo(text);
-      const suggestion = pendingOtherExpenseSuggestion;
-
-      if (answer === "yes") {
-        appendMessage({ id: `user-${Date.now()}`, sender: "user", text });
-        setPendingOtherExpenseSuggestion(null);
-        await recordAsOtherExpense(suggestion.amount, text);
-        return;
-      }
-      if (answer === "no") {
-        appendMessage({ id: `user-${Date.now()}`, sender: "user", text });
-        if (suggestion.declined) {
-          // 이미 한 번 거절한 뒤 다시 거절 — 더 이상 번복 기회를 열어두지 않는다.
-          setPendingOtherExpenseSuggestion(null);
-          appendMessage({
-            id: `ai-declined-${Date.now()}`,
-            sender: "ai",
-            text: "네, 알겠어요. 이 지출은 기록하지 않을게요.",
-          });
-        } else {
-          setPendingOtherExpenseSuggestion({ ...suggestion, declined: true, clarifyAttempts: 0 });
-          appendMessage({
-            id: `ai-declined-${Date.now()}`,
-            sender: "ai",
-            text: "네, 알겠어요. 이 지출은 기록하지 않을게요. 마음이 바뀌면 언제든 말씀해주세요.",
-          });
-        }
-        return;
-      }
-      // 긍정/부정 어느 쪽도 아니면, 처음 한 번은 금액을 잃지 않도록 다시 명확히 물어본다.
-      if (suggestion.clarifyAttempts === 0) {
-        appendMessage({ id: `user-${Date.now()}`, sender: "user", text });
-        setPendingOtherExpenseSuggestion({ ...suggestion, clarifyAttempts: 1 });
-        appendMessage({
-          id: `ai-clarify-${Date.now()}`,
-          sender: "ai",
-          text: "죄송해요, 잘 이해하지 못했어요. 이 지출은 기타소비로 기록할까요? '네' 또는 '아니요'로 답해주세요.",
-        });
-        return;
-      }
-      // 두 번째도 애매하면 제안은 접고 평소처럼 처리한다 (아래에서 이 메시지를 새로 보낸다).
-      setPendingOtherExpenseSuggestion(null);
-    }
-
     const waitingId = `ai-${Date.now()}`;
     appendMessage({ id: `user-${Date.now()}`, sender: "user", text });
     appendMessage({ id: waitingId, sender: "ai", variant: "waiting" });
+
+    const suggestion = pendingOtherExpenseSuggestion;
 
     await streamChatReply({
       tripName,
@@ -448,12 +401,17 @@ function ActiveConversation({
       todayConsumed: consumed,
       message: text,
       history,
+      pendingConfirmation: suggestion ? { amount: suggestion.amount } : undefined,
       onToken: (accumulated) => {
         setMessages((prev) =>
           prev.map((item) => (item.id === waitingId ? { ...item, variant: "text", text: accumulated } : item)),
         );
       },
       onDone: (result) => {
+        if (suggestion) {
+          void handlePendingConfirmationResult(text, result, suggestion);
+          return;
+        }
         void handleParsedResult(text, result, waitingId);
       },
       onError: (error) => {
