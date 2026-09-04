@@ -23,6 +23,7 @@ const config: ExpoConfig = {
     "expo-router",
     "expo-font",
     "expo-splash-screen",
+    "@sentry/react-native/expo",
     [
       "expo-image-picker",
       {
@@ -70,6 +71,7 @@ const config: ExpoConfig = {
     kakaoNativeAppKey: process.env.KAKAO_NATIVE_APP_KEY,
     naverMapClientId: process.env.NAVER_MAP_CLIENT_ID,
     naverMapStyleId: process.env.NAVER_MAP_STYLE_ID,
+    sentryDsn: process.env.SENTRY_DSN,
   },
 };
 

@@ -24,6 +24,7 @@
     "@react-native-kakao/user": "^2.4.6",
     "@repo/types": "workspace:*",
     "@repo/ui": "workspace:*",
+    "@sentry/react-native": "^8.25.0",
     "@supabase/supabase-js": "^2.112.3",
     "base64-arraybuffer": "^1.0.2",
     "expo": "~56.0.21",
