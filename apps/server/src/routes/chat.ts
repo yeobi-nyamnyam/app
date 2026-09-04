@@ -120,7 +120,9 @@ const buildSystemInstruction = ({
           `너는 방금 사용자에게 "오늘 끼니 기록이 이미 다 끝났는데, ${pendingConfirmation.amount}원 지출을`,
           '기타소비로 기록해드릴까요?"라고 물어본 상태야. 이번 사용자 메시지는 그 질문에 대한 답변으로',
           "함께 해석해서 confirmIntent를 판단해: 기록에 동의하면 \"yes\", 거절하면 \"no\", 둘 다 아니라서",
-          "판단이 안 서면 \"unclear\"로 응답해 (confirmIntent를 null로 두지 마).",
+          "판단이 안 서면 \"unclear\"로 응답해. confirmIntent는 반드시 이 세 값 중 하나로 채워야",
+          "해 — 절대 생략하거나 null로 비워두지 마(reply에서 동의/거절 의사를 이미 밝혔어도",
+          "confirmIntent 필드에 똑같이 명시적으로 채워야 해).",
           "메시지에 그 확인과 무관한 질문이나 코멘트가 섞여 있으면 무시하지 말고 reply에서 자연스럽게",
           "같이 답해줘 — 예를 들어 '지금까지 기록을 네가 삭제해줄 수 있어?'처럼 물으면, 너는 이미 저장된",
           "기록을 직접 삭제할 수 없고 사용자가 기록보기 화면에서 직접 삭제해야 한다고 안내해.",
@@ -169,7 +171,11 @@ chatRouter.post("/chat", async (req, res) => {
             mealType: { type: SchemaType.STRING, format: "enum", enum: [...MEAL_TYPES], nullable: true },
             confirmIntent: { type: SchemaType.STRING, format: "enum", enum: ["yes", "no", "unclear"], nullable: true },
           },
-          required: ["reply", "hasExpense"],
+          // confirmIntent는 pendingConfirmation이 있을 때만 필수로 강제한다 — Gemini는 optional
+          // 필드를 "필요 없다"고 판단하면 값이 있어도(reply가 이미 동의/거절을 담고 있어도)
+          // 통째로 생략하거나 null로 비워버리는 경향이 있어, required에 넣지 않으면 reply와
+          // 실제 저장 여부가 어긋나는 문제(사용자에게는 확인했다고 답하고 기록은 안 되는)가 생긴다.
+          required: pendingConfirmation ? ["reply", "hasExpense", "confirmIntent"] : ["reply", "hasExpense"],
         },
       },
     });
