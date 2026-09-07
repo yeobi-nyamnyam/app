@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { FlatList, Pressable, StyleSheet, View } from "react-native";
 import { router, useFocusEffect } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -168,27 +168,35 @@ export default function RecommendScreen() {
 
   // F3-1: 지도보기는 가격보기와 달리 예산과 무관하게, 좌표가 있는 착한가격업소를
   // 전부 마커로 띄운다 (좌표 없는 업소는 지오코딩 실패분이라 지도에 표시 불가).
-  const goodPriceMapMarkers: RecommendMapMarker[] = (restaurantsData?.restaurantsCollection.edges ?? [])
-    .map((edge) => {
-      const latitude = parseCoordinate(edge.node.latitude);
-      const longitude = parseCoordinate(edge.node.longitude);
-      if (latitude == null || longitude == null) return null;
+  // GraphQL edges 배열 자체를 의존성으로 잡아 useMemo — 매 렌더마다 새 배열을
+  // 만들면 RecommendMapView 안의 클러스터링 인덱스가 선택 상태 변경 등 무관한
+  // 렌더에도 통째로 재생성돼(수천 건 기준 눈에 띄는 랙) 마커 클릭/줌 반응이 느려진다.
+  const goodPriceEdges = restaurantsData?.restaurantsCollection.edges;
+  const goodPriceMapMarkers: RecommendMapMarker[] = useMemo(
+    () =>
+      (goodPriceEdges ?? [])
+        .map((edge) => {
+          const latitude = parseCoordinate(edge.node.latitude);
+          const longitude = parseCoordinate(edge.node.longitude);
+          if (latitude == null || longitude == null) return null;
 
-      const cheapestPrice = getCheapestMenuPrice(parsePriceMenus(edge.node.price_menus));
-      const marker: RecommendMapMarker = {
-        id: edge.node.id,
-        source: "good_price",
-        name: edge.node.name,
-        category: edge.node.category ?? "",
-        // TODO(F3 후속): 사용자 실시간 위치 기반 거리 계산은 별도 스코프.
-        distance: "-",
-        price: cheapestPrice != null ? formatWon(cheapestPrice) : undefined,
-        latitude,
-        longitude,
-      };
-      return marker;
-    })
-    .filter((marker): marker is RecommendMapMarker => marker !== null);
+          const cheapestPrice = getCheapestMenuPrice(parsePriceMenus(edge.node.price_menus));
+          const marker: RecommendMapMarker = {
+            id: edge.node.id,
+            source: "good_price",
+            name: edge.node.name,
+            category: edge.node.category ?? "",
+            // TODO(F3 후속): 사용자 실시간 위치 기반 거리 계산은 별도 스코프.
+            distance: "-",
+            price: cheapestPrice != null ? formatWon(cheapestPrice) : undefined,
+            latitude,
+            longitude,
+          };
+          return marker;
+        })
+        .filter((marker): marker is RecommendMapMarker => marker !== null),
+    [goodPriceEdges],
+  );
 
   // F3-1 2단계: 일반 업소(source=tour_api, TourAPI contentTypeId=39)도 가격과
   // 무관하게 좌표가 있는 것 전부 마커로 띄운다. 지도보기(viewMode===1)에서만
@@ -198,27 +206,35 @@ export default function RecommendScreen() {
     skip: !regionSido || viewMode !== 1,
     fetchPolicy: "cache-and-network",
   });
-  const tourApiMapMarkers: RecommendMapMarker[] = (tourApiData?.restaurantsCollection.edges ?? [])
-    .map((edge) => {
-      const latitude = parseCoordinate(edge.node.latitude);
-      const longitude = parseCoordinate(edge.node.longitude);
-      if (latitude == null || longitude == null) return null;
+  const tourApiEdges = tourApiData?.restaurantsCollection.edges;
+  const tourApiMapMarkers: RecommendMapMarker[] = useMemo(
+    () =>
+      (tourApiEdges ?? [])
+        .map((edge) => {
+          const latitude = parseCoordinate(edge.node.latitude);
+          const longitude = parseCoordinate(edge.node.longitude);
+          if (latitude == null || longitude == null) return null;
 
-      const marker: RecommendMapMarker = {
-        id: edge.node.id,
-        source: "tour_api",
-        name: edge.node.name,
-        category: edge.node.category ?? "",
-        distance: "-",
-        imageUrl: edge.node.image_url ?? undefined,
-        latitude,
-        longitude,
-      };
-      return marker;
-    })
-    .filter((marker): marker is RecommendMapMarker => marker !== null);
+          const marker: RecommendMapMarker = {
+            id: edge.node.id,
+            source: "tour_api",
+            name: edge.node.name,
+            category: edge.node.category ?? "",
+            distance: "-",
+            imageUrl: edge.node.image_url ?? undefined,
+            latitude,
+            longitude,
+          };
+          return marker;
+        })
+        .filter((marker): marker is RecommendMapMarker => marker !== null),
+    [tourApiEdges],
+  );
 
-  const mapMarkers = [...goodPriceMapMarkers, ...tourApiMapMarkers];
+  const mapMarkers = useMemo(
+    () => [...goodPriceMapMarkers, ...tourApiMapMarkers],
+    [goodPriceMapMarkers, tourApiMapMarkers],
+  );
 
   // 지도 초기 카메라는 마커 좌표가 아니라 사용자의 실제 현재 위치를 기준으로 삼는다
   // (권한 거부/측위 실패 시에만 FALLBACK_LOCATION으로 대체).
