@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { FlatList, Pressable, StyleSheet, View } from "react-native";
 import { router, useFocusEffect } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -40,6 +40,10 @@ import { getCheapestMenuPrice, parseCoordinate, parsePriceMenus } from "@/lib/re
 const FALLBACK_LOCATION = { latitude: 37.5665, longitude: 126.978 };
 
 const DEFAULT_SORT_VALUE = "price-asc";
+// F3-4: 가격보기 리스트를 이 개수 단위로 점진 노출한다(무한 스크롤). price_menus가
+// jsonb라 서버 측 가격 정렬이 안 돼(쿼리 파일 주석 참고) 전체 데이터는 그대로 받아오되,
+// FlatList 렌더링만 onEndReached로 나눠서 초기 렌더/스크롤 비용을 줄인다.
+const PAGE_SIZE = 30;
 const SORT_OPTIONS: SortOption[] = [
   { value: DEFAULT_SORT_VALUE, label: "가격 낮은 순" },
   { value: "price-desc", label: "가격 높은 순" },
@@ -144,27 +148,46 @@ export default function RecommendScreen() {
     },
   );
   // F3: 여행 지역의 착한가격업소 중 현재 끼니 예산 이하인 것만 추천 목록에 노출한다.
-  const priceListRestaurants: PriceListRestaurant[] = mealBudgetAmount
-    ? (restaurantsData?.restaurantsCollection.edges ?? [])
-        .map((edge) => {
-          const cheapestPrice = getCheapestMenuPrice(parsePriceMenus(edge.node.price_menus));
-          if (cheapestPrice == null || cheapestPrice > mealBudgetAmount) return null;
-          return {
-            id: edge.node.id,
-            name: edge.node.name,
-            address: edge.node.address,
-            category: edge.node.category ?? "",
-            priceAmount: cheapestPrice,
-            budgetPercent:
-              mealBudgetAmount > 0 ? Math.round((cheapestPrice / mealBudgetAmount) * 100) : 0,
-          };
-        })
-        .filter((item): item is PriceListRestaurant => item !== null)
-    : [];
+  // F3-4: 지도보기 마커(goodPriceMapMarkers)와 동일한 이유로 useMemo — 수천 건 기준
+  // 정렬 시트 열기 등 무관한 리렌더에도 매번 필터+정렬이 동기 실행되던 문제를 줄인다.
+  const restaurantEdges = restaurantsData?.restaurantsCollection.edges;
+  const priceListRestaurants: PriceListRestaurant[] = useMemo(() => {
+    if (!mealBudgetAmount) return [];
+    return (restaurantEdges ?? [])
+      .map((edge) => {
+        const cheapestPrice = getCheapestMenuPrice(parsePriceMenus(edge.node.price_menus));
+        if (cheapestPrice == null || cheapestPrice > mealBudgetAmount) return null;
+        return {
+          id: edge.node.id,
+          name: edge.node.name,
+          address: edge.node.address,
+          category: edge.node.category ?? "",
+          priceAmount: cheapestPrice,
+          budgetPercent:
+            mealBudgetAmount > 0 ? Math.round((cheapestPrice / mealBudgetAmount) * 100) : 0,
+        };
+      })
+      .filter((item): item is PriceListRestaurant => item !== null);
+  }, [restaurantEdges, mealBudgetAmount]);
 
   const hasResults = priceListRestaurants.length > 0;
-  const sortedRestaurants = sortByValue(priceListRestaurants, sortValue);
+  const sortedRestaurants = useMemo(
+    () => sortByValue(priceListRestaurants, sortValue),
+    [priceListRestaurants, sortValue],
+  );
   const sortLabel = SORT_OPTIONS.find((option) => option.value === sortValue)?.label ?? "";
+
+  // F3-4: 무한 스크롤 — sortedRestaurants 중 앞에서부터 PAGE_SIZE 단위로만 렌더링하고,
+  // FlatList onEndReached에서 노출 개수를 늘린다. 정렬 기준이나 목록 자체가 바뀌면
+  // (정렬 변경, 지역/예산 변경으로 데이터가 새로 옴) 처음부터 다시 보여준다.
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
+  useEffect(() => {
+    setVisibleCount(PAGE_SIZE);
+  }, [sortValue, priceListRestaurants]);
+  const visibleRestaurants = sortedRestaurants.slice(0, visibleCount);
+  const handleEndReached = useCallback(() => {
+    setVisibleCount((count) => Math.min(count + PAGE_SIZE, sortedRestaurants.length));
+  }, [sortedRestaurants.length]);
 
   // F3-1: 지도보기는 가격보기와 달리 예산과 무관하게, 좌표가 있는 착한가격업소를
   // 전부 마커로 띄운다 (좌표 없는 업소는 지오코딩 실패분이라 지도에 표시 불가).
@@ -299,7 +322,7 @@ export default function RecommendScreen() {
             </View>
           ) : hasResults ? (
             <FlatList
-              data={sortedRestaurants}
+              data={visibleRestaurants}
               keyExtractor={(item) => item.id}
               contentContainerStyle={styles.list}
               renderItem={({ item }) => (
@@ -312,6 +335,11 @@ export default function RecommendScreen() {
                   onPress={() => router.push(`/recommend/${item.id}`)}
                 />
               )}
+              onEndReached={handleEndReached}
+              onEndReachedThreshold={0.5}
+              initialNumToRender={PAGE_SIZE}
+              maxToRenderPerBatch={PAGE_SIZE}
+              windowSize={7}
             />
           ) : (
             <>
