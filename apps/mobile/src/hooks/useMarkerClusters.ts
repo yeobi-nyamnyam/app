@@ -92,9 +92,14 @@ export function useMarkerClusters<T extends ClusterableMarker>(
   }, [items]);
 
   return useMemo(() => {
-    const zoomLevel = Math.min(Math.max(Math.round(zoom), 0), CLUSTER_MAX_ZOOM);
+    // supercluster는 maxZoom을 넘는 줌(정확히는 maxZoom+1)을 요청하면 더 이상 묶지
+    // 않고 완전히 펼쳐진 원본 포인트를 돌려주도록 내부적으로 이미 클램프한다
+    // (Supercluster.prototype._limitZoom: min~maxZoom+1). 여기서 CLUSTER_MAX_ZOOM으로
+    // 한 번 더 clamp하면 그 maxZoom+1 구간에 절대 도달하지 못해서, 클러스터를 눌러
+    // expansionZoom까지 카메라를 이동시켜도(그 값이 maxZoom+1일 수 있음) 여전히
+    // 같은 클러스터가 남아있는 버그가 생긴다 — 그대로 넘긴다.
     const bbox = regionToBBox(region);
-    return index.getClusters(bbox, zoomLevel).map((feature): MarkerClusterResult<T> => {
+    return index.getClusters(bbox, zoom).map((feature): MarkerClusterResult<T> => {
       const [longitude, latitude] = feature.geometry.coordinates as [number, number];
       const properties = feature.properties;
       if ("cluster" in properties && properties.cluster) {
