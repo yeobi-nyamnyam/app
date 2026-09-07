@@ -5,9 +5,17 @@ import Supercluster from "supercluster";
 // supercluster(줌 기반 그리드 클러스터링 라이브러리)를 그대로 적용할 수 있다.
 const CLUSTER_RADIUS = 60;
 const CLUSTER_MAX_ZOOM = 16;
-// 전 세계 bbox 고정 — 지역 하나(시/군/구) 단위로 최대 수백 건인 데이터셋 규모라
-// 뷰포트별 bbox 계산 없이 항상 전체를 넘겨도 성능에 문제가 없다.
-const WORLD_BBOX: [number, number, number, number] = [-180, -85, 180, 85];
+// 화면 밖 데이터까지 전부 오버레이로 마운트하면(특히 시/도 전체 단위라 수천 건인
+// 경우) 네이티브 뷰 개수가 그대로 불어나 탭/핀치줌 반응이 느려진다. 뷰포트
+// bbox로 걸러서 화면 근처만 렌더링한다. panning 여유를 위해 뷰포트보다 약간
+// 넓게(PADDING배) 잡는다.
+const VIEWPORT_BBOX_PADDING = 1.5;
+export type ViewportRegion = {
+  latitude: number;
+  longitude: number;
+  latitudeDelta: number;
+  longitudeDelta: number;
+};
 
 interface ClusterableMarker {
   id: string;
@@ -43,16 +51,30 @@ export interface MarkerClusterGroup {
 
 export type MarkerClusterResult<T> = MarkerClusterPoint<T> | MarkerClusterGroup;
 
+const regionToBBox = (region: ViewportRegion | undefined): [number, number, number, number] => {
+  if (!region) return [-180, -85, 180, 85];
+  const halfLat = (region.latitudeDelta * VIEWPORT_BBOX_PADDING) / 2;
+  const halfLng = (region.longitudeDelta * VIEWPORT_BBOX_PADDING) / 2;
+  return [
+    region.longitude - halfLng,
+    Math.max(region.latitude - halfLat, -85),
+    region.longitude + halfLng,
+    Math.min(region.latitude + halfLat, 85),
+  ];
+};
+
 /**
- * 좌표를 가진 마커 목록을 현재 지도 줌 레벨 기준으로 클러스터링한다. 근접한 마커가
- * 많을 때 전부 개별로 그리면 성능/시인성이 떨어지는 문제를 해결한다.
+ * 좌표를 가진 마커 목록을 현재 지도 줌 레벨/뷰포트 기준으로 클러스터링한다. 근접한
+ * 마커가 많을 때 전부 개별로 그리면 성능/시인성이 떨어지는 문제를 해결한다.
  *
  * @param items 클러스터링할 마커 목록 (id, latitude, longitude 필수)
  * @param zoom 현재 지도 카메라 줌 레벨
+ * @param region 현재 지도 카메라가 보여주는 영역 (optional, 아직 모르면 전체를 대상으로 계산)
  */
 export function useMarkerClusters<T extends ClusterableMarker>(
   items: T[],
   zoom: number,
+  region?: ViewportRegion,
 ): MarkerClusterResult<T>[] {
   const index = useMemo(() => {
     const cluster = new Supercluster<T>({
@@ -71,7 +93,8 @@ export function useMarkerClusters<T extends ClusterableMarker>(
 
   return useMemo(() => {
     const zoomLevel = Math.min(Math.max(Math.round(zoom), 0), CLUSTER_MAX_ZOOM);
-    return index.getClusters(WORLD_BBOX, zoomLevel).map((feature): MarkerClusterResult<T> => {
+    const bbox = regionToBBox(region);
+    return index.getClusters(bbox, zoomLevel).map((feature): MarkerClusterResult<T> => {
       const [longitude, latitude] = feature.geometry.coordinates as [number, number];
       const properties = feature.properties;
       if ("cluster" in properties && properties.cluster) {
@@ -92,5 +115,5 @@ export function useMarkerClusters<T extends ClusterableMarker>(
         data: properties as T,
       };
     });
-  }, [index, zoom]);
+  }, [index, zoom, region]);
 }

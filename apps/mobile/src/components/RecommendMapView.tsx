@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { memo, useCallback, useMemo, useRef, useState } from "react";
 import { type LayoutChangeEvent, Pressable, StyleSheet, View } from "react-native";
 import Constants from "expo-constants";
 import * as Location from "expo-location";
@@ -9,7 +9,11 @@ import {
 } from "@mj-studio/react-native-naver-map";
 import { Icon, Preview, Text, colors, radius, spacing, stroke } from "@repo/ui";
 
-import { useMarkerClusters, type MarkerClusterResult } from "@/hooks/useMarkerClusters";
+import {
+  useMarkerClusters,
+  type MarkerClusterGroup,
+  type ViewportRegion,
+} from "@/hooks/useMarkerClusters";
 
 // NCP Style Editor로 만든 커스텀 지도 스타일 id (optional — 없으면 기본 스타일)
 const NAVER_MAP_STYLE_ID = Constants.expoConfig?.extra?.naverMapStyleId as string | undefined;
@@ -31,6 +35,90 @@ export interface RecommendMapMarker {
   latitude: number;
   longitude: number;
 }
+
+/**
+ * 클러스터 뱃지 마커. React.memo로 감싸서 선택 상태 변경 등 무관한 리렌더
+ * 때 다른 마커/클러스터는 건드리지 않는다 — 수천 건 규모에서 매번 전체 목록을
+ * 다시 diff하면 탭 반응이 느려진다.
+ *
+ * @param cluster 클러스터 정보(좌표/개수/펼침 줌 레벨)
+ * @param color 클러스터 배경색 (source별 범례 색상)
+ * @param onTap 클러스터를 눌렀을 때 발생하는 event 명시
+ */
+const ClusterBadgeMarker = memo(function ClusterBadgeMarker({
+  cluster,
+  color,
+  onTap,
+}: {
+  cluster: MarkerClusterGroup;
+  color: string;
+  onTap: (cluster: MarkerClusterGroup) => void;
+}) {
+  return (
+    <NaverMapMarkerOverlay
+      latitude={cluster.latitude}
+      longitude={cluster.longitude}
+      width={32}
+      height={32}
+      anchor={{ x: 0.5, y: 0.5 }}
+      onTap={() => onTap(cluster)}
+    >
+      <View collapsable={false} style={[styles.clusterMarker, { backgroundColor: color }]}>
+        <Text variant="footnoteEmphasized" color="inverse">
+          {cluster.count}
+        </Text>
+      </View>
+    </NaverMapMarkerOverlay>
+  );
+});
+
+/**
+ * 개별 음식점 마커. React.memo로 감싸서 선택된 마커가 바뀔 때 실제로 상태가
+ * 바뀐 두 마커(이전 선택/새 선택)만 리렌더되게 한다.
+ *
+ * @param marker 마커 데이터
+ * @param color 마커 배경색 (source별 범례 색상)
+ * @param isSelected 현재 선택된 마커인지 여부
+ * @param onTap 마커를 눌렀을 때 발생하는 event 명시(마커 id 전달)
+ */
+const RestaurantMarkerOverlay = memo(function RestaurantMarkerOverlay({
+  marker,
+  color,
+  isSelected,
+  onTap,
+}: {
+  marker: RecommendMapMarker;
+  color: string;
+  isSelected: boolean;
+  onTap: (id: string) => void;
+}) {
+  return (
+    <NaverMapMarkerOverlay
+      latitude={marker.latitude}
+      longitude={marker.longitude}
+      width={isSelected ? 24 : 8}
+      height={isSelected ? 24 : 8}
+      anchor={{ x: 0.5, y: 0.5 }}
+      onTap={() => onTap(marker.id)}
+    >
+      {isSelected ? (
+        <View collapsable={false} style={[styles.selectedMarker, { backgroundColor: color }]}>
+          <Icon
+            name="restaurant"
+            size="medium"
+            color={
+              marker.source === "good_price"
+                ? colors.content.neutral.inverse
+                : colors.content.neutral.default
+            }
+          />
+        </View>
+      ) : (
+        <View collapsable={false} style={[styles.dotMarker, { backgroundColor: color }]} />
+      )}
+    </NaverMapMarkerOverlay>
+  );
+});
 
 /**
  * 지도 마커를 눌렀을 때 뜨는 범례 항목.
@@ -84,84 +172,31 @@ export const RecommendMapView = ({
   // 마커가 많을 때 전부 개별로 그리면 성능/시인성이 떨어져 줌 레벨 기준으로
   // 클러스터링한다. 범례(착한가격업소/일반 업소) 색상 구분을 유지하기 위해
   // source별로 각각 클러스터링한다.
+  //
+  // markers는 매 렌더마다 새 배열이어도(부모가 memo 안 했더라도) source별로
+  // 나누는 이 필터 자체는 useMemo로 감싸 markers 참조가 실제로 바뀔 때만
+  // 다시 계산한다 — 그래야 useMarkerClusters의 supercluster 인덱스가 선택
+  // 상태 변경 같은 무관한 렌더에서 통째로 재생성되지 않는다.
   const [zoom, setZoom] = useState(INITIAL_ZOOM);
-  const goodPriceMarkers = markers.filter((marker) => marker.source === "good_price");
-  const tourApiMarkers = markers.filter((marker) => marker.source === "tour_api");
-  const goodPriceClusters = useMarkerClusters(goodPriceMarkers, zoom);
-  const tourApiClusters = useMarkerClusters(tourApiMarkers, zoom);
+  const [region, setRegion] = useState<ViewportRegion | undefined>(undefined);
+  const goodPriceMarkers = useMemo(
+    () => markers.filter((marker) => marker.source === "good_price"),
+    [markers],
+  );
+  const tourApiMarkers = useMemo(
+    () => markers.filter((marker) => marker.source === "tour_api"),
+    [markers],
+  );
+  const goodPriceClusters = useMarkerClusters(goodPriceMarkers, zoom, region);
+  const tourApiClusters = useMarkerClusters(tourApiMarkers, zoom, region);
 
-  const handleTapCluster = (cluster: { latitude: number; longitude: number; expansionZoom: number }) => {
+  const handleTapCluster = useCallback((cluster: MarkerClusterGroup) => {
     mapRef.current?.animateCameraTo({
       latitude: cluster.latitude,
       longitude: cluster.longitude,
       zoom: cluster.expansionZoom,
     });
-  };
-
-  const renderClusterResults = (
-    results: MarkerClusterResult<RecommendMapMarker>[],
-    clusterColor: string,
-  ) =>
-    results.map((result) => {
-      if (result.type === "cluster") {
-        return (
-          <NaverMapMarkerOverlay
-            key={`cluster-${clusterColor}-${result.id}`}
-            latitude={result.latitude}
-            longitude={result.longitude}
-            width={32}
-            height={32}
-            anchor={{ x: 0.5, y: 0.5 }}
-            onTap={() => handleTapCluster(result)}
-          >
-            <View
-              collapsable={false}
-              style={[styles.clusterMarker, { backgroundColor: clusterColor }]}
-            >
-              <Text variant="footnoteEmphasized" color="inverse">
-                {result.count}
-              </Text>
-            </View>
-          </NaverMapMarkerOverlay>
-        );
-      }
-
-      const marker = result.data;
-      const isSelected = marker.id === selectedMarkerId;
-      return (
-        <NaverMapMarkerOverlay
-          key={marker.id}
-          latitude={marker.latitude}
-          longitude={marker.longitude}
-          width={isSelected ? 24 : 8}
-          height={isSelected ? 24 : 8}
-          anchor={{ x: 0.5, y: 0.5 }}
-          onTap={() => onSelectMarker(marker.id)}
-        >
-          {isSelected ? (
-            <View
-              collapsable={false}
-              style={[styles.selectedMarker, { backgroundColor: clusterColor }]}
-            >
-              <Icon
-                name="restaurant"
-                size="medium"
-                color={
-                  marker.source === "good_price"
-                    ? colors.content.neutral.inverse
-                    : colors.content.neutral.default
-                }
-              />
-            </View>
-          ) : (
-            <View
-              collapsable={false}
-              style={[styles.dotMarker, { backgroundColor: clusterColor }]}
-            />
-          )}
-        </NaverMapMarkerOverlay>
-      );
-    });
+  }, []);
 
   const handlePressLocate = async () => {
     const { status } = await Location.requestForegroundPermissionsAsync();
@@ -192,10 +227,47 @@ export const RecommendMapView = ({
           isShowScaleBar={false}
           isShowLocationButton={false}
           onTapMap={() => onSelectMarker(undefined)}
-          onCameraIdle={(camera) => setZoom(camera.zoom ?? INITIAL_ZOOM)}
+          onCameraIdle={(camera) => {
+            setZoom(camera.zoom ?? INITIAL_ZOOM);
+            setRegion(camera.region);
+          }}
         >
-          {renderClusterResults(goodPriceClusters, colors.surface.primary.bold)}
-          {renderClusterResults(tourApiClusters, colors.surface.primary.default)}
+          {goodPriceClusters.map((result) =>
+            result.type === "cluster" ? (
+              <ClusterBadgeMarker
+                key={`good_price-cluster-${result.id}`}
+                cluster={result}
+                color={colors.surface.primary.bold}
+                onTap={handleTapCluster}
+              />
+            ) : (
+              <RestaurantMarkerOverlay
+                key={result.data.id}
+                marker={result.data}
+                color={colors.surface.primary.bold}
+                isSelected={result.data.id === selectedMarkerId}
+                onTap={onSelectMarker}
+              />
+            ),
+          )}
+          {tourApiClusters.map((result) =>
+            result.type === "cluster" ? (
+              <ClusterBadgeMarker
+                key={`tour_api-cluster-${result.id}`}
+                cluster={result}
+                color={colors.surface.primary.default}
+                onTap={handleTapCluster}
+              />
+            ) : (
+              <RestaurantMarkerOverlay
+                key={result.data.id}
+                marker={result.data}
+                color={colors.surface.primary.default}
+                isSelected={result.data.id === selectedMarkerId}
+                onTap={onSelectMarker}
+              />
+            ),
+          )}
         </NaverMapView>
         <View style={[styles.legend, { bottom: controlsBottomOffset }]}>
           <LegendItem color={colors.surface.primary.bold} label="착한가격업소" />
