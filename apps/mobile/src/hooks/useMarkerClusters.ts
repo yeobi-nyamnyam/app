@@ -1,0 +1,96 @@
+import { useMemo } from "react";
+import Supercluster from "supercluster";
+
+// Naver 지도 zoom(0~21)은 표준 웹 메르카토르 슬리피맵 줌 레벨과 동일한 스케일이라
+// supercluster(줌 기반 그리드 클러스터링 라이브러리)를 그대로 적용할 수 있다.
+const CLUSTER_RADIUS = 60;
+const CLUSTER_MAX_ZOOM = 16;
+// 전 세계 bbox 고정 — 지역 하나(시/군/구) 단위로 최대 수백 건인 데이터셋 규모라
+// 뷰포트별 bbox 계산 없이 항상 전체를 넘겨도 성능에 문제가 없다.
+const WORLD_BBOX: [number, number, number, number] = [-180, -85, 180, 85];
+
+interface ClusterableMarker {
+  id: string;
+  latitude: number;
+  longitude: number;
+}
+
+// supercluster의 네임스페이스 타입(Supercluster.ClusterProperties)은 default import와
+// 함께 타입 위치에서 참조할 수 없어(export = 모듈의 esModuleInterop 제약) 필요한
+// 필드만 직접 선언해서 쓴다.
+interface ClusterFeatureProperties {
+  cluster: true;
+  cluster_id: number;
+  point_count: number;
+}
+
+export interface MarkerClusterPoint<T> {
+  type: "point";
+  latitude: number;
+  longitude: number;
+  data: T;
+}
+
+export interface MarkerClusterGroup {
+  type: "cluster";
+  id: number;
+  latitude: number;
+  longitude: number;
+  count: number;
+  /** 이 클러스터를 눌렀을 때 확대해야 하는 줌 레벨 */
+  expansionZoom: number;
+}
+
+export type MarkerClusterResult<T> = MarkerClusterPoint<T> | MarkerClusterGroup;
+
+/**
+ * 좌표를 가진 마커 목록을 현재 지도 줌 레벨 기준으로 클러스터링한다. 근접한 마커가
+ * 많을 때 전부 개별로 그리면 성능/시인성이 떨어지는 문제를 해결한다.
+ *
+ * @param items 클러스터링할 마커 목록 (id, latitude, longitude 필수)
+ * @param zoom 현재 지도 카메라 줌 레벨
+ */
+export function useMarkerClusters<T extends ClusterableMarker>(
+  items: T[],
+  zoom: number,
+): MarkerClusterResult<T>[] {
+  const index = useMemo(() => {
+    const cluster = new Supercluster<T>({
+      radius: CLUSTER_RADIUS,
+      maxZoom: CLUSTER_MAX_ZOOM,
+    });
+    cluster.load(
+      items.map((item) => ({
+        type: "Feature",
+        properties: item,
+        geometry: { type: "Point", coordinates: [item.longitude, item.latitude] },
+      })),
+    );
+    return cluster;
+  }, [items]);
+
+  return useMemo(() => {
+    const zoomLevel = Math.min(Math.max(Math.round(zoom), 0), CLUSTER_MAX_ZOOM);
+    return index.getClusters(WORLD_BBOX, zoomLevel).map((feature): MarkerClusterResult<T> => {
+      const [longitude, latitude] = feature.geometry.coordinates as [number, number];
+      const properties = feature.properties;
+      if ("cluster" in properties && properties.cluster) {
+        const clusterProperties = properties as ClusterFeatureProperties;
+        return {
+          type: "cluster",
+          id: clusterProperties.cluster_id,
+          latitude,
+          longitude,
+          count: clusterProperties.point_count,
+          expansionZoom: index.getClusterExpansionZoom(clusterProperties.cluster_id),
+        };
+      }
+      return {
+        type: "point",
+        latitude,
+        longitude,
+        data: properties as T,
+      };
+    });
+  }, [index, zoom]);
+}
