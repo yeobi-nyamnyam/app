@@ -1,0 +1,27 @@
+# 앱이 정상적으로 빌드/부팅되고 스플래시를 지나 로그인 화면까지 렌더되는지 확인하는 스모크 테스트.
+#
+# 실행 전 준비:
+# 1. apps/mobile에서 Metro 개발 서버 실행 (`pnpm dev`)
+# 2. adb reverse tcp:8081 tcp:8081 (에뮬레이터가 로컬 Metro에 접근하도록)
+#
+# launchApp만 쓰면 dev client 런처 화면(서버 목록)만 뜨고 실제 앱 화면으로
+# 안 넘어가서, openLink로 dev server URL을 바로 넘겨 앱 번들을 로드한다.
+#
+# clearState로 기기에 남아있을 수 있는 로그인 세션을 초기화한다. 세션이 남아있으면
+# (auth)/_layout.tsx가 곧바로 /(main)으로 리다이렉트해서 로그인 화면을 못 보기 때문.
+appId: com.yeobinyamnyam.mobile
+---
+- clearState
+- openLink: "yeobinyamnyam://expo-development-client/?url=http%3A%2F%2Flocalhost%3A8081"
+# clearState 직후 최초 1회, dev client의 "developer menu 안내" 팝업이 화면을 덮는다.
+# "Continue"를 누르면 안내 카드가 닫히는 대신 dev menu 시트(Reload/Go home/Tools...)가
+# 그대로 열려서, back으로 그 시트까지 완전히 닫아야 앱 화면이 드러난다.
+- tapOn:
+    text: "Continue"
+    optional: true
+- back
+- assertVisible: "여비냠냠"
+- extendedWaitUntil:
+    visible: "카카오로 시작하기"
+    timeout: 10000
+- assertVisible: "구글로 시작하기"

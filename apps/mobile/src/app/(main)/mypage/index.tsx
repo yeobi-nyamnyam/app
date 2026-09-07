@@ -1,11 +1,19 @@
 import { useState } from "react";
-import { Alert, Pressable, ScrollView, StyleSheet, Text as RNText, View } from "react-native";
+import {
+  Modal as RNModal,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text as RNText,
+  View,
+} from "react-native";
 import { router } from "expo-router";
 import { useQuery } from "@apollo/client/react";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
   CharacterGrowth,
   Icon,
+  Modal,
   NavBar,
   Text,
   colors,
@@ -21,7 +29,8 @@ import { MyPageDashboardDocument } from "@repo/types";
 import { deleteAccount } from "@/lib/account";
 import { supabase } from "@/lib/supabase";
 import { useSession } from "@/hooks/useSession";
-import { getCharacterLevel, getGrowthStage } from "@/lib/character";
+import { useAlertModal } from "@/hooks/useAlertModal";
+import { getCharacterLevel, getCharacterStage, getGrowthStage } from "@/lib/character";
 
 /**
  * 마이페이지 허브 화면 (M0, Figma "User_1 - 마이페이지", node 404:2106).
@@ -36,7 +45,9 @@ import { getCharacterLevel, getGrowthStage } from "@/lib/character";
 export default function MyPageScreen() {
   const insets = useSafeAreaInsets();
   const { session } = useSession();
+  const { showAlert } = useAlertModal();
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isWithdrawConfirmVisible, setIsWithdrawConfirmVisible] = useState(false);
 
   const { data, loading } = useQuery(MyPageDashboardDocument, {
     variables: { userId: session?.user.id ?? "" },
@@ -50,9 +61,13 @@ export default function MyPageScreen() {
   const badgeCount = data?.user_badgesCollection.edges.length ?? 0;
   const trips = data?.tripsCollection.edges ?? [];
   const completedTripCount = trips.filter((edge) => edge.node.status === "completed").length;
+  // "방문 매장"은 끼니 소비(식비)만 센다 — 기타소비(교통/숙박/기념품/기타)의
+  // "이용 내역"은 자유 텍스트를 같은 store_name 컬럼에 저장할 뿐 실제 매장이
+  // 아닐 수 있어서(예: "택시", "고속버스터미널") 방문 매장으로 잘못 집계되면 안 됨.
   const storeNames = new Set(
     trips.flatMap((tripEdge) =>
       (tripEdge.node.meal_logsCollection?.edges ?? [])
+        .filter((logEdge) => logEdge.node.category === "식비")
         .map((logEdge) => logEdge.node.store_name)
         .filter((name): name is string => Boolean(name)),
     ),
@@ -76,7 +91,7 @@ export default function MyPageScreen() {
       router.push("/record");
       return;
     }
-    Alert.alert("준비 중", "아직 구현되지 않은 탭이에요.");
+    showAlert("준비 중", "아직 구현되지 않은 탭이에요.");
   };
 
   const handleLogout = async () => {
@@ -88,24 +103,18 @@ export default function MyPageScreen() {
     }
   };
 
-  const handleWithdraw = () => {
-    Alert.alert("정말 탈퇴하시겠어요?", "계정과 모든 데이터가 삭제되며 되돌릴 수 없어요.", [
-      { text: "취소", style: "cancel" },
-      {
-        text: "탈퇴",
-        style: "destructive",
-        onPress: async () => {
-          setIsProcessing(true);
-          try {
-            await deleteAccount();
-          } catch (error) {
-            Alert.alert("탈퇴 실패", error instanceof Error ? error.message : "잠시 후 다시 시도해주세요.");
-          } finally {
-            setIsProcessing(false);
-          }
-        },
-      },
-    ]);
+  const handleWithdrawPress = () => setIsWithdrawConfirmVisible(true);
+
+  const handleWithdraw = async () => {
+    setIsWithdrawConfirmVisible(false);
+    setIsProcessing(true);
+    try {
+      await deleteAccount();
+    } catch (error) {
+      showAlert("탈퇴 실패", error instanceof Error ? error.message : "잠시 후 다시 시도해주세요.");
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   return (
@@ -128,7 +137,7 @@ export default function MyPageScreen() {
                     @{profile.handle}
                   </Text>
                 </View>
-                <RNText style={styles.levelText}>{`Lv.${level} 여행자`}</RNText>
+                <RNText style={styles.levelText}>{`Lv.${level} ${getCharacterStage(level)}`}</RNText>
               </>
             ) : (
               <Text color="subtlest">프로필이 아직 없어요.</Text>
@@ -150,6 +159,7 @@ export default function MyPageScreen() {
 
         <SectionLabel label="기록 · 분석" />
         <View style={styles.menuSection}>
+          <MenuRow title="완료 여행" onPress={() => router.push("/mypage/completed-trips")} />
           <MenuRow title="소비 습관 대시보드" onPress={() => router.push("/mypage/habits")} />
           <MenuRow title="방문 매장 지도" onPress={() => router.push("/mypage/store-map")} />
         </View>
@@ -165,14 +175,32 @@ export default function MyPageScreen() {
               로그아웃
             </Text>
           </Pressable>
-          <Pressable disabled={isProcessing} onPress={handleWithdraw}>
+          <Pressable disabled={isProcessing} onPress={handleWithdrawPress}>
             <Text variant="footnoteEmphasized" color="error">
               회원탈퇴
             </Text>
           </Pressable>
         </View>
       </ScrollView>
-      <NavBar active="profile" onChange={handleNavChange} />
+      <NavBar active="profile" onChange={handleNavChange} bottomInset={insets.bottom} />
+
+      <RNModal
+        visible={isWithdrawConfirmVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setIsWithdrawConfirmVisible(false)}
+      >
+        <Pressable style={styles.backdrop} onPress={() => setIsWithdrawConfirmVisible(false)} />
+        <View style={styles.modalCenter}>
+          <Modal
+            title="정말 탈퇴하시겠어요?"
+            content="계정과 모든 데이터가 삭제되며 되돌릴 수 없어요."
+            confirmLabel="탈퇴"
+            onCancel={() => setIsWithdrawConfirmVisible(false)}
+            onConfirm={handleWithdraw}
+          />
+        </View>
+      </RNModal>
     </View>
   );
 }
@@ -283,5 +311,15 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     gap: spacing[16],
     paddingTop: spacing[4],
+  },
+  backdrop: {
+    ...StyleSheet.absoluteFill,
+    backgroundColor: colors.surface.neutral.alpha["inverse-alpha-30"],
+  },
+  modalCenter: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: spacing[24],
   },
 });

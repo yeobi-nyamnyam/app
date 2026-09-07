@@ -16,15 +16,18 @@ const ITEMS: { key: NavBarItemKey; icon: IconName; label: string }[] = [
 /**
  * @param active 현재 선택된 탭: 'home' | 'recommend' | 'chat' | 'record' | 'profile'
  * @param onChange 탭을 클릭할 때 발생하는 event, 클릭된 탭의 key를 인자로 전달 (optional)
+ * @param bottomInset 하단에 추가로 더할 여백(px). iOS 홈 인디케이터 등 시스템 영역과
+ * 겹치지 않도록, 화면에서 `useSafeAreaInsets().bottom` 값을 전달한다 (optional, 기본값 0)
  */
 export interface NavBarProps {
   active: NavBarItemKey
   onChange?: (key: NavBarItemKey) => void
+  bottomInset?: number
 }
 
-export const NavBar = ({ active, onChange }: NavBarProps) => {
+export const NavBar = ({ active, onChange, bottomInset = 0 }: NavBarProps) => {
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { paddingBottom: bottomInset }]}>
       {ITEMS.map((item) => {
         const selected = item.key === active
         const color = selected ? colors.content.neutral.default : colors.content.neutral.subtlest

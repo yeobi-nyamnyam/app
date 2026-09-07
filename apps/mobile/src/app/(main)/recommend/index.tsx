@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useState } from "react";
-import { Alert, FlatList, Pressable, StyleSheet, View } from "react-native";
+import { FlatList, Pressable, StyleSheet, View } from "react-native";
 import { router, useFocusEffect } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useQuery } from "@apollo/client/react";
@@ -247,7 +247,7 @@ export default function RecommendScreen() {
         <View style={styles.emptyState}>
           <Text color="subtlest">여행 정보 불러오는 중...</Text>
         </View>
-        <NavBar active="recommend" onChange={handleNavChange} />
+        <NavBar active="recommend" onChange={handleNavChange} bottomInset={insets.bottom} />
       </View>
     );
   }
@@ -258,12 +258,9 @@ export default function RecommendScreen() {
     return (
       <View style={styles.screen}>
         <View style={styles.emptyState}>
-          <EmptyTripPrompt
-            onCreateTrip={() => router.push("/trip-create")}
-            onLoadPastTrip={() => Alert.alert("준비 중", "과거 여행 불러오기는 아직 준비 중이에요.")}
-          />
+          <EmptyTripPrompt onCreateTrip={() => router.push("/trip-create")} />
         </View>
-        <NavBar active="recommend" onChange={handleNavChange} />
+        <NavBar active="recommend" onChange={handleNavChange} bottomInset={insets.bottom} />
       </View>
     );
   }
@@ -348,9 +345,7 @@ export default function RecommendScreen() {
           }}
         />
       )}
-      <View style={{ paddingBottom: insets.bottom }}>
-        <NavBar active="recommend" onChange={handleNavChange} />
-      </View>
+      <NavBar active="recommend" onChange={handleNavChange} bottomInset={insets.bottom} />
       <SortSheet
         visible={isSortSheetOpen}
         options={SORT_OPTIONS}

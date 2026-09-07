@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Alert, Pressable, ScrollView, StyleSheet, View } from "react-native";
+import { Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { Redirect, router } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useMutation, useQuery } from "@apollo/client/react";
@@ -34,6 +34,7 @@ import {
   type WeightLevel,
 } from "@/lib/budget";
 import { useSession } from "@/hooks/useSession";
+import { useAlertModal } from "@/hooks/useAlertModal";
 
 interface ActiveTrip {
   id: string;
@@ -49,10 +50,11 @@ interface ActiveMealSlot {
   weightLevel: WeightLevel;
   budgetAmount: number;
   isRecorded: boolean;
+  isCascadeConfirmed: boolean;
   recordedAmount: number | null;
 }
 
-const handleNavChange = (key: NavBarItemKey) => {
+const handleNavChange = (key: NavBarItemKey, showAlert: (title: string, content: string) => void) => {
   if (key === "home") return;
   if (key === "recommend") {
     router.push("/recommend");
@@ -70,11 +72,13 @@ const handleNavChange = (key: NavBarItemKey) => {
     router.push("/mypage");
     return;
   }
-  Alert.alert("준비 중", "아직 구현되지 않은 탭이에요.");
+  showAlert("준비 중", "아직 구현되지 않은 탭이에요.");
 };
 
 export default function HomeScreen() {
+  const insets = useSafeAreaInsets();
   const { session } = useSession();
+  const { showAlert } = useAlertModal();
   const { data, loading, refetch } = useQuery(ActiveTripDocument, {
     variables: { userId: session?.user.id ?? "" },
     skip: !session,
@@ -95,7 +99,7 @@ export default function HomeScreen() {
     completeTrip({ variables: { tripId: tripNode.id } })
       .then(() => setCompletedTripId(tripNode.id))
       .catch((error) => {
-        Alert.alert("여행 완료 처리 실패", error instanceof Error ? error.message : "잠시 후 다시 시도해주세요.");
+        showAlert("여행 완료 처리 실패", error instanceof Error ? error.message : "잠시 후 다시 시도해주세요.");
       });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOverdue, tripNode?.id]);
@@ -110,7 +114,7 @@ export default function HomeScreen() {
         <View style={styles.emptyContent}>
           <Text color="subtlest">여행 정보 불러오는 중...</Text>
         </View>
-        <NavBar active="home" onChange={handleNavChange} />
+        <NavBar active="home" onChange={(key) => handleNavChange(key, showAlert)} bottomInset={insets.bottom} />
       </View>
     );
   }
@@ -125,7 +129,7 @@ export default function HomeScreen() {
         <View style={styles.emptyContent}>
           <Text color="subtlest">여행을 마무리하는 중...</Text>
         </View>
-        <NavBar active="home" onChange={handleNavChange} />
+        <NavBar active="home" onChange={(key) => handleNavChange(key, showAlert)} bottomInset={insets.bottom} />
       </View>
     );
   }
@@ -143,6 +147,7 @@ export default function HomeScreen() {
     weightLevel: edge.node.weight_level as WeightLevel,
     budgetAmount: edge.node.budget_amount,
     isRecorded: edge.node.is_recorded,
+    isCascadeConfirmed: edge.node.is_cascade_confirmed,
     recordedAmount: edge.node.recorded_amount,
   }));
 
@@ -156,17 +161,14 @@ export default function HomeScreen() {
 }
 
 function EmptyHome() {
+  const insets = useSafeAreaInsets();
+  const { showAlert } = useAlertModal();
   return (
     <View style={styles.container}>
       <View style={styles.emptyContent}>
-        <EmptyTripPrompt
-          onCreateTrip={() => router.push("/trip-create")}
-          onLoadPastTrip={() =>
-            Alert.alert("준비 중", "과거 여행 불러오기는 아직 준비 중이에요.")
-          }
-        />
+        <EmptyTripPrompt onCreateTrip={() => router.push("/trip-create")} />
       </View>
-      <NavBar active="home" onChange={handleNavChange} />
+      <NavBar active="home" onChange={(key) => handleNavChange(key, showAlert)} bottomInset={insets.bottom} />
     </View>
   );
 }
@@ -179,6 +181,7 @@ function UpcomingTripHome({
   mealSlots: ActiveMealSlot[];
 }) {
   const insets = useSafeAreaInsets();
+  const { showAlert } = useAlertModal();
   const daysUntilStart = Math.round(
     (new Date(trip.startDate).getTime() - new Date(todayDate()).getTime()) /
       (1000 * 60 * 60 * 24),
@@ -215,7 +218,7 @@ function UpcomingTripHome({
           dinner={formatWon(budgetFor("dinner"))}
         />
       </ScrollView>
-      <NavBar active="home" onChange={handleNavChange} />
+      <NavBar active="home" onChange={(key) => handleNavChange(key, showAlert)} bottomInset={insets.bottom} />
     </View>
   );
 }
@@ -230,10 +233,15 @@ function ActiveTripHome({
   onChanged: () => void;
 }) {
   const insets = useSafeAreaInsets();
+  const { showAlert } = useAlertModal();
   const [expanded, setExpanded] = useState(true);
   const [updateMealSlotWeight] = useMutation(UpdateMealSlotWeightDocument);
+  // record/new.tsx의 기록 저장 뮤테이션이 이 쿼리를 refetch하지 않아서, 기본
+  // fetchPolicy(cache-first)로는 방금 기록한 끼니가 캐시에 없어 "기록을 불러오지
+  // 못했어요"로 잘못 뜬다 — record/history.tsx와 동일하게 맞춘다.
   const { data: mealLogsData } = useQuery(TripMealLogsDocument, {
     variables: { tripId: trip.id },
+    fetchPolicy: "cache-and-network",
   });
 
   const today = todayDate();
@@ -290,7 +298,15 @@ function ActiveTripHome({
     if (slot.isRecorded) {
       const log = mealLogByMealSlotId.get(slot.id);
       if (!log) {
-        Alert.alert("기록을 불러오지 못했어요", "잠시 후 다시 시도해주세요.");
+        // F6-4 캐스케이드 확정(is_cascade_confirmed)은 recorded_amount=0으로
+        // is_recorded만 true로 바꿀 뿐 실제 meal_logs row는 안 남긴다 — 이땐
+        // "기록이 없는 게 정상"이라 에러가 아니라 안내로 보여준다.
+        showAlert(
+          slot.isCascadeConfirmed ? "따로 기록한 내역이 없어요" : "기록을 불러오지 못했어요",
+          slot.isCascadeConfirmed
+            ? "이후 끼니를 기록하면서 자동으로 완료 처리된 끼니예요."
+            : "잠시 후 다시 시도해주세요.",
+        );
         return;
       }
       router.push({
@@ -355,7 +371,7 @@ function ActiveTripHome({
       });
       onChanged();
     } catch (error) {
-      Alert.alert(
+      showAlert(
         "가중치 변경 실패",
         error instanceof Error ? error.message : "잠시 후 다시 시도해주세요.",
       );
@@ -423,7 +439,7 @@ function ActiveTripHome({
           ))}
         </View>
       </ScrollView>
-      <NavBar active="home" onChange={handleNavChange} />
+      <NavBar active="home" onChange={(key) => handleNavChange(key, showAlert)} bottomInset={insets.bottom} />
     </View>
   );
 }

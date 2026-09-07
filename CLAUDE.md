@@ -45,7 +45,7 @@
 - `.env` 커밋 금지
 - Claude / Claude Code는 PR을 스스로 머지하지 않음 — 항상 사람 승인 후 머지
 - `main`, `develop` 브랜치에 직접 push 금지
-- CI(lint + type-check) 실패 상태로 PR 생성 금지
+- CI(lint + type-check + test) 실패 상태로 PR 생성 금지
 
 ## 컴포넌트 작성 규칙
 

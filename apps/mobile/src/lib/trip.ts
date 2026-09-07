@@ -5,6 +5,7 @@ import { apolloClient } from "@/lib/apollo";
 export interface CreateTripInput {
   name: string;
   regionCode: string;
+  regionDisplayName: string;
   startDate: string;
   endDate: string;
   totalBudget: number;
@@ -30,6 +31,7 @@ export async function createTrip(input: CreateTripInput): Promise<CreatedTrip> {
     variables: {
       name: input.name,
       regionCode: input.regionCode,
+      regionDisplayName: input.regionDisplayName,
       startDate: input.startDate,
       endDate: input.endDate,
       totalBudget: input.totalBudget,

@@ -1,7 +1,8 @@
 import { useState } from "react";
-import { Alert as RNAlert, ScrollView, StyleSheet, TextInput, View } from "react-native";
+import { StyleSheet, TextInput, View } from "react-native";
 import { router } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
 import { useMutation, useQuery } from "@apollo/client/react";
 import {
   Alert,
@@ -21,6 +22,7 @@ import { ActiveTripDocument, EditTripBudgetDocument, RegionNameDocument } from "
 import { formatWon, parseDigits } from "@/lib/format";
 import { getTripDates, redistributeUnrecordedSlots, type WeightLevel } from "@/lib/budget";
 import { useSession } from "@/hooks/useSession";
+import { useAlertModal } from "@/hooks/useAlertModal";
 
 interface EditableBudget {
   name: string;
@@ -35,6 +37,7 @@ interface EditTrip {
   id: string;
   name: string;
   regionCode: string;
+  regionDisplayName: string | null;
   startDate: string;
   endDate: string;
   totalBudget: number;
@@ -86,6 +89,7 @@ export default function TripEditScreen() {
     id: tripNode.id,
     name: tripNode.name,
     regionCode: tripNode.region_code,
+    regionDisplayName: tripNode.region_display_name ?? null,
     startDate: tripNode.start_date,
     endDate: tripNode.end_date,
     totalBudget: tripNode.total_budget,
@@ -113,17 +117,24 @@ function TripEditForm({
   onSaved: () => void;
 }) {
   const insets = useSafeAreaInsets();
+  const { showAlert } = useAlertModal();
   const [editTripBudget, { loading: isSaving }] = useMutation(EditTripBudgetDocument);
   const { data: regionData } = useQuery(RegionNameDocument, {
     variables: { code: trip.regionCode },
   });
-  const regionName = regionData?.region_cacheCollection.edges[0]?.node.region_name ?? trip.regionCode;
+  const regionName =
+    trip.regionDisplayName ??
+    regionData?.region_cacheCollection.edges[0]?.node.region_name ??
+    trip.regionCode;
 
   const [committed, setCommitted] = useState<EditableBudget>(() => toEditableBudget(trip));
   const [draft, setDraft] = useState<EditableBudget>(() => toEditableBudget(trip));
   const [editingField, setEditingField] = useState<EditableField | null>(null);
   const [editingText, setEditingText] = useState("");
   const [changeLines, setChangeLines] = useState<string[]>([]);
+  // 에러 Alert + Footer는 스크롤 밖(아래)에 있어서 화면 맨 밑이 아니다 — 키보드가
+  // 뜰 때 그만큼은 덜 밀어올려야 한다. 안 그러면 그 높이만큼 빈 공간이 남는다.
+  const [belowScrollHeight, setBelowScrollHeight] = useState(0);
 
   const consumed = mealSlots.reduce(
     (sum, slot) => sum + (slot.recordedAmount ?? 0),
@@ -158,7 +169,9 @@ function TripEditForm({
   const validationError = !isBudgetSumValid
     ? "전체 예산이 고정비용+유동비용 보다 적어요"
     : !isFoodBudgetValid
-      ? "식비가 이미 기록된 끼니 예산 합보다 적어요"
+      ? unrecordedCount === 0
+        ? "오늘처럼 이미 다 기록된 끼니의 예산은 못 줄여요"
+        : "식비가 이미 기록된 끼니 예산 합보다 적어요"
       : null;
   const isOverBudget = consumed > committedFoodBudget;
   const trackProgress =
@@ -223,7 +236,7 @@ function TripEditForm({
       setEditingField(null);
       onSaved();
     } catch (error) {
-      RNAlert.alert(
+      showAlert(
         "예산 수정 실패",
         error instanceof Error ? error.message : "잠시 후 다시 시도해주세요.",
       );
@@ -273,7 +286,10 @@ function TripEditForm({
         onBackPress={() => router.back()}
         topInset={insets.top}
       />
-      <ScrollView contentContainerStyle={styles.scrollContent}>
+      <KeyboardAwareScrollView
+        contentContainerStyle={styles.scrollContent}
+        extraKeyboardSpace={-belowScrollHeight}
+      >
         <View
           style={[styles.summaryCard, isOverBudget && styles.summaryCardOver]}
         >
@@ -306,20 +322,22 @@ function TripEditForm({
           {editableRow("fixedCost")}
           {editableRow("floatingBudget")}
         </View>
-      </ScrollView>
+      </KeyboardAwareScrollView>
 
-      {validationError ? (
-        <View style={styles.alertWrapper}>
-          <Alert variant="error" title={validationError} />
-        </View>
-      ) : null}
+      <View onLayout={(event) => setBelowScrollHeight(event.nativeEvent.layout.height)}>
+        {validationError ? (
+          <View style={styles.alertWrapper}>
+            <Alert variant="error" title={validationError} />
+          </View>
+        ) : null}
 
-      <Footer
-        label={isSaving ? "저장 중..." : "수정 완료"}
-        disabled={!hasPendingChanges || !isValid || isSaving}
-        onPress={handleConfirm}
-        bottomInset={insets.bottom}
-      />
+        <Footer
+          label={isSaving ? "저장 중..." : "수정 완료"}
+          disabled={!hasPendingChanges || !isValid || isSaving}
+          onPress={handleConfirm}
+          bottomInset={insets.bottom}
+        />
+      </View>
     </View>
   );
 }
@@ -366,7 +384,10 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingVertical: spacing[8],
+    // BudgetFieldRow(packages/ui)의 container와 같은 높이를 유지하려고 그쪽
+    // paddingVertical(spacing[12])을 그대로 맞춘다 — 다르면 수정 모드로 들어갈 때
+    // 행 높이가 눈에 띄게 줄어든다.
+    paddingVertical: spacing[12],
     borderBottomWidth: 1,
     borderBottomColor: colors.border.primary.default,
   },
@@ -375,6 +396,7 @@ const styles = StyleSheet.create({
     textAlign: "right",
     fontFamily: typography.fontFamily,
     fontSize: typography.bodyEmphasized.fontSize,
+    lineHeight: typography.bodyEmphasized.lineHeight,
     color: colors.content.primary.default,
     padding: 0,
   },

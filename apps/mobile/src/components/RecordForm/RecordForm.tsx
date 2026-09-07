@@ -11,6 +11,7 @@ import { router } from 'expo-router'
 import {
   Button,
   Chip,
+  DropdownField,
   FormField,
   Icon,
   Modal,
@@ -20,6 +21,7 @@ import {
   getFontFamily,
   spacing,
   typography,
+  type DropdownOption,
 } from '@repo/ui'
 
 import { MEAL_TYPES, MEAL_TYPE_LABEL, type MealType } from '@/lib/budget'
@@ -29,7 +31,6 @@ import { setReceiptOcrResolver, type ReceiptOcrFillResult } from '@/lib/receiptO
 
 import { ReceiptUploadBox } from '../ReceiptUploadBox'
 import { StoreSearchModal, type StoreSearchResult } from '../StoreSearchModal'
-import { DropdownField, type DropdownOption } from '../DropdownField'
 
 export type MealLogCategory = '식비' | '교통' | '숙박' | '기념품' | '기타'
 
@@ -67,6 +68,8 @@ export interface RecordFormValues {
   amount: string
   storeName: string
   storeAddress: string
+  storeLatitude: number | null
+  storeLongitude: number | null
   memo: string
   mealSlotId: string | null
   visitDate: string
@@ -147,8 +150,15 @@ export const RecordForm = ({
   const [amount, setAmount] = useState(initialValues?.amount ?? '')
   const [storeName, setStoreName] = useState(initialValues?.storeName ?? '')
   // 주소는 매장 검색 결과 선택으로만 채워진다 (F6-10) — 사용자가 직접 타이핑하지
-  // 않으므로 항상 disabled 상태의 TextField로만 보여준다.
+  // 않으므로 항상 disabled 상태의 TextField로만 보여준다. 검색 결과가 지오코딩된
+  // 좌표를 같이 주므로 위경도도 함께 들고 있다가 제출 값에 실어 보낸다.
   const [storeAddress, setStoreAddress] = useState(initialValues?.storeAddress ?? '')
+  const [storeLatitude, setStoreLatitude] = useState<number | null>(
+    initialValues?.storeLatitude ?? null,
+  )
+  const [storeLongitude, setStoreLongitude] = useState<number | null>(
+    initialValues?.storeLongitude ?? null,
+  )
   const [memo, setMemo] = useState(initialValues?.memo ?? '')
   const [visitDate, setVisitDate] = useState(initialValues?.visitDate ?? '')
   const [mealType, setMealType] = useState(initialValues?.mealType ?? '')
@@ -218,6 +228,8 @@ export const RecordForm = ({
   const handleSelectStore = (result: StoreSearchResult) => {
     setStoreName(result.name)
     setStoreAddress(result.address)
+    setStoreLatitude(result.latitude)
+    setStoreLongitude(result.longitude)
     setIsStoreSearchVisible(false)
   }
 
@@ -240,6 +252,8 @@ export const RecordForm = ({
       amount,
       storeName,
       storeAddress,
+      storeLatitude,
+      storeLongitude,
       memo,
       mealSlotId,
       visitDate,

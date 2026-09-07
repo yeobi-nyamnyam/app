@@ -28,6 +28,8 @@ Closes #<!-- 이슈 번호 -->
 
 - [ ] `pnpm lint` 통과
 - [ ] `pnpm type-check` 통과
+- [ ] `pnpm test` 통과
+- [ ] 핵심 로직(계산/분기가 있는 순수 함수 등) 추가·수정 시 테스트 작성함
 - [ ] `any` 타입 미사용 확인
 - [ ] `className` / NativeWind 미사용, `StyleSheet` + `tokens.ts` 사용 확인
 - [ ] `console.log` 미포함

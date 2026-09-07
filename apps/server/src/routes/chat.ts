@@ -142,7 +142,8 @@ chatRouter.post("/chat", async (req, res) => {
         },
       },
     });
-  } catch {
+  } catch (error) {
+    console.error("[chat] Gemini 모델 생성 실패", error);
     const body: z.infer<typeof ErrorResponseSchema> = { message: "AI 채팅 서비스를 사용할 수 없습니다." };
     return res.status(500).json(body);
   }
@@ -159,7 +160,9 @@ chatRouter.post("/chat", async (req, res) => {
   try {
     const result = await model.generateContent({ contents });
     rawText = result.response.text();
-  } catch {
+  } catch (error) {
+    // Gemini 호출 실패 원인(레이트리밋 429, 타임아웃 등)을 서버 로그에서 구분할 수 있도록 남긴다.
+    console.error("[chat] Gemini generateContent 실패", error);
     const body: z.infer<typeof ErrorResponseSchema> = { message: "AI 응답을 받아오지 못했습니다." };
     return res.status(502).json(body);
   }
@@ -167,13 +170,15 @@ chatRouter.post("/chat", async (req, res) => {
   let rawJson: unknown;
   try {
     rawJson = JSON.parse(rawText);
-  } catch {
+  } catch (error) {
+    console.error("[chat] Gemini 응답 JSON 파싱 실패", error, rawText);
     const body: z.infer<typeof ErrorResponseSchema> = { message: "AI 응답 형식이 올바르지 않습니다." };
     return res.status(502).json(body);
   }
 
   const validated = ChatParsedResultSchema.safeParse(rawJson);
   if (!validated.success) {
+    console.error("[chat] Gemini 응답 스키마 검증 실패", validated.error, rawJson);
     const body: z.infer<typeof ErrorResponseSchema> = { message: "AI 응답 검증에 실패했습니다." };
     return res.status(502).json(body);
   }

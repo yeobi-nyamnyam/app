@@ -1,7 +1,8 @@
 import { useMemo, useState } from "react";
-import { ScrollView, StyleSheet, View } from "react-native";
+import { StyleSheet, View } from "react-native";
 import { router } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
 import {
   ChipList,
   FormField,
@@ -24,7 +25,7 @@ import {
   WEIGHT_LEVEL_BY_LABEL,
   type MealType,
 } from "@/lib/budget";
-import { findRegionByName } from "@/lib/region";
+import { lookupRegion, type RegionMatch } from "@/lib/region";
 
 const WEIGHT_OPTIONS = [
   { label: "가볍게", value: "가볍게" },
@@ -38,6 +39,11 @@ export default function TripNewScreen() {
   const [region, setRegion] = useState("");
   const [regionError, setRegionError] = useState<string | undefined>();
   const [isValidatingRegion, setIsValidatingRegion] = useState(false);
+  const [regionCandidates, setRegionCandidates] = useState<RegionMatch[]>([]);
+  const [selectedCandidateCode, setSelectedCandidateCode] = useState<string | undefined>();
+  // Footer는 KeyboardAwareScrollView 밖(아래)에 있어서 화면 맨 밑이 아니다 — 키보드가
+  // 뜰 때 그만큼은 덜 밀어올려야 한다. 안 그러면 Footer 높이만큼 빈 공간이 남는다.
+  const [footerHeight, setFooterHeight] = useState(0);
   const [startDate, setStartDate] = useState<string | null>(null);
   const [endDate, setEndDate] = useState<string | null>(null);
   const [totalBudgetText, setTotalBudgetText] = useState("");
@@ -74,22 +80,7 @@ export default function TripNewScreen() {
     [name, region, isValidDateRange, totalBudget, fixedCost, ratio],
   );
 
-  const handleConfirm = async () => {
-    if (!canConfirm || isValidatingRegion) {
-      return;
-    }
-    setRegionError(undefined);
-    setIsValidatingRegion(true);
-    let matchedRegion;
-    try {
-      matchedRegion = await findRegionByName(region.trim());
-    } finally {
-      setIsValidatingRegion(false);
-    }
-    if (!matchedRegion) {
-      setRegionError("조회할 수 없는 지역입니다");
-      return;
-    }
+  const navigateWithRegion = (matchedRegion: RegionMatch) => {
     const floatingBudget = Math.floor(
       ((totalBudget - fixedCost) * ratio) / 100,
     );
@@ -99,6 +90,7 @@ export default function TripNewScreen() {
         name,
         region: matchedRegion.regionName,
         regionCode: matchedRegion.regionCode,
+        regionDisplayName: matchedRegion.displayName,
         startDate: startDate ?? "",
         endDate: endDate ?? "",
         totalBudget: String(totalBudget),
@@ -121,6 +113,39 @@ export default function TripNewScreen() {
     });
   };
 
+  const handleConfirm = async () => {
+    if (!canConfirm || isValidatingRegion) {
+      return;
+    }
+    if (regionCandidates.length > 0) {
+      const picked = regionCandidates.find(
+        (candidate) => candidate.regionCode === selectedCandidateCode,
+      );
+      if (picked) {
+        navigateWithRegion(picked);
+      }
+      return;
+    }
+    setRegionError(undefined);
+    setIsValidatingRegion(true);
+    let result;
+    try {
+      result = await lookupRegion(region.trim());
+    } finally {
+      setIsValidatingRegion(false);
+    }
+    if (result.status === "not_found") {
+      setRegionError("조회할 수 없는 지역입니다");
+      return;
+    }
+    if (result.status === "ambiguous") {
+      setRegionCandidates(result.candidates);
+      setSelectedCandidateCode(undefined);
+      return;
+    }
+    navigateWithRegion(result.region);
+  };
+
   return (
     <View style={styles.container}>
       <Header
@@ -128,7 +153,10 @@ export default function TripNewScreen() {
         onBackPress={() => router.back()}
         topInset={insets.top}
       />
-      <ScrollView contentContainerStyle={styles.scrollContent}>
+      <KeyboardAwareScrollView
+        contentContainerStyle={styles.scrollContent}
+        extraKeyboardSpace={-footerHeight}
+      >
         <FormField label="여행 이름">
           <TextField
             value={name}
@@ -142,11 +170,30 @@ export default function TripNewScreen() {
             onChangeText={(text) => {
               setRegion(text);
               setRegionError(undefined);
+              setRegionCandidates([]);
+              setSelectedCandidateCode(undefined);
             }}
             placeholder="예: 대구"
             error={regionError}
           />
         </FormField>
+        {regionCandidates.length > 0 ? (
+          <>
+            <Notice
+              variant="sky"
+              content="같은 이름의 지역이 여러 곳이에요. 하나를 선택해주세요."
+            />
+            <ChipList
+              label="지역 선택"
+              options={regionCandidates.map((candidate) => ({
+                label: candidate.regionName,
+                value: candidate.regionCode,
+              }))}
+              value={selectedCandidateCode ?? ""}
+              onChange={setSelectedCandidateCode}
+            />
+          </>
+        ) : null}
         <FormField label="기간">
           <DateRangeField
             startDate={startDate}
@@ -233,13 +280,19 @@ export default function TripNewScreen() {
             )}`}
           />
         ) : null}
-      </ScrollView>
-      <Footer
-        label={isValidatingRegion ? "확인 중..." : "확인"}
-        disabled={!canConfirm || isValidatingRegion}
-        onPress={handleConfirm}
-        bottomInset={insets.bottom}
-      />
+      </KeyboardAwareScrollView>
+      <View onLayout={(event) => setFooterHeight(event.nativeEvent.layout.height)}>
+        <Footer
+          label={isValidatingRegion ? "확인 중..." : "확인"}
+          disabled={
+            !canConfirm ||
+            isValidatingRegion ||
+            (regionCandidates.length > 0 && !selectedCandidateCode)
+          }
+          onPress={handleConfirm}
+          bottomInset={insets.bottom}
+        />
+      </View>
     </View>
   );
 }

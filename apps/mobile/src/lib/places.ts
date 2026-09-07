@@ -1,6 +1,8 @@
 export interface PlaceSearchResult {
   name: string;
   address: string;
+  latitude: number;
+  longitude: number;
 }
 
 // apps/server의 네이버 지역 검색 프록시 엔드포인트. Override with EXPO_PUBLIC_SERVER_URL for staging/prod.
@@ -20,10 +22,18 @@ export async function searchPlaces(query: string): Promise<PlaceSearchResult[]> 
   }
 
   const data = (await response.json()) as {
-    results: { name: string; roadAddress: string; address: string }[];
+    results: {
+      name: string;
+      roadAddress: string;
+      address: string;
+      latitude: number;
+      longitude: number;
+    }[];
   };
   return data.results.map((result) => ({
     name: result.name,
     address: result.roadAddress || result.address,
+    latitude: result.latitude,
+    longitude: result.longitude,
   }));
 }

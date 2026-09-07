@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Alert, ScrollView, StyleSheet, Text as RNText, View } from "react-native";
+import { ScrollView, StyleSheet, Text as RNText, View } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { DayCard, Footer, Header, Text, colors, getFontFamily, radius, spacing, typography } from "@repo/ui";
@@ -14,6 +14,7 @@ import {
   type WeightLevel,
 } from "@/lib/budget";
 import { createTrip } from "@/lib/trip";
+import { useAlertModal } from "@/hooks/useAlertModal";
 
 const toWeightLevel = (value: string | string[] | undefined, fallback: WeightLevel): WeightLevel => {
   return value === "light" || value === "normal" || value === "hearty" ? value : fallback;
@@ -21,10 +22,12 @@ const toWeightLevel = (value: string | string[] | undefined, fallback: WeightLev
 
 export default function BudgetResultScreen() {
   const insets = useSafeAreaInsets();
+  const { showAlert } = useAlertModal();
   const [isCreating, setIsCreating] = useState(false);
   const params = useLocalSearchParams<{
     name: string;
     regionCode: string;
+    regionDisplayName: string;
     startDate: string;
     endDate: string;
     totalBudget: string;
@@ -80,6 +83,7 @@ export default function BudgetResultScreen() {
       await createTrip({
         name: params.name,
         regionCode: params.regionCode,
+        regionDisplayName: params.regionDisplayName,
         startDate: params.startDate,
         endDate: params.endDate,
         totalBudget,
@@ -93,7 +97,7 @@ export default function BudgetResultScreen() {
       });
       router.replace("/");
     } catch (error) {
-      Alert.alert(
+      showAlert(
         "여행 생성 실패",
         error instanceof Error ? error.message : "잠시 후 다시 시도해주세요.",
       );

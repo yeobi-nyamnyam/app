@@ -1,5 +1,5 @@
 import { useCallback, useState } from "react";
-import { Alert, ScrollView, StyleSheet, View } from "react-native";
+import { ScrollView, StyleSheet, View } from "react-native";
 import { router, useFocusEffect } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useQuery } from "@apollo/client/react";
@@ -17,6 +17,7 @@ import {
 import { ActiveTripDocument, UserTripsDocument } from "@repo/types";
 
 import { useSession } from "@/hooks/useSession";
+import { useAlertModal } from "@/hooks/useAlertModal";
 
 const TABS = ["기록 작성하기", "기록보기"];
 
@@ -30,6 +31,7 @@ export default function RecordWriteScreen() {
   const insets = useSafeAreaInsets();
   const [activeTab, setActiveTab] = useState(0);
   const { session } = useSession();
+  const { showAlert } = useAlertModal();
   const userId = session?.user.id ?? "";
 
   const { data, loading, refetch: refetchActiveTrip } = useQuery(ActiveTripDocument, {
@@ -85,7 +87,7 @@ export default function RecordWriteScreen() {
       router.push("/mypage");
       return;
     }
-    Alert.alert("준비 중", "아직 구현되지 않은 탭이에요.");
+    showAlert("준비 중", "아직 구현되지 않은 탭이에요.");
   };
 
   const goToTripHistory = (tripHistoryId: string, tripName: string) =>
@@ -120,12 +122,7 @@ export default function RecordWriteScreen() {
           </ScrollView>
         ) : (
           <View style={styles.emptyState}>
-            <EmptyTripPrompt
-              onCreateTrip={() => router.push("/trip-create")}
-              onLoadPastTrip={() =>
-                Alert.alert("준비 중", "과거 여행 불러오기는 아직 준비 중이에요.")
-              }
-            />
+            <EmptyTripPrompt onCreateTrip={() => router.push("/trip-create")} />
           </View>
         )
       ) : tripsLoading && !tripsData ? (
@@ -169,9 +166,7 @@ export default function RecordWriteScreen() {
           ) : null}
         </ScrollView>
       )}
-      <View style={{ paddingBottom: insets.bottom }}>
-        <NavBar active="record" onChange={handleNavChange} />
-      </View>
+      <NavBar active="record" onChange={handleNavChange} bottomInset={insets.bottom} />
     </View>
   );
 }

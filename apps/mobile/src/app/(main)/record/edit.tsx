@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Alert, Modal as RNModal, Pressable, ScrollView, StyleSheet, View } from "react-native";
+import { Modal as RNModal, Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useMutation } from "@apollo/client/react";
@@ -24,6 +24,7 @@ import { DeleteMealLogDocument, UpdateMealLogDocument } from "@repo/types";
 
 import { formatDateTime, formatDigitsForDisplay, formatWon, parseDigits } from "@/lib/format";
 import type { MealLogCategory } from "@/components/RecordForm";
+import { useAlertModal } from "@/hooks/useAlertModal";
 
 const OTHER_CATEGORY_OPTIONS: MealLogCategory[] = ["교통", "숙박", "기념품", "기타"];
 
@@ -34,6 +35,7 @@ const OTHER_CATEGORY_OPTIONS: MealLogCategory[] = ["교통", "숙박", "기념�
  */
 export default function RecordEditScreen() {
   const insets = useSafeAreaInsets();
+  const { showAlert } = useAlertModal();
   const params = useLocalSearchParams<{
     logId: string;
     title: string;
@@ -54,6 +56,7 @@ export default function RecordEditScreen() {
   const [category, setCategory] = useState<MealLogCategory>(params.category);
   const [amount, setAmount] = useState(params.amount);
   const [storeName, setStoreName] = useState(params.storeName ?? "");
+  const [storeAddress, setStoreAddress] = useState(params.storeAddress ?? "");
   const [memo, setMemo] = useState(params.memo ?? "");
   const [isDeleteConfirmVisible, setIsDeleteConfirmVisible] = useState(false);
 
@@ -75,6 +78,15 @@ export default function RecordEditScreen() {
     setAmount(digits > 0 ? String(digits) : "");
   };
 
+  // 주소는 매장명 검색 결과로만 채워지는 값(F6-10)이라 매장명을 지우면 더는
+  // 유효하지 않다 — 같이 초기화한다.
+  const handleStoreNameChange = (text: string) => {
+    setStoreName(text);
+    if (!text) {
+      setStoreAddress("");
+    }
+  };
+
   const handleSave = async () => {
     try {
       await updateMealLog({
@@ -82,14 +94,14 @@ export default function RecordEditScreen() {
           mealLogId: params.logId,
           amount: amountValue,
           storeName: storeName || null,
-          storeAddress: params.storeAddress || null,
+          storeAddress: storeAddress || null,
           memo: memo || null,
           category: isMeal ? null : category,
         },
       });
       router.back();
     } catch (error) {
-      Alert.alert("수정 실패", error instanceof Error ? error.message : "잠시 후 다시 시도해주세요.");
+      showAlert("수정 실패", error instanceof Error ? error.message : "잠시 후 다시 시도해주세요.");
     }
   };
 
@@ -101,7 +113,7 @@ export default function RecordEditScreen() {
       await deleteMealLog({ variables: { mealLogId: params.logId } });
       router.back();
     } catch (error) {
-      Alert.alert("삭제 실패", error instanceof Error ? error.message : "잠시 후 다시 시도해주세요.");
+      showAlert("삭제 실패", error instanceof Error ? error.message : "잠시 후 다시 시도해주세요.");
     }
   };
 
@@ -126,7 +138,7 @@ export default function RecordEditScreen() {
       router.push("/mypage");
       return;
     }
-    Alert.alert("준비 중", "아직 구현되지 않은 탭이에요.");
+    showAlert("준비 중", "아직 구현되지 않은 탭이에요.");
   };
 
   return (
@@ -165,12 +177,12 @@ export default function RecordEditScreen() {
           ) : null}
 
           <FormField label={isMeal ? "매장 이름" : "이용 내역"}>
-            <TextField value={storeName} onChangeText={setStoreName} placeholder="예: 북구네 돼지국밥" />
+            <TextField value={storeName} onChangeText={handleStoreNameChange} placeholder="예: 북구네 돼지국밥" />
           </FormField>
 
-          {isMeal && params.storeAddress ? (
+          {isMeal && storeAddress ? (
             <FormField label="주소">
-              <TextField value={params.storeAddress} onChangeText={() => {}} disabled />
+              <TextField value={storeAddress} onChangeText={() => {}} disabled />
             </FormField>
           ) : null}
 
@@ -204,9 +216,7 @@ export default function RecordEditScreen() {
         </View>
       </View>
 
-      <View style={{ paddingBottom: insets.bottom }}>
-        <NavBar active="record" onChange={handleNavChange} />
-      </View>
+      <NavBar active="record" onChange={handleNavChange} bottomInset={insets.bottom} />
 
       <RNModal
         visible={isDeleteConfirmVisible}

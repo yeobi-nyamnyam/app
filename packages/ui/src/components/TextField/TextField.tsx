@@ -14,6 +14,9 @@ type FieldStateKey = 'default' | 'focused' | 'filled' | 'error' | 'disabled'
  * @param disabled 입력창이 비활성화 상태인지: true | false (optional, 기본값 false)
  * @param error 에러 메시지. 값이 있으면 입력창이 에러 상태(빨간 테두리)로 표시되고
  * 입력창 아래에 이 메시지가 표시됨 (optional)
+ * @param hideErrorMessage true면 에러 상태(빨간 테두리)는 유지하되 입력창 아래
+ * 에러 메시지 텍스트는 표시하지 않음 — 호출부에서 에러 메시지를 다른 요소와 한 줄로
+ * 배치하는 등 직접 레이아웃하고 싶을 때 사용 (optional, 기본값 false)
  * @param leadingIcon 입력창 좌측에 표시할 24x24 아이콘 (optional)
  * @param tailingIcon 입력창 우측에 표시할 24x24 아이콘 (optional)
  * @param keyboardType 표시할 키보드 종류, RN TextInput의 keyboardType 그대로 (optional, 기본값 'default')
@@ -24,6 +27,7 @@ export interface TextFieldProps {
   placeholder?: string
   disabled?: boolean
   error?: string
+  hideErrorMessage?: boolean
   leadingIcon?: ReactNode
   tailingIcon?: ReactNode
   keyboardType?: KeyboardTypeOptions
@@ -71,6 +75,7 @@ export const TextField = ({
   placeholder,
   disabled = false,
   error,
+  hideErrorMessage = false,
   leadingIcon,
   tailingIcon,
   keyboardType = 'default',
@@ -104,7 +109,7 @@ export const TextField = ({
         />
         {tailingIcon ? <View style={styles.icon}>{tailingIcon}</View> : null}
       </View>
-      {error ? <Text style={styles.helpText}>{error}</Text> : null}
+      {error && !hideErrorMessage ? <Text style={styles.helpText}>{error}</Text> : null}
     </View>
   )
 }

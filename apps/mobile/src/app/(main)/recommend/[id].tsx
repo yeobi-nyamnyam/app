@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { Alert, View } from "react-native";
+import { View } from "react-native";
 import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import { useQuery } from "@apollo/client/react";
 import { Text } from "@repo/ui";
@@ -12,6 +12,7 @@ import {
   type RestaurantDetailSource,
 } from "@/components/RestaurantDetailView";
 import { useSession } from "@/hooks/useSession";
+import { useAlertModal } from "@/hooks/useAlertModal";
 import {
   MEAL_TYPE_LABEL,
   findNextUnrecordedMealSlot,
@@ -157,6 +158,7 @@ export default function RestaurantDetailScreen() {
   }, [restaurantNodeId, restaurantNodeSource]);
 
   const { session } = useSession();
+  const { showAlert } = useAlertModal();
   const { data, refetch: refetchActiveTrip } = useQuery(ActiveTripDocument, {
     variables: { userId: session?.user.id ?? "" },
     skip: !session,
@@ -247,7 +249,7 @@ export default function RestaurantDetailScreen() {
 
   const handlePressCTA = () => {
     if (!tripId) {
-      Alert.alert("진행 중인 여행이 없어요", "여행을 먼저 만들어주세요.");
+      showAlert("진행 중인 여행이 없어요", "여행을 먼저 만들어주세요.");
       return;
     }
     const params = new URLSearchParams({
