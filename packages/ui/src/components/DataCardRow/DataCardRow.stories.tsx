@@ -37,6 +37,14 @@ export const MenuWithoutPrice: Story = {
   args: { variant: 'menu', showPrice: false },
 }
 
+export const LongValueLeftAligned: Story = {
+  args: {
+    label: '주소',
+    value: '서울특별시 서대문구 통일로40길 9, 2층(홍제동) 근처 골목 안쪽 상가 건물',
+    valueAlign: 'left',
+  },
+}
+
 export const AllVariants: Story = {
   render: (args) => (
     <View>

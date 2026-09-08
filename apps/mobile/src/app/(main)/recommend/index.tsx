@@ -120,6 +120,10 @@ export default function RecommendScreen() {
   }));
   // F3-3: 가장 이른 미기록 끼니 슬롯을 추천 기준(끼니명 + 예산 상한)으로 삼는다.
   const nextMealSlot = findNextUnrecordedMealSlot(mealSlots);
+  // F3-7: 여행의 마지막 끼니까지 전부 기록된 상태(추천 기준 끼니 자체가 없음)와
+  // 끼니는 남았지만 예산 이하 업소가 없는 상태를 구분한다 — 전자에 "예산을 수정하고
+  // 다시 추천을 받아보세요"를 보여주면 예산 문제처럼 오해하기 쉽다는 피드백 반영.
+  const allMealsRecorded = !nextMealSlot;
   const mealBudgetAmount = nextMealSlot ? getRecommendBudgetAmount(nextMealSlot) : null;
   const sectionTitle = nextMealSlot
     ? viewMode === 0
@@ -386,6 +390,12 @@ export default function RecommendScreen() {
                 ) : null
               }
             />
+          ) : allMealsRecorded ? (
+            <View style={styles.emptyState}>
+              <Text variant="title3Emphasized" align="center">
+                여행의 모든 끼니가 기록되었어요
+              </Text>
+            </View>
           ) : (
             <>
               <View style={styles.emptyState}>
