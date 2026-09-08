@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, View } from "react-native";
-import { Redirect, router } from "expo-router";
+import { Redirect, router, useFocusEffect } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useMutation, useQuery } from "@apollo/client/react";
 import {
@@ -86,6 +86,16 @@ export default function HomeScreen() {
   });
   const [completeTrip] = useMutation(CompleteTripDocument);
   const [completedTripId, setCompletedTripId] = useState<string | null>(null);
+
+  // record/edit(기록 삭제)에서 돌아왔을 때 이 화면이 그대로 마운트되어 있어서
+  // cache-and-network만으로는 재조회가 안 된다 — 포커스를 다시 받을 때마다
+  // 명시적으로 refetch한다 (record/index.tsx와 동일한 패턴).
+  useFocusEffect(
+    useCallback(() => {
+      refetch();
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []),
+  );
 
   const tripNode = data?.tripsCollection.edges[0]?.node;
   // ActiveTrip 쿼리가 status: {eq: "ongoing"}으로만 조회하므로, 종료일이 지났는데도
@@ -239,10 +249,19 @@ function ActiveTripHome({
   // record/new.tsx의 기록 저장 뮤테이션이 이 쿼리를 refetch하지 않아서, 기본
   // fetchPolicy(cache-first)로는 방금 기록한 끼니가 캐시에 없어 "기록을 불러오지
   // 못했어요"로 잘못 뜬다 — record/history.tsx와 동일하게 맞춘다.
-  const { data: mealLogsData } = useQuery(TripMealLogsDocument, {
+  const { data: mealLogsData, refetch: refetchMealLogs } = useQuery(TripMealLogsDocument, {
     variables: { tripId: trip.id },
     fetchPolicy: "cache-and-network",
   });
+
+  // record/edit.tsx의 삭제 뮤테이션도 이 쿼리를 refetch하지 않으므로, 포커스를
+  // 다시 받을 때마다 명시적으로 refetch해 삭제된 기록이 계속 남아있지 않게 한다.
+  useFocusEffect(
+    useCallback(() => {
+      refetchMealLogs();
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []),
+  );
 
   const today = todayDate();
   const dayIndex = getTripDates(trip).indexOf(today);
