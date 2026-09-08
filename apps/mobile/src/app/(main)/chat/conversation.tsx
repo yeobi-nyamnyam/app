@@ -27,10 +27,6 @@ import type { MealLogCategory } from "@/components/RecordForm";
 import { formatWon, todayDate } from "@/lib/format";
 import { MEAL_TYPES, MEAL_TYPE_LABEL, type MealType } from "@/lib/budget";
 import { formatChatTime, streamChatReply, type ChatHistoryItem, type ChatParsedResult } from "@/lib/chat";
-import {
-  resolvePendingConfirmation,
-  type PendingOtherExpenseSuggestion,
-} from "@/lib/chatConfirmation";
 import { useSession } from "@/hooks/useSession";
 import { useAlertModal } from "@/hooks/useAlertModal";
 
@@ -176,8 +172,6 @@ function ActiveConversation({
   const [history, setHistory] = useState<ChatHistoryItem[]>([]);
   const [inputValue, setInputValue] = useState("");
   const [pendingExpense, setPendingExpense] = useState<PendingExpense | null>(null);
-  const [pendingOtherExpenseSuggestion, setPendingOtherExpenseSuggestion] =
-    useState<PendingOtherExpenseSuggestion | null>(null);
 
   const appendMessage = (message: ChatBubbleProps & { id: string }) => {
     setMessages((prev) => [...prev, message]);
@@ -276,9 +270,8 @@ function ActiveConversation({
         appendMessage({
           id: `ai-locked-${Date.now()}`,
           sender: "ai",
-          text: "오늘 끼니 기록은 이미 다 끝났어요. 이 지출은 저장할 수 없어요 — 수정하려면 기록보기에서 오늘 기록을 삭제한 뒤 순서대로 다시 입력해주세요. 대신 이 지출은 기타소비로 기록해드릴까요?",
+          text: "오늘 끼니 기록은 이미 다 끝났어요. 이 지출은 저장할 수 없어요 — 수정하려면 기록보기에서 오늘 기록을 삭제한 뒤 순서대로 다시 입력해주세요.",
         });
-        setPendingOtherExpenseSuggestion({ amount: result.amount, declined: false, clarifyAttempts: 0 });
         return;
       }
       // 메시지에서 끼니 때(아침/점심/저녁)가 특정됐는데 그 끼니가 이미 기록돼 있으면
@@ -309,81 +302,6 @@ function ActiveConversation({
     setPendingExpense({ category: result.category, amount: String(result.amount), chatMessageId: userMessageId });
   };
 
-  // 끼니 슬롯이 다 차서 저장 못 한 지출을, 사용자 확인 후 슬롯 연결 없이(mealSlotId: null)
-  // 기타소비로 바로 기록한다. 카테고리·금액이 이미 확정돼 있어 handleConfirm과 달리
-  // 기록 시트를 다시 띄우지 않는다.
-  const recordAsOtherExpense = async (amount: number, userText: string) => {
-    let messageId: string | null = null;
-    try {
-      const { data } = await insertChatMessage({
-        variables: {
-          tripId,
-          userId,
-          role: "user",
-          content: userText,
-          parsedCategory: "기타",
-          parsedAmount: amount,
-          status: "pending",
-        },
-      });
-      messageId = data?.insertIntochat_messagesCollection?.records[0]?.id ?? null;
-    } catch {
-      // chat_messages 기록 실패로 대화 흐름 자체를 막지 않는다.
-    }
-
-    try {
-      await createMealLog({
-        variables: {
-          tripId,
-          mealSlotId: null,
-          category: "기타",
-          amount,
-          storeName: null,
-          storeAddress: null,
-          memo: null,
-          source: "chat",
-          visitDate: todayDate(),
-        },
-      });
-      if (messageId) {
-        await updateChatMessageStatus({ variables: { id: messageId, status: "confirmed" } });
-      }
-      appendMessage({
-        id: `confirmed-${Date.now()}`,
-        sender: "ai",
-        variant: "confirmed",
-        categoryLabel: "기타",
-        time: formatChatTime(new Date()),
-        price: amount.toLocaleString("ko-KR"),
-      });
-    } catch (error) {
-      showAlert("저장 실패", error instanceof Error ? error.message : "잠시 후 다시 시도해주세요.");
-    }
-  };
-
-  // "기타소비로 기록할까요?" 확인 대기 중에 온 사용자 메시지의 처리 결과. confirmIntent는
-  // 이번 메시지가 LLM에 실어 보낸 pendingConfirmation 컨텍스트를 참고해 판단한 값이라,
-  // 거절과 함께 다른 질문이 섞여 있어도 reply가 그 질문에 자연스럽게 같이 답한다.
-  const handlePendingConfirmationResult = async (
-    userText: string,
-    result: ChatParsedResult,
-    suggestion: PendingOtherExpenseSuggestion,
-  ) => {
-    setHistory((prev) => [...prev, { role: "user", text: userText }, { role: "ai", text: result.reply }]);
-
-    const resolution = resolvePendingConfirmation(suggestion, result.confirmIntent ?? "unclear");
-    if (resolution.action === "record") {
-      setPendingOtherExpenseSuggestion(null);
-      await recordAsOtherExpense(suggestion.amount, userText);
-      return;
-    }
-    if (resolution.action === "close") {
-      setPendingOtherExpenseSuggestion(null);
-      return;
-    }
-    setPendingOtherExpenseSuggestion(resolution.suggestion);
-  };
-
   const handleSend = async () => {
     const text = inputValue.trim();
     if (!text) return;
@@ -393,25 +311,18 @@ function ActiveConversation({
     appendMessage({ id: `user-${Date.now()}`, sender: "user", text });
     appendMessage({ id: waitingId, sender: "ai", variant: "waiting" });
 
-    const suggestion = pendingOtherExpenseSuggestion;
-
     await streamChatReply({
       tripName,
       todayBudget: dayBudget,
       todayConsumed: consumed,
       message: text,
       history,
-      pendingConfirmation: suggestion ? { amount: suggestion.amount } : undefined,
       onToken: (accumulated) => {
         setMessages((prev) =>
           prev.map((item) => (item.id === waitingId ? { ...item, variant: "text", text: accumulated } : item)),
         );
       },
       onDone: (result) => {
-        if (suggestion) {
-          void handlePendingConfirmationResult(text, result, suggestion);
-          return;
-        }
         void handleParsedResult(text, result, waitingId);
       },
       onError: (error) => {
