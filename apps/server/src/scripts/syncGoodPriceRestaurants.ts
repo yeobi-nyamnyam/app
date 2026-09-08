@@ -26,6 +26,12 @@ const toPriceMenus = (store: GoodPriceStore) =>
     )
     .map((menu) => ({ name: menu.name, price: Number(menu.price) }));
 
+// F3-6: price_menus(jsonb) 안의 최저가는 pg_graphql이 서버 측 orderBy/filter 대상으로
+// 못 써서(apps/mobile/src/graphql/recommend/good-price-restaurants.query.graphql 주석
+// 참고), restaurants.min_price 실컬럼에 미리 계산해 채운다.
+const toMinPrice = (menus: ReturnType<typeof toPriceMenus>) =>
+  menus.length > 0 ? Math.min(...menus.map((menu) => menu.price)) : null;
+
 const geocode = async (name: string, address: string) => {
   try {
     const results = await searchNaverLocal(`${name} ${address}`, 1);
@@ -61,6 +67,7 @@ async function main() {
       geocodeFailedCount += 1;
     }
 
+    const priceMenus = toPriceMenus(store);
     const { error } = await supabase.from("restaurants").upsert(
       {
         source: "good_price",
@@ -73,7 +80,8 @@ async function main() {
         phone: store.연락처,
         latitude: geo?.latitude ?? null,
         longitude: geo?.longitude ?? null,
-        price_menus: toPriceMenus(store),
+        price_menus: priceMenus,
+        min_price: toMinPrice(priceMenus),
         last_synced_at: new Date().toISOString(),
       },
       { onConflict: "source,external_id" },
