@@ -13,9 +13,9 @@ import { StatusBar } from "expo-status-bar";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
   Badge,
-  Button,
   DataCardRow,
   FloatingButton,
+  Footer,
   Icon,
   Text,
   colors,
@@ -222,12 +222,13 @@ export const RestaurantDetailView = ({
               </View>
             </View>
           ) : null}
-
-          <View style={styles.ctaSlot}>
-            <Button label="여기로 정하고 기록" variant="primary" onPress={onPressCTA} />
-          </View>
         </View>
       </Animated.ScrollView>
+      {/* F3-7: CTA는 스크롤 콘텐츠 안이 아니라 ScrollView 밖 형제 요소로 둬서,
+          메뉴가 많아 스크롤이 길어져도 화면 하단에 고정되게 한다 (Figma "CTA Footer",
+          node 1268:5296 / 1268:5493). trip-create 등 다른 화면과 동일하게
+          packages/ui의 Footer(테두리+세이프에어리어 패딩 포함)를 재사용. */}
+      <Footer label="여기로 정하고 기록" onPress={onPressCTA} bottomInset={insets.bottom} />
       <Animated.View
         pointerEvents="none"
         style={[
@@ -298,9 +299,6 @@ const styles = StyleSheet.create({
   },
   menuCardSlot: {
     marginTop: spacing[4],
-  },
-  ctaSlot: {
-    marginTop: spacing[12],
   },
   fieldCard: {
     width: "100%",
