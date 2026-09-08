@@ -13,4 +13,7 @@ export function getGeminiClient() {
   return new GoogleGenerativeAI(apiKey);
 }
 
-export const GEMINI_CHAT_MODEL = "gemini-3.6-flash";
+// 무료 티어 기준 gemini-3.6-flash는 RPD(하루 요청 한도)가 20건뿐이라 QA 중에도
+// 금방 소진된다. gemini-3.5-flash-lite는 같은 무료 등급에서 RPD 500으로 훨씬
+// 여유롭고, 채팅(C1/C2)의 구조화 출력 파싱 작업엔 이 정도로 충분하다 (이슈 #223).
+export const GEMINI_CHAT_MODEL = "gemini-3.5-flash-lite";
