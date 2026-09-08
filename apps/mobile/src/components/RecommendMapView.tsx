@@ -1,16 +1,43 @@
-import { useRef, useState } from "react";
-import { type LayoutChangeEvent, Pressable, StyleSheet, View } from "react-native";
+import { useCallback, useMemo, useRef, useState } from "react";
+import { Image, type LayoutChangeEvent, Pressable, StyleSheet, View } from "react-native";
 import Constants from "expo-constants";
 import * as Location from "expo-location";
 import {
   NaverMapMarkerOverlay,
   NaverMapView,
+  type ClusterMarkerProp,
   type NaverMapViewRef,
 } from "@mj-studio/react-native-naver-map";
 import { Icon, Preview, Text, colors, radius, spacing, stroke } from "@repo/ui";
 
+import markerGoodPriceSource from "../../assets/markers/marker-good-price.png";
+import markerGoodPriceSelectedSource from "../../assets/markers/marker-good-price-selected.png";
+import markerTourApiSource from "../../assets/markers/marker-tour-api.png";
+import markerTourApiSelectedSource from "../../assets/markers/marker-tour-api-selected.png";
+
+// `*.png` import는 global.d.ts에서 범용 `ImageSourcePropType`(원격 uri 포함)으로
+// 선언돼 있는데, `ClusterMarkerProp.image`(`MapImageProp`)는 로컬 require 에셋만
+// (`ImageRequireSource` = number) 받는다. 로컬 정적 에셋 import라 실제로는 항상
+// number이므로 명시적으로 좁혀서 쓴다.
+const markerGoodPrice = markerGoodPriceSource as number;
+const markerTourApi = markerTourApiSource as number;
+
 // NCP Style Editor로 만든 커스텀 지도 스타일 id (optional — 없으면 기본 스타일)
 const NAVER_MAP_STYLE_ID = Constants.expoConfig?.extra?.naverMapStyleId as string | undefined;
+
+const INITIAL_ZOOM = 15;
+
+// 마커가 많을 때 전부 개별로 그리면 성능/시인성이 떨어져 네이버 지도 SDK의 네이티브
+// 클러스터링(`NaverMapView`의 `clusters` prop)에 맡긴다. 클러스터에 포함되는 개별
+// 마커는 RN 컴포넌트가 아니라 정적 이미지(`ClusterMarkerProp.image`)만 지정할 수
+// 있고, 클러스터 자체(뭉쳐진 상태)의 원형+숫자 디자인은 SDK 기본값을 그대로 쓴다
+// (이슈 #142 — 담당자 확인 완료, 클러스터 색상/모양 커스터마이징 불가).
+const CLUSTER_BADGE_SIZE = 32;
+const CLUSTER_SCREEN_DISTANCE = 60;
+const CLUSTER_MIN_ZOOM = 0;
+const CLUSTER_MAX_ZOOM = 16;
+const LEAF_MARKER_SIZE = 8;
+const SELECTED_MARKER_SIZE = 24;
 
 export type RecommendMapMarkerSource = "good_price" | "tour_api";
 
@@ -43,10 +70,13 @@ const LegendItem = ({ color, label }: { color: string; label: string }) => (
   </View>
 );
 
+const clusterMarkerImage = (source: RecommendMapMarkerSource): ClusterMarkerProp["image"] =>
+  source === "good_price" ? markerGoodPrice : markerTourApi;
+
 /**
  * 추천 탭 "지도보기" 화면의 지도 영역 (Figma "recommand-map", node 733:15646 /
  * 733:15879). 네이버 지도 클라이언트 SDK(`@mj-studio/react-native-naver-map`)로
- * 렌더링하고, 마커는 커스텀 뷰 오버레이로 얹는다.
+ * 렌더링하고, 마커는 네이티브 클러스터링(`clusters` prop)으로 얹는다.
  *
  * @param markers 지도에 표시할 마커 목록
  * @param currentLocation 초기 카메라 중심 좌표
@@ -77,6 +107,43 @@ export const RecommendMapView = ({
   const [previewHeight, setPreviewHeight] = useState(0);
   const controlsBottomOffset = spacing[10] + (selectedMarker ? previewHeight : 0);
 
+  // 선택 여부와 무관하게 항상 고정된 이미지/크기로 둔다 — 여기에 selectedMarkerId를
+  // 의존성으로 넣으면 마커 하나 선택할 때마다 markers 전체(지역 전체 분량, 수백~
+  // 수천 건)를 다시 만들어 clusters prop 통째로 네이티브에 재전송하게 되어 탭할
+  // 때마다 눈에 띄는 지연이 생긴다. 선택된 마커의 확대 표시는 별도의 가벼운
+  // NaverMapMarkerOverlay 하나로 그 위에 얹는다 (아래 참고).
+  const clusterMarkers: ClusterMarkerProp[] = useMemo(
+    () =>
+      markers.map((marker) => ({
+        identifier: marker.id,
+        latitude: marker.latitude,
+        longitude: marker.longitude,
+        image: clusterMarkerImage(marker.source),
+        width: LEAF_MARKER_SIZE,
+        height: LEAF_MARKER_SIZE,
+      })),
+    [markers],
+  );
+
+  const clusters = useMemo(
+    () => [
+      {
+        width: CLUSTER_BADGE_SIZE,
+        height: CLUSTER_BADGE_SIZE,
+        markers: clusterMarkers,
+        screenDistance: CLUSTER_SCREEN_DISTANCE,
+        minZoom: CLUSTER_MIN_ZOOM,
+        maxZoom: CLUSTER_MAX_ZOOM,
+      },
+    ],
+    [clusterMarkers],
+  );
+
+  const handleTapClusterLeaf = useCallback(
+    ({ markerIdentifier }: { markerIdentifier: string }) => onSelectMarker(markerIdentifier),
+    [onSelectMarker],
+  );
+
   const handlePressLocate = async () => {
     const { status } = await Location.requestForegroundPermissionsAsync();
     if (status !== Location.PermissionStatus.GRANTED) return;
@@ -99,66 +166,35 @@ export const RecommendMapView = ({
           initialCamera={{
             latitude: currentLocation.latitude,
             longitude: currentLocation.longitude,
-            zoom: 15,
+            zoom: INITIAL_ZOOM,
           }}
           logoAlign="TopRight"
           isShowZoomControls={false}
           isShowScaleBar={false}
           isShowLocationButton={false}
           onTapMap={() => onSelectMarker(undefined)}
+          clusters={clusters}
+          onTapClusterLeaf={handleTapClusterLeaf}
         >
-          {markers.map((marker) => {
-            const isSelected = marker.id === selectedMarkerId;
-            return (
-              <NaverMapMarkerOverlay
-                key={marker.id}
-                latitude={marker.latitude}
-                longitude={marker.longitude}
-                width={isSelected ? 24 : 8}
-                height={isSelected ? 24 : 8}
-                anchor={{ x: 0.5, y: 0.5 }}
-                onTap={() => onSelectMarker(marker.id)}
-              >
-                {isSelected ? (
-                  <View
-                    collapsable={false}
-                    style={[
-                      styles.selectedMarker,
-                      {
-                        backgroundColor:
-                          marker.source === "good_price"
-                            ? colors.surface.primary.bold
-                            : colors.surface.primary.default,
-                      },
-                    ]}
-                  >
-                    <Icon
-                      name="restaurant"
-                      size="medium"
-                      color={
-                        marker.source === "good_price"
-                          ? colors.content.neutral.inverse
-                          : colors.content.neutral.default
-                      }
-                    />
-                  </View>
-                ) : (
-                  <View
-                    collapsable={false}
-                    style={[
-                      styles.dotMarker,
-                      {
-                        backgroundColor:
-                          marker.source === "good_price"
-                            ? colors.surface.primary.bold
-                            : colors.surface.primary.default,
-                      },
-                    ]}
-                  />
-                )}
-              </NaverMapMarkerOverlay>
-            );
-          })}
+          {selectedMarker ? (
+            <NaverMapMarkerOverlay
+              latitude={selectedMarker.latitude}
+              longitude={selectedMarker.longitude}
+              width={SELECTED_MARKER_SIZE}
+              height={SELECTED_MARKER_SIZE}
+              anchor={{ x: 0.5, y: 0.5 }}
+              onTap={() => onSelectMarker(selectedMarker.id)}
+            >
+              <Image
+                source={
+                  selectedMarker.source === "good_price"
+                    ? markerGoodPriceSelectedSource
+                    : markerTourApiSelectedSource
+                }
+                style={styles.selectedMarkerImage}
+              />
+            </NaverMapMarkerOverlay>
+          ) : null}
         </NaverMapView>
         <View style={[styles.legend, { bottom: controlsBottomOffset }]}>
           <LegendItem color={colors.surface.primary.bold} label="착한가격업소" />
@@ -244,16 +280,8 @@ const styles = StyleSheet.create({
       { offsetX: 0, offsetY: 0, blurRadius: 2, color: colors.surface.neutral.alpha["inverse-alpha-30"] },
     ],
   },
-  dotMarker: {
-    width: 8,
-    height: 8,
-    borderRadius: radius.full,
-  },
-  selectedMarker: {
-    width: 24,
-    height: 24,
-    borderRadius: radius.full,
-    alignItems: "center",
-    justifyContent: "center",
+  selectedMarkerImage: {
+    width: SELECTED_MARKER_SIZE,
+    height: SELECTED_MARKER_SIZE,
   },
 });
