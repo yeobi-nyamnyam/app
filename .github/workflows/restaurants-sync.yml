@@ -1,0 +1,67 @@
+name: Restaurants Sync
+
+# F3-8: restaurants 캐시 배치(F3, F3-1, docs/business-logic-notes.md §8)를 주 1회
+# 자동 실행한다. 외부 API(행안부 착한가격업소, TourAPI, 네이버 지역검색)를 호출해야
+# 해서 순수 SQL만 되는 pg_cron 대신 GitHub Actions를 쓴다 (supabase-keepalive.yml과
+# 동일한 스케줄 트리거 패턴).
+#
+# good-price/tour-api를 별도 job으로 나눈 이유: 한쪽이 실패해도(외부 API 장애 등)
+# 다른 쪽은 서로 의존하지 않고(둘 다 `needs` 없음) 계속 실행되게 하기 위함.
+on:
+  schedule:
+    # 매주 일요일 03:00 KST(UTC+9) = 일요일 18:00 UTC — 사용량이 적은 새벽 시간대
+    - cron: "0 18 * * 0"
+  workflow_dispatch: {}
+
+jobs:
+  sync-good-price:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Sync 착한가격업소
+        run: pnpm --filter server sync:good-price
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          GOOD_PRICE_API_KEY: ${{ secrets.GOOD_PRICE_API_KEY }}
+          NAVER_SEARCH_CLIENT_ID: ${{ secrets.NAVER_SEARCH_CLIENT_ID }}
+          NAVER_SEARCH_CLIENT_SECRET: ${{ secrets.NAVER_SEARCH_CLIENT_SECRET }}
+
+  sync-tour-api:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Sync TourAPI
+        run: pnpm --filter server sync:tour-api
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          TOUR_API_KEY: ${{ secrets.TOUR_API_KEY }}
