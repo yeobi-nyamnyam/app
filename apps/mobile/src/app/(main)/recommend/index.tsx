@@ -18,10 +18,14 @@ import {
 } from "@repo/ui";
 import {
   ActiveTripDocument,
+  GoodPriceRestaurantsByPriceAscBySigunguDocument,
   GoodPriceRestaurantsByPriceAscDocument,
+  GoodPriceRestaurantsByPriceDescBySigunguDocument,
   GoodPriceRestaurantsByPriceDescDocument,
+  GoodPriceRestaurantsBySigunguDocument,
   GoodPriceRestaurantsDocument,
   RegionNameDocument,
+  TourApiRestaurantsBySigunguDocument,
   TourApiRestaurantsDocument,
 } from "@repo/types";
 
@@ -139,14 +143,35 @@ export default function RecommendScreen() {
   });
   const regionSido = regionData?.region_cacheCollection.edges[0]?.node.region_name;
 
+  // F3-9: region_display_name(F1-1, "경주시" 등 사용자가 실제 입력한 이름)이
+  // regionSido(= region_cache의 시/도 정식명)와 다를 때만 시/군 단위로 매칭된
+  // 여행이다 — 이때만 restaurants.region_sigungu로 좁힌다. 사용자가 애초에
+  // "강원도"처럼 시/도 단위로 입력했으면 둘이 같아서 필터 없이 지역 전체를 보여준다.
+  const regionDisplayName = tripNode?.region_display_name;
+  const sigunguName =
+    regionDisplayName && regionSido && regionDisplayName !== regionSido
+      ? regionDisplayName
+      : null;
+
   // F3-6: 지도보기 전용 조회 — 가격보기와 달리 예산과 무관하게 좌표 있는 착한가격업소를
   // 전부 마커로 띄워야 해서, min_price 필터/페이지네이션을 쓰는 가격보기 쿼리와는
   // 분리했다. TourApi와 같은 이유로 지도보기(viewMode===1)에서만 조회한다.
-  const { data: restaurantsData } = useQuery(GoodPriceRestaurantsDocument, {
+  //
+  // F3-9: sigunguName 유무에 따라 필터 있는/없는 쿼리를 별도 훅으로 나눴다 —
+  // 두 쿼리는 필요한 변수 형태가 달라서(하나는 sigunguName 필수) 문서를
+  // 삼항연산자로 골라 쓰는 방식은 useQuery 제네릭 타입 추론이 깨진다.
+  const mapGoodPriceSkip = !regionSido || viewMode !== 1;
+  const { data: goodPriceAllData } = useQuery(GoodPriceRestaurantsDocument, {
     variables: { regionSido: regionSido ?? "" },
-    skip: !regionSido || viewMode !== 1,
+    skip: mapGoodPriceSkip || !!sigunguName,
     fetchPolicy: "cache-and-network",
   });
+  const { data: goodPriceSigunguData } = useQuery(GoodPriceRestaurantsBySigunguDocument, {
+    variables: { regionSido: regionSido ?? "", sigunguName: sigunguName ?? "" },
+    skip: mapGoodPriceSkip || !sigunguName,
+    fetchPolicy: "cache-and-network",
+  });
+  const restaurantsData = sigunguName ? goodPriceSigunguData : goodPriceAllData;
 
   // F3-6: 가격보기 전용 조회 — restaurants.min_price(실컬럼)를 서버 측
   // filter(예산 이하)/orderBy(가격순)에 써서 first+after 커서 페이지네이션으로
@@ -155,23 +180,44 @@ export default function RecommendScreen() {
   // 컬럼을 새로 추가해 해결했다 — 이제 지역 전체가 아니라 페이지 단위로만 받는다.
   // 정렬 방향별로 쿼리를 분리한 이유는 쿼리 파일 주석 참고(orderBy 변수화 시
   // codegen이 타입을 중복 생성해 tsc가 깨지는 문제).
-  const pricedDocument =
-    sortValue === "price-desc"
-      ? GoodPriceRestaurantsByPriceDescDocument
-      : GoodPriceRestaurantsByPriceAscDocument;
-  const {
-    data: pricedData,
-    loading: pricedLoading,
-    fetchMore: fetchMorePriced,
-  } = useQuery(pricedDocument, {
-    variables: {
-      regionSido: regionSido ?? "",
-      maxPrice: String(mealBudgetAmount ?? 0),
-      first: PAGE_SIZE,
-    },
-    skip: !regionSido || !mealBudgetAmount,
+  //
+  // F3-9: sigunguName 유무 × 정렬 방향 조합(4가지)마다 별도 훅으로 나눴다 —
+  // 지도보기 쿼리와 같은 이유(문서를 조건부로 고르면 useQuery 제네릭 추론이 깨짐).
+  // skip으로 항상 최대 1개만 실제로 네트워크 요청하므로 동작은 훅 하나 쓸 때와 같다.
+  const pricedSkipCommon = !regionSido || !mealBudgetAmount;
+  const pricedVariables = {
+    regionSido: regionSido ?? "",
+    maxPrice: String(mealBudgetAmount ?? 0),
+    first: PAGE_SIZE,
+  };
+  const pricedAscAll = useQuery(GoodPriceRestaurantsByPriceAscDocument, {
+    variables: pricedVariables,
+    skip: pricedSkipCommon || sortValue === "price-desc" || !!sigunguName,
     fetchPolicy: "cache-and-network",
   });
+  const pricedDescAll = useQuery(GoodPriceRestaurantsByPriceDescDocument, {
+    variables: pricedVariables,
+    skip: pricedSkipCommon || sortValue !== "price-desc" || !!sigunguName,
+    fetchPolicy: "cache-and-network",
+  });
+  const pricedAscSigungu = useQuery(GoodPriceRestaurantsByPriceAscBySigunguDocument, {
+    variables: { ...pricedVariables, sigunguName: sigunguName ?? "" },
+    skip: pricedSkipCommon || sortValue === "price-desc" || !sigunguName,
+    fetchPolicy: "cache-and-network",
+  });
+  const pricedDescSigungu = useQuery(GoodPriceRestaurantsByPriceDescBySigunguDocument, {
+    variables: { ...pricedVariables, sigunguName: sigunguName ?? "" },
+    skip: pricedSkipCommon || sortValue !== "price-desc" || !sigunguName,
+    fetchPolicy: "cache-and-network",
+  });
+  const activePriced = sigunguName
+    ? sortValue === "price-desc"
+      ? pricedDescSigungu
+      : pricedAscSigungu
+    : sortValue === "price-desc"
+      ? pricedDescAll
+      : pricedAscAll;
+  const { data: pricedData, loading: pricedLoading, fetchMore: fetchMorePriced } = activePriced;
 
   const pricedEdges = pricedData?.restaurantsCollection.edges;
   const priceListRestaurants: PriceListRestaurant[] = useMemo(() => {
@@ -266,11 +312,19 @@ export default function RecommendScreen() {
   // F3-1 2단계: 일반 업소(source=tour_api, TourAPI contentTypeId=39)도 가격과
   // 무관하게 좌표가 있는 것 전부 마커로 띄운다. 지도보기(viewMode===1)에서만
   // 쓰는 데이터라 가격보기에서까지 불필요하게 조회하지 않도록 skip한다.
-  const { data: tourApiData } = useQuery(TourApiRestaurantsDocument, {
+  // F3-9: sigunguName 유무에 따라 별도 훅으로 나눈 이유는 위 good-price와 동일.
+  const mapTourApiSkip = !regionSido || viewMode !== 1;
+  const { data: tourApiAllData } = useQuery(TourApiRestaurantsDocument, {
     variables: { regionSido: regionSido ?? "" },
-    skip: !regionSido || viewMode !== 1,
+    skip: mapTourApiSkip || !!sigunguName,
     fetchPolicy: "cache-and-network",
   });
+  const { data: tourApiSigunguData } = useQuery(TourApiRestaurantsBySigunguDocument, {
+    variables: { regionSido: regionSido ?? "", sigunguName: sigunguName ?? "" },
+    skip: mapTourApiSkip || !sigunguName,
+    fetchPolicy: "cache-and-network",
+  });
+  const tourApiData = sigunguName ? tourApiSigunguData : tourApiAllData;
   const tourApiEdges = tourApiData?.restaurantsCollection.edges;
   const tourApiMapMarkers: RecommendMapMarker[] = useMemo(
     () =>
