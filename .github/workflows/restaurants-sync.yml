@@ -7,6 +7,12 @@ name: Restaurants Sync
 #
 # good-price/tour-api를 별도 job으로 나눈 이유: 한쪽이 실패해도(외부 API 장애 등)
 # 다른 쪽은 서로 의존하지 않고(둘 다 `needs` 없음) 계속 실행되게 하기 위함.
+#
+# node-version은 ci.yml(20)과 다르게 22 — @supabase/supabase-js가 클라이언트
+# 생성 시 Realtime 기능 초기화 과정에서 네이티브 WebSocket을 찾는데, Node 20에는
+# 없어서 "Node.js detected but native WebSocket not found" 에러로 바로 죽는다
+# (Node 22부터 전역 WebSocket 제공). ci.yml은 이 스크립트를 실행하지 않아서
+# 지금까지 안 드러났던 문제.
 on:
   schedule:
     # 매주 일요일 03:00 KST(UTC+9) = 일요일 18:00 UTC — 사용량이 적은 새벽 시간대
@@ -26,7 +32,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: pnpm
 
       - name: Install dependencies
@@ -53,7 +59,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: pnpm
 
       - name: Install dependencies
