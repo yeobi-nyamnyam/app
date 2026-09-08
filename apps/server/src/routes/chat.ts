@@ -30,15 +30,18 @@ const ChatRequestSchema = z.object({
   }),
 });
 
-const ChatParsedResultSchema = z.object({
+// Gemini는 hasExpense가 false인 응답에서 amount/category/mealType을 null이 아니라
+// 필드 자체를 통째로 빼먹는 경우가 흔하다(structured output이 "관련 없는" 필드를
+// 생략) — nullable()만 쓰면 undefined(필드 누락)를 막아 검증이 깨지므로, 누락도
+// null과 동일하게 받아들인다 (#222).
+const nullishToNull = <T extends z.ZodTypeAny>(schema: T) => schema.nullish().transform((value) => value ?? null);
+
+export const ChatParsedResultSchema = z.object({
   reply: z.string(),
   hasExpense: z.boolean(),
-  amount: z.number().int().nullable(),
-  category: z.enum(EXPENSE_CATEGORIES).nullable(),
-  mealType: z.enum(MEAL_TYPES).nullable(),
-  // Gemini는 hasExpense가 true인 응답에서 confirmIntent를 null이 아니라 필드 자체를
-  // 통째로 빼먹는 경우가 흔하다(structured output이 "관련 없는" 필드를 생략) — nullable()만
-  // 쓰면 undefined(필드 누락)를 막아 검증이 깨지므로, 누락도 null과 동일하게 받아들인다.
+  amount: nullishToNull(z.number().int()),
+  category: nullishToNull(z.enum(EXPENSE_CATEGORIES)),
+  mealType: nullishToNull(z.enum(MEAL_TYPES)),
   confirmIntent: z
     .enum(["yes", "no", "unclear"])
     .nullish()
