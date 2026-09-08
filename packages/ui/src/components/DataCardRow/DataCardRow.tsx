@@ -10,9 +10,6 @@ export type DataCardRowVariant = 'info' | 'menu'
  * 라벨-값 쌍을 표시하고, 'menu'는 메뉴명-가격 쌍을 표시하며 하단에 구분선이 붙음
  * @param label variant가 'info'일 때 좌측에 표시할 라벨 텍스트
  * @param value variant가 'info'일 때 우측에 표시할 값 텍스트
- * @param valueAlign variant가 'info'일 때 value 정렬: 'left' | 'right' (optional,
- * 기본값 'right'). 주소처럼 길어서 두 줄 이상으로 줄바꿈될 수 있는 값은 'left'를 쓰면
- * 줄마다 시작 위치가 들쭉날쭉해 보이는 것을 피할 수 있다
  * @param cuisine variant가 'menu'일 때 좌측에 표시할 메뉴명
  * @param price variant가 'menu'일 때 우측에 표시할 가격 텍스트
  * @param showPrice variant가 'menu'일 때 price를 표시할지: true | false (optional, 기본값 true)
@@ -21,7 +18,6 @@ export interface DataCardRowProps {
   variant?: DataCardRowVariant
   label?: string
   value?: string
-  valueAlign?: 'left' | 'right'
   cuisine?: string
   price?: string
   showPrice?: boolean
@@ -41,7 +37,6 @@ export const DataCardRow = ({
   variant = 'info',
   label,
   value,
-  valueAlign = 'right',
   cuisine,
   price,
   showPrice = true,
@@ -66,7 +61,7 @@ export const DataCardRow = ({
           <Text style={styles.label} numberOfLines={1}>
             {label}
           </Text>
-          <Text style={[styles.value, { textAlign: valueAlign }]}>{value}</Text>
+          <Text style={styles.value}>{value}</Text>
         </>
       )}
     </View>
@@ -92,6 +87,7 @@ const styles = StyleSheet.create({
   },
   value: {
     flex: 1,
+    textAlign: 'right',
     fontFamily: getFontFamily(typography.bodyRegular.fontWeight),
     fontSize: typography.bodyRegular.fontSize,
     lineHeight: typography.bodyRegular.lineHeight,

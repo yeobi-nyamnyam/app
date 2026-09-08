@@ -200,7 +200,7 @@ export const RestaurantDetailView = ({
               {restaurant.hours ? <DataCardRow label="영업시간" value={restaurant.hours} /> : null}
               {restaurant.holiday ? <DataCardRow label="휴일" value={restaurant.holiday} /> : null}
               <DataCardRow label="전화" value={restaurant.phone} />
-              <DataCardRow label="주소" value={restaurant.address} valueAlign="left" />
+              <DataCardRow label="주소" value={restaurant.address} />
             </FieldCard>
           </View>
 
