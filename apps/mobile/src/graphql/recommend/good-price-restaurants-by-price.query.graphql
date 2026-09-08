@@ -77,3 +77,78 @@ query GoodPriceRestaurantsByPriceDesc(
     }
   }
 }
+
+# F3-9: 시/군 단위로 매칭된 여행에서만 쓰는 변형 — 별도 쿼리로 나눈 이유는
+# good-price-restaurants.query.graphql 주석 참고 (null/빈 문자열로 "필터 없음"을
+# 흉내낼 수 없었다).
+query GoodPriceRestaurantsByPriceAscBySigungu(
+  $regionSido: String!
+  $sigunguName: String!
+  $maxPrice: BigFloat!
+  $first: Int!
+  $after: Cursor
+) {
+  restaurantsCollection(
+    filter: {
+      source: { eq: "good_price" }
+      region_sido: { eq: $regionSido }
+      region_sigungu: { startsWith: $sigunguName }
+      min_price: { lte: $maxPrice }
+    }
+    orderBy: [{ min_price: AscNullsLast }]
+    first: $first
+    after: $after
+  ) {
+    totalCount
+    edges {
+      cursor
+      node {
+        id
+        name
+        address
+        category
+        min_price
+      }
+    }
+    pageInfo {
+      hasNextPage
+      endCursor
+    }
+  }
+}
+
+query GoodPriceRestaurantsByPriceDescBySigungu(
+  $regionSido: String!
+  $sigunguName: String!
+  $maxPrice: BigFloat!
+  $first: Int!
+  $after: Cursor
+) {
+  restaurantsCollection(
+    filter: {
+      source: { eq: "good_price" }
+      region_sido: { eq: $regionSido }
+      region_sigungu: { startsWith: $sigunguName }
+      min_price: { lte: $maxPrice }
+    }
+    orderBy: [{ min_price: DescNullsLast }]
+    first: $first
+    after: $after
+  ) {
+    totalCount
+    edges {
+      cursor
+      node {
+        id
+        name
+        address
+        category
+        min_price
+      }
+    }
+    pageInfo {
+      hasNextPage
+      endCursor
+    }
+  }
+}
