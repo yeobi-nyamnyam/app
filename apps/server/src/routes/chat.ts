@@ -13,12 +13,21 @@ const ChatHistoryItemSchema = z.object({
   text: z.string(),
 });
 
+const PendingConfirmationSchema = z.object({
+  amount: z.number().int(),
+});
+
 const ChatRequestSchema = z.object({
   tripName: z.string().openapi({ example: "친구들과 대구 여행" }),
   todayBudget: z.number().int().openapi({ example: 45000 }),
   todayConsumed: z.number().int().openapi({ example: 13000 }),
   message: z.string().min(1).openapi({ example: "저녁으로 13000원 썼어" }),
   history: z.array(ChatHistoryItemSchema).optional(),
+  pendingConfirmation: PendingConfirmationSchema.optional().openapi({
+    description:
+      "직전에 '이 지출을 기타소비로 기록할지' 확인을 물어본 상태일 때만 채워 보낸다. " +
+      "채워지면 Gemini가 이번 메시지를 그 예/아니오 답변으로 함께 해석해 confirmIntent를 반환한다.",
+  }),
 });
 
 const ChatParsedResultSchema = z.object({
@@ -27,6 +36,13 @@ const ChatParsedResultSchema = z.object({
   amount: z.number().int().nullable(),
   category: z.enum(EXPENSE_CATEGORIES).nullable(),
   mealType: z.enum(MEAL_TYPES).nullable(),
+  // Gemini는 hasExpense가 true인 응답에서 confirmIntent를 null이 아니라 필드 자체를
+  // 통째로 빼먹는 경우가 흔하다(structured output이 "관련 없는" 필드를 생략) — nullable()만
+  // 쓰면 undefined(필드 누락)를 막아 검증이 깨지므로, 누락도 null과 동일하게 받아들인다.
+  confirmIntent: z
+    .enum(["yes", "no", "unclear"])
+    .nullish()
+    .transform((value) => value ?? null),
 });
 
 const ErrorResponseSchema = z.object({
@@ -77,10 +93,12 @@ const buildSystemInstruction = ({
   tripName,
   todayBudget,
   todayConsumed,
+  pendingConfirmation,
 }: {
   tripName: string;
   todayBudget: number;
   todayConsumed: number;
+  pendingConfirmation?: { amount: number };
 }) =>
   [
     `너는 여행 식비 관리 앱 "여비냠냠"의 채팅 비서야. 사용자는 지금 "${tripName}" 여행 중이고,`,
@@ -97,7 +115,21 @@ const buildSystemInstruction = ({
     "그러니 hasExpense가 true여도 reply에서 '입력해 드릴게요', '기록해 두었습니다', '저장했어요'처럼",
     "네가 직접 저장/기록했다는 표현은 절대 쓰지 마. 사용자가 말한 내용을 자연스럽게 되짚어주는 정도로만 답해.",
     "reply는 한국어 존댓말로, 짧고 친근하게 1~2문장으로 작성해.",
-    "반드시 { reply, hasExpense, amount, category, mealType } 형태의 JSON으로만 응답해.",
+    ...(pendingConfirmation
+      ? [
+          `너는 방금 사용자에게 "오늘 끼니 기록이 이미 다 끝났는데, ${pendingConfirmation.amount}원 지출을`,
+          '기타소비로 기록해드릴까요?"라고 물어본 상태야. 이번 사용자 메시지는 그 질문에 대한 답변으로',
+          "함께 해석해서 confirmIntent를 판단해: 기록에 동의하면 \"yes\", 거절하면 \"no\", 둘 다 아니라서",
+          "판단이 안 서면 \"unclear\"로 응답해. confirmIntent는 반드시 이 세 값 중 하나로 채워야",
+          "해 — 절대 생략하거나 null로 비워두지 마(reply에서 동의/거절 의사를 이미 밝혔어도",
+          "confirmIntent 필드에 똑같이 명시적으로 채워야 해).",
+          "메시지에 그 확인과 무관한 질문이나 코멘트가 섞여 있으면 무시하지 말고 reply에서 자연스럽게",
+          "같이 답해줘 — 예를 들어 '지금까지 기록을 네가 삭제해줄 수 있어?'처럼 물으면, 너는 이미 저장된",
+          "기록을 직접 삭제할 수 없고 사용자가 기록보기 화면에서 직접 삭제해야 한다고 안내해.",
+          "이 상황에서는 amount/category/mealType을 다시 채울 필요 없이 null로 둬도 돼 — 금액은 이미 알고 있어.",
+        ]
+      : ["confirmIntent는 항상 null로 둬."]),
+    "반드시 { reply, hasExpense, amount, category, mealType, confirmIntent } 형태의 JSON으로만 응답해.",
   ].join(" ");
 
 chatRouter.post("/chat", async (req, res) => {
@@ -120,13 +152,13 @@ chatRouter.post("/chat", async (req, res) => {
     const body: z.infer<typeof ErrorResponseSchema> = { message: "요청 형식이 올바르지 않습니다." };
     return res.status(400).json(body);
   }
-  const { tripName, todayBudget, todayConsumed, message, history } = parseResult.data;
+  const { tripName, todayBudget, todayConsumed, message, history, pendingConfirmation } = parseResult.data;
 
   let model: ReturnType<ReturnType<typeof getGeminiClient>["getGenerativeModel"]>;
   try {
     model = getGeminiClient().getGenerativeModel({
       model: GEMINI_CHAT_MODEL,
-      systemInstruction: buildSystemInstruction({ tripName, todayBudget, todayConsumed }),
+      systemInstruction: buildSystemInstruction({ tripName, todayBudget, todayConsumed, pendingConfirmation }),
       generationConfig: {
         responseMimeType: "application/json",
         responseSchema: {
@@ -137,8 +169,13 @@ chatRouter.post("/chat", async (req, res) => {
             amount: { type: SchemaType.INTEGER, nullable: true },
             category: { type: SchemaType.STRING, format: "enum", enum: [...EXPENSE_CATEGORIES], nullable: true },
             mealType: { type: SchemaType.STRING, format: "enum", enum: [...MEAL_TYPES], nullable: true },
+            confirmIntent: { type: SchemaType.STRING, format: "enum", enum: ["yes", "no", "unclear"], nullable: true },
           },
-          required: ["reply", "hasExpense"],
+          // confirmIntent는 pendingConfirmation이 있을 때만 필수로 강제한다 — Gemini는 optional
+          // 필드를 "필요 없다"고 판단하면 값이 있어도(reply가 이미 동의/거절을 담고 있어도)
+          // 통째로 생략하거나 null로 비워버리는 경향이 있어, required에 넣지 않으면 reply와
+          // 실제 저장 여부가 어긋나는 문제(사용자에게는 확인했다고 답하고 기록은 안 되는)가 생긴다.
+          required: pendingConfirmation ? ["reply", "hasExpense", "confirmIntent"] : ["reply", "hasExpense"],
         },
       },
     });
