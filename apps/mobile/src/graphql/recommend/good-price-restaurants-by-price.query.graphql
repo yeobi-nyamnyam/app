@@ -1,0 +1,79 @@
+# F3-6: 가격보기 리스트 전용 조회 — restaurants.min_price(실컬럼, F3-6에서 추가)
+# 기준으로 서버 측 filter(예산 이하)/orderBy(가격순)/first+after 커서 페이지네이션을
+# 적용해, 지역 전체를 한 번에 받아오지 않고 필요한 페이지만 받는다.
+#
+# 지도보기(RecommendMapMarker)는 예산과 무관하게 좌표 있는 업소를 전부 받아야 하므로
+# 여전히 good-price-restaurants.query.graphql(GoodPriceRestaurantsDocument)을 쓴다 —
+# 두 쿼리를 분리한 이유가 그것이다.
+#
+# 정렬 방향(가격 낮은/높은 순)마다 별도 쿼리로 나눴다 — pg_graphql의 orderBy
+# 입력 타입(restaurantsOrderBy)을 $변수로 넘기면 graphql-codegen이 타입을 중복
+# 생성해 tsc 컴파일이 깨지는 문제가 있어서(제네릭 input list 타입 변수화 이슈),
+# 기존 코드베이스 관례대로(다른 쿼리들도 orderBy는 항상 리터럴) 방향별로 고정했다.
+query GoodPriceRestaurantsByPriceAsc(
+  $regionSido: String!
+  $maxPrice: BigFloat!
+  $first: Int!
+  $after: Cursor
+) {
+  restaurantsCollection(
+    filter: {
+      source: { eq: "good_price" }
+      region_sido: { eq: $regionSido }
+      min_price: { lte: $maxPrice }
+    }
+    orderBy: [{ min_price: AscNullsLast }]
+    first: $first
+    after: $after
+  ) {
+    totalCount
+    edges {
+      cursor
+      node {
+        id
+        name
+        address
+        category
+        min_price
+      }
+    }
+    pageInfo {
+      hasNextPage
+      endCursor
+    }
+  }
+}
+
+query GoodPriceRestaurantsByPriceDesc(
+  $regionSido: String!
+  $maxPrice: BigFloat!
+  $first: Int!
+  $after: Cursor
+) {
+  restaurantsCollection(
+    filter: {
+      source: { eq: "good_price" }
+      region_sido: { eq: $regionSido }
+      min_price: { lte: $maxPrice }
+    }
+    orderBy: [{ min_price: DescNullsLast }]
+    first: $first
+    after: $after
+  ) {
+    totalCount
+    edges {
+      cursor
+      node {
+        id
+        name
+        address
+        category
+        min_price
+      }
+    }
+    pageInfo {
+      hasNextPage
+      endCursor
+    }
+  }
+}
