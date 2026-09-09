@@ -63,6 +63,19 @@ export const ManyOptionsScroll: Story = {
   ),
 }
 
+export const Fill: Story = {
+  args: {
+    label: '아침',
+    options: [
+      { label: '가볍게', value: 'light' },
+      { label: '보통', value: 'normal' },
+      { label: '든든하게', value: 'hearty' },
+    ],
+    width: 'fill',
+  },
+  render: (args) => <Controlled {...args} value="normal" />,
+}
+
 export const StackedLists: Story = {
   render: (args) => (
     <View style={{ gap: 4 }}>

@@ -1,7 +1,7 @@
 import { ScrollView, StyleSheet, Text, View } from 'react-native'
 import { colors, spacing, typography } from '@repo/tokens'
 import { getFontFamily } from '../../typography/getFontFamily'
-import { Chip } from '../Chip'
+import { Chip, type ChipWidth } from '../Chip'
 
 export interface ChipListOption {
   label: string
@@ -14,6 +14,9 @@ export interface ChipListOption {
  * @param value 현재 선택된 항목의 value
  * @param onChange 항목을 선택할 때 발생하는 event 명시, 선택한 value를 전달
  * @param disabled 칩 그룹 전체가 비활성화 상태인지: true | false (optional, 기본값 false)
+ * @param width 칩 각각의 가로 크기: 'fill' | 'hug'. 'fill'은 남은 폭을 옵션 개수만큼
+ * 균등하게 채우고(스크롤 없음), 'hug'는 텍스트 길이만큼만 차지하고 넘치면 가로
+ * 스크롤됨 (optional, 기본값 'hug')
  */
 export interface ChipListProps {
   label: string
@@ -21,29 +24,43 @@ export interface ChipListProps {
   value: string
   onChange: (value: string) => void
   disabled?: boolean
+  width?: ChipWidth
 }
 
-export const ChipList = ({ label, options, value, onChange, disabled = false }: ChipListProps) => {
+export const ChipList = ({
+  label,
+  options,
+  value,
+  onChange,
+  disabled = false,
+  width = 'hug',
+}: ChipListProps) => {
+  const chips = options.map((option) => (
+    <Chip
+      key={option.value}
+      text={option.label}
+      width={width}
+      active={value === option.value}
+      disabled={disabled}
+      onPress={() => onChange(option.value)}
+    />
+  ))
+
   return (
     <View style={styles.container}>
       <Text style={styles.label}>{label}</Text>
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        style={styles.scrollArea}
-        contentContainerStyle={styles.chipRow}
-      >
-        {options.map((option) => (
-          <Chip
-            key={option.value}
-            text={option.label}
-            width="hug"
-            active={value === option.value}
-            disabled={disabled}
-            onPress={() => onChange(option.value)}
-          />
-        ))}
-      </ScrollView>
+      {width === 'fill' ? (
+        <View style={[styles.scrollArea, styles.chipRow]}>{chips}</View>
+      ) : (
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          style={styles.scrollArea}
+          contentContainerStyle={styles.chipRow}
+        >
+          {chips}
+        </ScrollView>
+      )}
     </View>
   )
 }
