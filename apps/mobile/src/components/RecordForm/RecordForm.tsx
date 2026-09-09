@@ -8,9 +8,12 @@ import {
   View,
 } from 'react-native'
 import { router } from 'expo-router'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import { KeyboardAwareScrollView } from 'react-native-keyboard-controller'
 import {
   Button,
   Chip,
+  DropdownField,
   FormField,
   Icon,
   Modal,
@@ -19,7 +22,9 @@ import {
   colors,
   getFontFamily,
   spacing,
+  stroke,
   typography,
+  type DropdownOption,
 } from '@repo/ui'
 
 import { MEAL_TYPES, MEAL_TYPE_LABEL, type MealType } from '@/lib/budget'
@@ -27,9 +32,9 @@ import { formatDigitsForDisplay, parseDigits, todayDate } from '@/lib/format'
 import { pickReceiptImage } from '@/lib/receipts'
 import { setReceiptOcrResolver, type ReceiptOcrFillResult } from '@/lib/receiptOcrBridge'
 
+import { PickerField } from '../PickerField'
 import { ReceiptUploadBox } from '../ReceiptUploadBox'
 import { StoreSearchModal, type StoreSearchResult } from '../StoreSearchModal'
-import { DropdownField, type DropdownOption } from '../DropdownField'
 
 export type MealLogCategory = '식비' | '교통' | '숙박' | '기념품' | '기타'
 
@@ -98,31 +103,6 @@ export interface RecordFormProps {
   tripId: string
 }
 
-// 값을 직접 타이핑하지 않고, 눌렀을 때 별도 선택 UI(바텀시트/검색 모달)를 여는
-// 필드에 공통으로 쓰는 표시용 TextField 래퍼.
-const PickerField = ({
-  value,
-  placeholder,
-  onPress,
-  showChevron = true,
-}: {
-  value: string
-  placeholder: string
-  onPress: () => void
-  showChevron?: boolean
-}) => (
-  <Pressable onPress={onPress}>
-    <View pointerEvents="none">
-      <TextField
-        value={value}
-        onChangeText={() => {}}
-        placeholder={placeholder}
-        tailingIcon={showChevron ? <Icon name="chevron-down" size="medium" /> : undefined}
-      />
-    </View>
-  </Pressable>
-)
-
 export const RecordForm = ({
   initialValues,
   submitting = false,
@@ -131,6 +111,7 @@ export const RecordForm = ({
   onSubmit,
   tripId,
 }: RecordFormProps) => {
+  const insets = useSafeAreaInsets()
   const initialCategory = initialValues?.category
   // 오늘 아침/점심/저녁이 전부 기록(캐스케이드 확정 포함)됐으면 더 이상 끼니
   // 소비로 기록할 대상이 없다 — 새 기록은 기타소비로 시작하고, 끼니 쪽으로
@@ -167,6 +148,10 @@ export const RecordForm = ({
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [receiptImageUrl, setReceiptImageUrl] = useState<string | null>(null)
   const [ocrRaw, setOcrRaw] = useState<unknown>(null)
+  // footer(저장하기 버튼)는 스크롤 영역 밖(아래)에 있어서 화면 맨 밑이 아니다 —
+  // 키보드가 뜰 때 그만큼은 덜 밀어올려야 한다. 안 그러면 footer 높이만큼
+  // 스크롤이 부족해서 하단 필드(메모 등)가 키보드에 가려진 채 안 올라온다.
+  const [footerHeight, setFooterHeight] = useState(0)
 
   const tripDayOptions = useMemo(() => buildTripDayOptions(tripDates), [tripDates])
   const availableMealTypeOptions = useMemo(() => {
@@ -205,6 +190,9 @@ export const RecordForm = ({
   const handleReceiptFilled = (result: ReceiptOcrFillResult) => {
     setStoreName(result.storeName)
     setAmount(String(result.amount))
+    setStoreAddress(result.storeAddress ?? '')
+    setStoreLatitude(result.storeLatitude)
+    setStoreLongitude(result.storeLongitude)
     setReceiptImageUrl(result.receiptImageUrl)
     setOcrRaw(result.ocrRaw)
   }
@@ -241,8 +229,17 @@ export const RecordForm = ({
     : null
   const isMealSelectionValid = !isMeal || mealSlotId != null
   const isVisitDateValid = isMeal || visitDate.length > 0
+  // 끼니 소비는 어느 매장에서 먹었는지가 F3 추천 필터링/기록 조회의 기준이 되므로
+  // 매장 검색 결과 선택이 필수. 기타소비는 매장 없이도(예: 교통비) 기록 가능해야
+  // 해서 계속 선택 사항으로 둔다.
+  const isStoreNameValid = !isMeal || storeName.trim().length > 0
   const canSubmit =
-    isAmountValid && category.length > 0 && isMealSelectionValid && isVisitDateValid && !submitting
+    isAmountValid &&
+    category.length > 0 &&
+    isMealSelectionValid &&
+    isVisitDateValid &&
+    isStoreNameValid &&
+    !submitting
 
   const handleSubmit = () => {
     if (!category) return
@@ -263,7 +260,11 @@ export const RecordForm = ({
 
   return (
     <View style={styles.container}>
-      <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent}>
+      <KeyboardAwareScrollView
+        style={styles.scroll}
+        contentContainerStyle={styles.scrollContent}
+        extraKeyboardSpace={-footerHeight}
+      >
         <View style={styles.toggleRow}>
           <Text style={styles.toggleLabel}>끼니 소비</Text>
           <Switch value={isMeal} onPress={handleToggleMeal} />
@@ -296,7 +297,7 @@ export const RecordForm = ({
             <FormField label="매장 이름">
               <PickerField
                 value={storeName}
-                placeholder="매장 검색하기 (선택)"
+                placeholder="매장 검색하기"
                 showChevron={false}
                 onPress={() => setIsStoreSearchVisible(true)}
               />
@@ -350,9 +351,12 @@ export const RecordForm = ({
         <FormField label="메모">
           <TextField value={memo} onChangeText={setMemo} placeholder="예: 어묵꼬치, 생필품" />
         </FormField>
-      </ScrollView>
+      </KeyboardAwareScrollView>
 
-      <View style={styles.footer}>
+      <View
+        style={[styles.footer, { paddingBottom: spacing[12] + insets.bottom }]}
+        onLayout={(event) => setFooterHeight(event.nativeEvent.layout.height)}
+      >
         <Button
           label={submitting ? '저장 중...' : '저장하기'}
           disabled={!canSubmit}
@@ -459,8 +463,11 @@ const styles = StyleSheet.create({
   },
   footer: {
     width: '100%',
+    backgroundColor: colors.surface.neutral.default,
+    borderTopWidth: stroke.default,
+    borderTopColor: colors.border.neutral.subtle,
     paddingHorizontal: spacing[16],
-    paddingVertical: spacing[12],
+    paddingTop: spacing[12],
   },
   backdrop: {
     ...StyleSheet.absoluteFill,

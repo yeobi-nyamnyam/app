@@ -37,7 +37,8 @@ assignees: ""
 
 - [ ] 화면/로직 구현 (해당 시 GraphQL 쿼리 작성 → `pnpm codegen` → 타입 반영)
 - [ ] 공통 컴포넌트 신규 작성 시 Storybook story 포함
-- [ ] `pnpm lint`, `pnpm type-check` 통과
+- [ ] 핵심 로직(계산/분기가 있는 순수 함수 등) 추가·수정 시 테스트 작성함
+- [ ] `pnpm lint`, `pnpm type-check`, `pnpm test` 통과
 - [ ] 외부 API 키를 클라이언트에 직접 넣지 않았는지 확인 (`apps/server` 경유)
 - [ ] 관련 마이그레이션 필요 시 팀에 공유 후 `supabase/migrations/`에 추가
 

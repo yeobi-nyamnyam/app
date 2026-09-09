@@ -1,8 +1,14 @@
 import "dotenv/config";
 
+import { batchUpsert } from "../lib/batchUpsert";
 import { fetchTourApiRestaurants, type TourApiRestaurant } from "../lib/tourApi";
 import { resolveTourApiCategory } from "../lib/tourApiCategory";
 import { getSupabaseAdmin } from "../lib/supabase";
+
+// F3-5: 지역 하나만 대상으로 하면 문제없지만, 전국 단위로 돌리면 업소 1건마다
+// upsert를 순차 호출하던 것이 round-trip 수만큼 배치 시간을 늘렸다 — 지역별로
+// 모은 업소를 이 개수 단위로 묶어 upsert 호출 수를 줄인다.
+const UPSERT_CHUNK_SIZE = 300;
 
 interface RegionCacheRow {
   region_code: string;
@@ -27,6 +33,27 @@ const resolveSigunguName = (
   return region.tour_api_snapshot.find((s) => s.sigungu_code === fullSigunguCode)?.sigungu_name ?? null;
 };
 
+const toRow = (region: RegionCacheRow, item: TourApiRestaurant) => {
+  const latitude = Number(item.mapy);
+  const longitude = Number(item.mapx);
+  return {
+    source: "tour_api",
+    external_id: item.contentid,
+    name: item.title,
+    address: item.addr1,
+    region_sido: region.region_name,
+    region_sigungu: resolveSigunguName(region, item),
+    category: resolveTourApiCategory(item.lclsSystm2, item.lclsSystm3),
+    cls_system2: item.lclsSystm2 || null,
+    cls_system3: item.lclsSystm3 || null,
+    phone: item.tel || null,
+    latitude: Number.isNaN(latitude) ? null : latitude,
+    longitude: Number.isNaN(longitude) ? null : longitude,
+    image_url: item.firstimage || null,
+    last_synced_at: new Date().toISOString(),
+  };
+};
+
 async function main() {
   const supabase = getSupabaseAdmin();
 
@@ -49,44 +76,30 @@ async function main() {
 
   let syncedCount = 0;
   let totalFetched = 0;
+  let upsertFailedCount = 0;
 
   for (const region of targetRegions) {
     const items = await fetchTourApiRestaurants(region.region_code);
     totalFetched += items.length;
     console.info(`[tour-api-sync] ${region.region_name} ${items.length}건 수집`);
 
-    for (const item of items) {
-      const latitude = Number(item.mapy);
-      const longitude = Number(item.mapx);
-      const { error } = await supabase.from("restaurants").upsert(
-        {
-          source: "tour_api",
-          external_id: item.contentid,
-          name: item.title,
-          address: item.addr1,
-          region_sido: region.region_name,
-          region_sigungu: resolveSigunguName(region, item),
-          category: resolveTourApiCategory(item.lclsSystm2, item.lclsSystm3),
-          cls_system2: item.lclsSystm2 || null,
-          cls_system3: item.lclsSystm3 || null,
-          phone: item.tel || null,
-          latitude: Number.isNaN(latitude) ? null : latitude,
-          longitude: Number.isNaN(longitude) ? null : longitude,
-          image_url: item.firstimage || null,
-          last_synced_at: new Date().toISOString(),
-        },
-        { onConflict: "source,external_id" },
-      );
-
-      if (error) {
-        console.error(`[tour-api-sync] upsert 실패: ${item.title} (${item.contentid})`, error.message);
-        continue;
-      }
-      syncedCount += 1;
-    }
+    const rows = items.map((item) => toRow(region, item));
+    syncedCount += await batchUpsert({
+      supabase,
+      table: "restaurants",
+      onConflict: "source,external_id",
+      rows,
+      chunkSize: UPSERT_CHUNK_SIZE,
+      onItemError: (row, message) => {
+        console.error(`[tour-api-sync] upsert 실패: ${row.name} (${row.external_id})`, message);
+        upsertFailedCount += 1;
+      },
+    });
   }
 
-  console.info(`[tour-api-sync] 완료: ${syncedCount}/${totalFetched}건 upsert`);
+  console.info(
+    `[tour-api-sync] 완료: ${syncedCount}/${totalFetched}건 upsert, upsert 실패 ${upsertFailedCount}건`,
+  );
 }
 
 main()

@@ -1,4 +1,6 @@
 import "dotenv/config";
+import "./instrument";
+import * as Sentry from "@sentry/node";
 import express from "express";
 import swaggerUi from "swagger-ui-express";
 import { generateOpenApiDocument } from "./openapi/document";
@@ -25,6 +27,9 @@ app.use(diaryRouter);
 const openApiDocument = generateOpenApiDocument();
 app.get("/openapi.json", (_req, res) => res.json(openApiDocument));
 app.use("/docs", swaggerUi.serve, swaggerUi.setup(openApiDocument));
+
+// 라우트 전부 등록된 뒤, 커스텀 에러 핸들러보다 앞에 와야 한다 (Sentry 공식 가이드).
+Sentry.setupExpressErrorHandler(app);
 
 app.listen(port, () => {
   console.log(`Server listening on port ${port}`);

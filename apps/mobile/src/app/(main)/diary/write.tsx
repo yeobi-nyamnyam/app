@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Alert, Modal as RNModal, Pressable, ScrollView, StyleSheet, View } from "react-native";
+import { Modal as RNModal, Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useMutation, useQuery } from "@apollo/client/react";
@@ -9,17 +9,17 @@ import {
   Header,
   LoadingOverlay,
   Modal,
-  NavBar,
   SegmentedControl,
   Text,
   TextField,
   colors,
   spacing,
-  type NavBarItemKey,
+  stroke,
 } from "@repo/ui";
 import { ActiveTripDocument, CreateDiaryDocument, DiaryByDateDocument, TripMealLogsDocument } from "@repo/types";
 
 import { useSession } from "@/hooks/useSession";
+import { useAlertModal } from "@/hooks/useAlertModal";
 import { getTripDates } from "@/lib/budget";
 import { todayDate } from "@/lib/format";
 import { generateDiaryDraft, type MealLogSummary } from "@/lib/diary";
@@ -38,6 +38,7 @@ export default function DiaryWriteScreen() {
   const insets = useSafeAreaInsets();
   const params = useLocalSearchParams<{ tripId: string }>();
   const { session } = useSession();
+  const { showAlert } = useAlertModal();
 
   const [mode, setMode] = useState<DiaryMode>("ai");
   const [title, setTitle] = useState("");
@@ -122,7 +123,8 @@ export default function DiaryWriteScreen() {
   };
 
   const isAiUntouched = mode === "ai" && aiOriginalContent !== null && content === aiOriginalContent;
-  const canSave = content.trim().length > 0 && !isAiUntouched && !saving && !generating;
+  const canSave =
+    title.trim().length > 0 && content.trim().length > 0 && !isAiUntouched && !saving && !generating;
 
   const handleSave = async () => {
     if (!canSave) return;
@@ -132,29 +134,7 @@ export default function DiaryWriteScreen() {
       });
       router.back();
     } catch (error) {
-      Alert.alert("저장 실패", error instanceof Error ? error.message : "잠시 후 다시 시도해주세요.");
-    }
-  };
-
-  const handleNavChange = (key: NavBarItemKey) => {
-    if (key === "home") {
-      router.push("/");
-      return;
-    }
-    if (key === "recommend") {
-      router.push("/recommend");
-      return;
-    }
-    if (key === "chat") {
-      router.push("/chat");
-      return;
-    }
-    if (key === "record") {
-      router.push("/record");
-      return;
-    }
-    if (key === "profile") {
-      router.push("/mypage");
+      showAlert("저장 실패", error instanceof Error ? error.message : "잠시 후 다시 시도해주세요.");
     }
   };
 
@@ -218,11 +198,8 @@ export default function DiaryWriteScreen() {
             ) : null}
           </ScrollView>
 
-          <View style={styles.footer}>
+          <View style={[styles.footer, { paddingBottom: spacing[12] + insets.bottom }]}>
             <Button label={saving ? "저장 중..." : "저장"} disabled={!canSave} onPress={handleSave} />
-          </View>
-          <View style={{ paddingBottom: insets.bottom }}>
-            <NavBar active="record" onChange={handleNavChange} />
           </View>
         </>
       ) : null}
@@ -273,8 +250,11 @@ const styles = StyleSheet.create({
     gap: spacing[8],
   },
   footer: {
+    backgroundColor: colors.surface.neutral.default,
+    borderTopWidth: stroke.default,
+    borderTopColor: colors.border.neutral.subtle,
     paddingHorizontal: spacing[16],
-    paddingVertical: spacing[12],
+    paddingTop: spacing[12],
   },
   backdrop: {
     ...StyleSheet.absoluteFill,

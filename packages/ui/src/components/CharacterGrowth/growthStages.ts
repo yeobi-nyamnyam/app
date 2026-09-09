@@ -52,3 +52,15 @@ export const GROWTH_STAGE_SHAPES: Record<GrowthStage, GrowthStageShape> = {
     ],
   },
 }
+
+// 캐릭터 성장 화면(node 406:2141)의 캐릭터 배경 글로우는 단계별 고정 팔레트가
+// 아니라, 캐릭터 자체 색을 10% 불투명도로 겹쳐 안쪽일수록 진해 보이게 만든
+// 동심원 4개다 — 그 글로우 색을 만들 때 단계별 캐릭터 색이 필요해서
+// GROWTH_STAGE_SHAPES의 fill 값을 그대로 재사용해 내보낸다.
+export const GROWTH_STAGE_COLORS: Record<GrowthStage, string> = {
+  1: GROWTH_STAGE_SHAPES[1].paths[0]!.fill,
+  2: GROWTH_STAGE_SHAPES[2].paths[0]!.fill,
+  3: GROWTH_STAGE_SHAPES[3].paths[0]!.fill,
+  4: GROWTH_STAGE_SHAPES[4].paths[0]!.fill,
+  5: GROWTH_STAGE_SHAPES[5].paths[0]!.fill,
+}

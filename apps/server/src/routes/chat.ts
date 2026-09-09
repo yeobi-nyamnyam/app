@@ -21,12 +21,18 @@ const ChatRequestSchema = z.object({
   history: z.array(ChatHistoryItemSchema).optional(),
 });
 
-const ChatParsedResultSchema = z.object({
+// Gemini는 hasExpense가 false인 응답에서 amount/category/mealType을 null이 아니라
+// 필드 자체를 통째로 빼먹는 경우가 흔하다(structured output이 "관련 없는" 필드를
+// 생략) — nullable()만 쓰면 undefined(필드 누락)를 막아 검증이 깨지므로, 누락도
+// null과 동일하게 받아들인다 (#222).
+const nullishToNull = <T extends z.ZodTypeAny>(schema: T) => schema.nullish().transform((value) => value ?? null);
+
+export const ChatParsedResultSchema = z.object({
   reply: z.string(),
   hasExpense: z.boolean(),
-  amount: z.number().int().nullable(),
-  category: z.enum(EXPENSE_CATEGORIES).nullable(),
-  mealType: z.enum(MEAL_TYPES).nullable(),
+  amount: nullishToNull(z.number().int()),
+  category: nullishToNull(z.enum(EXPENSE_CATEGORIES)),
+  mealType: nullishToNull(z.enum(MEAL_TYPES)),
 });
 
 const ErrorResponseSchema = z.object({
@@ -143,7 +149,7 @@ chatRouter.post("/chat", async (req, res) => {
       },
     });
   } catch (error) {
-    console.error("[chat] Gemini 클라이언트 생성 실패", error);
+    console.error("[chat] Gemini 모델 생성 실패", error);
     const body: z.infer<typeof ErrorResponseSchema> = { message: "AI 채팅 서비스를 사용할 수 없습니다." };
     return res.status(500).json(body);
   }
@@ -161,7 +167,8 @@ chatRouter.post("/chat", async (req, res) => {
     const result = await model.generateContent({ contents });
     rawText = result.response.text();
   } catch (error) {
-    console.error("[chat] Gemini 응답 수신 실패", error);
+    // Gemini 호출 실패 원인(레이트리밋 429, 타임아웃 등)을 서버 로그에서 구분할 수 있도록 남긴다.
+    console.error("[chat] Gemini generateContent 실패", error);
     const body: z.infer<typeof ErrorResponseSchema> = { message: "AI 응답을 받아오지 못했습니다." };
     return res.status(502).json(body);
   }
@@ -170,13 +177,14 @@ chatRouter.post("/chat", async (req, res) => {
   try {
     rawJson = JSON.parse(rawText);
   } catch (error) {
-    console.error("[chat] Gemini 응답 JSON 파싱 실패", error, "rawText:", rawText);
+    console.error("[chat] Gemini 응답 JSON 파싱 실패", error, rawText);
     const body: z.infer<typeof ErrorResponseSchema> = { message: "AI 응답 형식이 올바르지 않습니다." };
     return res.status(502).json(body);
   }
 
   const validated = ChatParsedResultSchema.safeParse(rawJson);
   if (!validated.success) {
+    console.error("[chat] Gemini 응답 스키마 검증 실패", validated.error, rawJson);
     const body: z.infer<typeof ErrorResponseSchema> = { message: "AI 응답 검증에 실패했습니다." };
     return res.status(502).json(body);
   }

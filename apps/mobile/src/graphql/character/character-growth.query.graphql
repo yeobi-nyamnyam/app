@@ -1,0 +1,9 @@
+query CharacterGrowth($userId: UUID!) {
+  exp_ledgerCollection(filter: { user_id: { eq: $userId } }) {
+    edges {
+      node {
+        points
+      }
+    }
+  }
+}

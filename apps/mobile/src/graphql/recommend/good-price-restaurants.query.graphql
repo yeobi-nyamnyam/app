@@ -20,3 +20,33 @@ query GoodPriceRestaurants($regionSido: String!) {
     }
   }
 }
+
+# F3-9: 시/군 단위로 매칭된 여행(예: "경주시")에서만 쓰는 변형 — region_sigungu가
+# null인 값이 실제로 존재해서(good_price 43건, tour_api 219건, 지오코딩/파싱
+# 실패분) $sigunguName에 null이나 빈 문자열을 넘겨 "필터 없음"을 흉내내려 했지만,
+# pg_graphql은 필터 값을 SQL 비교 연산자에 그대로 대입해서 null은 아무것도
+# 매칭 못 하고 빈 문자열은 region_sigungu가 null인 행을 조용히 제외시켜버렸다
+# (직접 curl로 확인). 그래서 "필터 있음/없음"을 아예 별도 쿼리로 나눴다 — 위
+# GoodPriceRestaurants(필터 없음, 시/도 단위 여행용)와 이 쿼리(시/군 단위 여행용).
+query GoodPriceRestaurantsBySigungu($regionSido: String!, $sigunguName: String!) {
+  restaurantsCollection(
+    filter: {
+      source: { eq: "good_price" }
+      region_sido: { eq: $regionSido }
+      region_sigungu: { startsWith: $sigunguName }
+    }
+    orderBy: [{ name: AscNullsLast }]
+  ) {
+    edges {
+      node {
+        id
+        name
+        address
+        category
+        price_menus
+        latitude
+        longitude
+      }
+    }
+  }
+}

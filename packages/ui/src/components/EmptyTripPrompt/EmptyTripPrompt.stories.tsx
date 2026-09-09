@@ -7,7 +7,6 @@ const meta: Meta<typeof EmptyTripPrompt> = {
   component: EmptyTripPrompt,
   args: {
     onCreateTrip: action('onCreateTrip'),
-    onLoadPastTrip: action('onLoadPastTrip'),
   },
 }
 

@@ -9,6 +9,7 @@
     "start": "node dist/index.js",
     "lint": "eslint . --max-warnings 0",
     "type-check": "tsc --noEmit",
+    "test": "vitest run",
     "sync:good-price": "tsx src/scripts/syncGoodPriceRestaurants.ts",
     "sync:tour-api": "tsx src/scripts/syncTourApiRestaurants.ts"
   },
@@ -16,6 +17,7 @@
     "@asteasolutions/zod-to-openapi": "^9.1.0",
     "@google/generative-ai": "^0.24.1",
     "@repo/types": "workspace:*",
+    "@sentry/node": "^10.73.0",
     "@supabase/supabase-js": "^2.112.3",
     "dotenv": "^17.4.2",
     "express": "^4.21.0",
@@ -30,6 +32,7 @@
     "eslint": "^9.39.1",
     "tsx": "^4.19.0",
     "typescript": "^5.9.2",
-    "typescript-eslint": "^8.50.0"
+    "typescript-eslint": "^8.50.0",
+    "vitest": "^5.0.0"
   }
 }

@@ -10,7 +10,8 @@
     // (workspace 패키지의 exports 필드 기반 resolution이 "node"에서는 깨짐).
     "moduleResolution": "Bundler",
     "types": [
-      "node"
+      "node",
+      "jest"
     ],
     "paths": {
       "@/*": [

@@ -98,7 +98,10 @@ Postgres 함수(RPC)로 할지 Apollo mutation 여러 개를 클라이언트가 
 
 ## 8. `restaurants` 캐시 배치 (F3, F3-1)
 
-**트리거**: 24시간 주기 스케줄 (Supabase Scheduled Edge Function + `pg_cron` 권장)
+**트리거**: 주 1회 GitHub Actions 스케줄 (`.github/workflows/restaurants-sync.yml`, F3-8). `pg_cron`은
+순수 SQL만 실행 가능해 외부 API(착한가격업소/TourAPI/네이버 Geocoding)를 호출하는 이 배치에는
+쓸 수 없어 GitHub Actions로 구현 — `good-price`/`tour-api` 동기화는 서로 독립된 job이라 한쪽이
+실패해도 다른 쪽 실행에 영향 없음
 
 **규칙**:
 1. **행안부 착한가격업소**: 위치 검색 파라미터가 없어 `page`를 1부터 끝까지 순회하며 전량 수집 (`perPage` 최대치 기준)

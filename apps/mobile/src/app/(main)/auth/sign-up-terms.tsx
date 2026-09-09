@@ -1,10 +1,11 @@
 import { useState } from "react";
-import { Alert, Linking, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Linking, ScrollView, StyleSheet, Text, View } from "react-native";
 import { router } from "expo-router";
 import { CheckBox, Footer, Header, ListRow, colors, getFontFamily, spacing, typography } from "@repo/ui";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useSession } from "@/hooks/useSession";
+import { useAlertModal } from "@/hooks/useAlertModal";
 import { markSignUpTermsAgreed } from "@/lib/onboarding";
 import { supabase } from "@/lib/supabase";
 
@@ -30,6 +31,7 @@ const TERMS: { key: TermKey; title: string; required: boolean }[] = [
 export default function SignUpTermsScreen() {
   const insets = useSafeAreaInsets();
   const { session } = useSession();
+  const { showAlert } = useAlertModal();
   const [checked, setChecked] = useState<Record<TermKey, boolean>>({
     service: false,
     privacy: false,
@@ -50,7 +52,7 @@ export default function SignUpTermsScreen() {
       await markSignUpTermsAgreed(session.user.id, checked.marketing);
       router.replace("/(main)");
     } catch (error) {
-      Alert.alert(
+      showAlert(
         "약관 동의 저장 실패",
         error instanceof Error ? error.message : "잠시 후 다시 시도해주세요.",
       );

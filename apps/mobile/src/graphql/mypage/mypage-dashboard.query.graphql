@@ -27,6 +27,7 @@ query MyPageDashboard($userId: UUID!) {
           edges {
             node {
               store_name
+              category
             }
           }
         }

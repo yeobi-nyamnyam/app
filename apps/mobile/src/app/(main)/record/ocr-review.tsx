@@ -16,7 +16,6 @@ import {
   Button,
   Header,
   Modal as DialogModal,
-  NavBar,
   Text,
   colors,
   getFontFamily,
@@ -24,7 +23,6 @@ import {
   spacing,
   stroke,
   typography,
-  type NavBarItemKey,
 } from "@repo/ui";
 import { ActiveTripDocument } from "@repo/types";
 
@@ -38,6 +36,7 @@ import {
   type ReceiptOcrResult,
 } from "@/lib/receipts";
 import { resolveReceiptOcr } from "@/lib/receiptOcrBridge";
+import { searchPlaces } from "@/lib/places";
 
 /**
  * F6-2 영수증 인식 결과 확인 페이지 (Figma "spent-write-recipt" /
@@ -55,6 +54,9 @@ export default function RecordOcrReviewScreen() {
     storagePath?: string;
     presetStoreName?: string;
     presetAmount?: string;
+    presetStoreAddress?: string;
+    presetStoreLatitude?: string;
+    presetStoreLongitude?: string;
   }>();
   const { session } = useSession();
 
@@ -66,13 +68,14 @@ export default function RecordOcrReviewScreen() {
       ? {
           recognized: true,
           storeName: params.presetStoreName,
-          storeAddress: null,
+          storeAddress: params.presetStoreAddress ?? null,
           amount: Number(params.presetAmount ?? 0),
           bizNumRecognized: true,
         }
       : null,
   );
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [isConfirming, setIsConfirming] = useState(false);
   const isManualEntry = Boolean(params.presetStoreName);
 
   const { data: tripData } = useQuery(ActiveTripDocument, {
@@ -141,37 +144,43 @@ export default function RecordOcrReviewScreen() {
     });
   };
 
-  const handleConfirm = () => {
+  const handleConfirm = async () => {
     if (!result?.recognized || result.amount === null || !result.storeName) return;
+    setIsConfirming(true);
+    // 수정 화면(F6-3)에서 매장 검색으로 상호명을 골랐다면 그 결과의 주소/좌표를
+    // 그대로 쓴다 — OCR 인식 그대로거나 텍스트만 있는 경우엔 위경도가 없으므로,
+    // F3 추천 필터링에 필요한 위경도를 채우기 위해 상호명으로 지오코딩(네이버
+    // 지역 검색)을 한 번 더 태운다. 매칭 실패해도 상호명/금액은 이미 인식됐으니
+    // 계속 진행하고, 주소는 RecordForm의 매장 검색으로 사용자가 다시 채울 수 있다.
+    let storeAddress: string | null = params.presetStoreAddress ?? null;
+    let storeLatitude: number | null = params.presetStoreLatitude
+      ? Number(params.presetStoreLatitude)
+      : null;
+    let storeLongitude: number | null = params.presetStoreLongitude
+      ? Number(params.presetStoreLongitude)
+      : null;
+    if (storeLatitude === null || storeLongitude === null) {
+      try {
+        const [match] = await searchPlaces(result.storeName);
+        if (match) {
+          storeAddress = match.address;
+          storeLatitude = match.latitude;
+          storeLongitude = match.longitude;
+        }
+      } catch {
+        // 지오코딩 실패는 조용히 무시 — 아래 에러 안내 없이 계속 진행.
+      }
+    }
     resolveReceiptOcr({
       storeName: result.storeName,
       amount: result.amount,
+      storeAddress,
+      storeLatitude,
+      storeLongitude,
       receiptImageUrl: storagePath,
       ocrRaw: { ...result, manuallyConfirmed: isManualEntry },
     });
     router.dismissTo({ pathname: "/record/new", params: { tripId: params.tripId } });
-  };
-
-  const handleNavChange = (key: NavBarItemKey) => {
-    if (key === "home") {
-      router.push("/");
-      return;
-    }
-    if (key === "recommend") {
-      router.push("/recommend");
-      return;
-    }
-    if (key === "chat") {
-      router.push("/chat");
-      return;
-    }
-    if (key === "record") {
-      router.push("/record");
-      return;
-    }
-    if (key === "profile") {
-      router.push("/mypage");
-    }
   };
 
   const renderFieldValue = (value: string | null) =>
@@ -238,16 +247,17 @@ export default function RecordOcrReviewScreen() {
         )}
       </ScrollView>
 
-      <View style={styles.footer}>
+      <View style={[styles.footer, { paddingBottom: spacing[12] + insets.bottom }]}>
         <View style={styles.buttonFlex}>
           <Button label="수정하기" variant="outline" onPress={handleEdit} />
         </View>
         <View style={styles.buttonFlex}>
-          <Button label="확인" disabled={!result?.recognized || processing} onPress={handleConfirm} />
+          <Button
+            label={isConfirming ? "확인 중..." : "확인"}
+            disabled={!result?.recognized || processing || isConfirming}
+            onPress={handleConfirm}
+          />
         </View>
-      </View>
-      <View style={{ paddingBottom: insets.bottom }}>
-        <NavBar active="record" onChange={handleNavChange} />
       </View>
 
       <RNModal
@@ -340,8 +350,11 @@ const styles = StyleSheet.create({
   footer: {
     flexDirection: "row",
     gap: spacing[8],
+    backgroundColor: colors.surface.neutral.default,
+    borderTopWidth: stroke.default,
+    borderTopColor: colors.border.neutral.subtle,
     paddingHorizontal: spacing[16],
-    paddingVertical: spacing[12],
+    paddingTop: spacing[12],
   },
   backdrop: {
     ...StyleSheet.absoluteFill,

@@ -1,12 +1,13 @@
 import { useState } from "react";
-import { Alert, ScrollView, StyleSheet, View } from "react-native";
+import { ScrollView, StyleSheet, View } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useMutation } from "@apollo/client/react";
-import { FormField, Header, NavBar, TextField, colors, spacing, type NavBarItemKey } from "@repo/ui";
+import { Button, FormField, Header, TextField, colors, spacing, stroke } from "@repo/ui";
 import { UpdateDiaryDocument } from "@repo/types";
 
 import { DiaryTextArea } from "@/components/DiaryTextArea";
+import { useAlertModal } from "@/hooks/useAlertModal";
 
 const MAX_CONTENT_LENGTH = 300;
 
@@ -17,6 +18,7 @@ const MAX_CONTENT_LENGTH = 300;
  */
 export default function DiaryEditScreen() {
   const insets = useSafeAreaInsets();
+  const { showAlert } = useAlertModal();
   const params = useLocalSearchParams<{
     diaryId: string;
     tripId: string;
@@ -32,55 +34,28 @@ export default function DiaryEditScreen() {
   const [updateDiary, { loading: saving }] = useMutation(UpdateDiaryDocument);
 
   const isDirty = title !== (params.title ?? "") || content !== (params.content ?? "");
-  const canSave = content.trim().length > 0 && isDirty && !saving;
+  const canSave = title.trim().length > 0 && content.trim().length > 0 && !saving;
 
+  // 수정한 내용이 없으면 저장 요청 없이 바로 상세 화면으로 돌아간다.
   const handleSave = async () => {
     if (!canSave) return;
+    if (!isDirty) {
+      router.back();
+      return;
+    }
     try {
       await updateDiary({
         variables: { diaryId: params.diaryId, mode: params.mode, title: title || null, content },
       });
       router.back();
     } catch (error) {
-      Alert.alert("수정 실패", error instanceof Error ? error.message : "잠시 후 다시 시도해주세요.");
+      showAlert("수정 실패", error instanceof Error ? error.message : "잠시 후 다시 시도해주세요.");
     }
-  };
-
-  const handleNavChange = (key: NavBarItemKey) => {
-    if (key === "record") {
-      router.push("/record");
-      return;
-    }
-    if (key === "home") {
-      router.push("/");
-      return;
-    }
-    if (key === "recommend") {
-      router.push("/recommend");
-      return;
-    }
-    if (key === "chat") {
-      router.push("/chat");
-      return;
-    }
-    if (key === "profile") {
-      router.push("/mypage");
-      return;
-    }
-    Alert.alert("준비 중", "아직 구현되지 않은 탭이에요.");
   };
 
   return (
     <View style={styles.screen}>
-      <Header
-        title="여행 일기 수정"
-        textAlign="start"
-        tailing="text"
-        tailingText={saving ? "저장 중..." : "완료"}
-        topInset={insets.top}
-        onBackPress={() => router.back()}
-        onTailingPress={handleSave}
-      />
+      <Header title="여행 일기 수정" textAlign="start" topInset={insets.top} onBackPress={() => router.back()} />
       <ScrollView style={styles.scroll} contentContainerStyle={styles.content}>
         <FormField label={params.dayLabel}>
           <TextField value={title} onChangeText={setTitle} placeholder="제목" />
@@ -89,8 +64,8 @@ export default function DiaryEditScreen() {
         <DiaryTextArea value={content} onChangeText={setContent} maxLength={MAX_CONTENT_LENGTH} editable={!saving} />
       </ScrollView>
 
-      <View style={{ paddingBottom: insets.bottom }}>
-        <NavBar active="record" onChange={handleNavChange} />
+      <View style={[styles.footer, { paddingBottom: spacing[12] + insets.bottom }]}>
+        <Button label={saving ? "저장 중..." : "완료"} disabled={!canSave} onPress={handleSave} />
       </View>
     </View>
   );
@@ -107,5 +82,12 @@ const styles = StyleSheet.create({
   content: {
     padding: spacing[16],
     gap: spacing[8],
+  },
+  footer: {
+    backgroundColor: colors.surface.neutral.default,
+    borderTopWidth: stroke.default,
+    borderTopColor: colors.border.neutral.subtle,
+    paddingHorizontal: spacing[16],
+    paddingTop: spacing[12],
   },
 });

@@ -20,22 +20,26 @@ export function useCurrentLocation(): Coordinates | null {
       const { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== Location.PermissionStatus.GRANTED) return;
 
-      // 마지막으로 캐시된 위치가 있으면 그걸로 먼저 빠르게 보여주고, 없으면
-      // 실시간 측위(getCurrentPositionAsync)를 기다린다.
-      const lastKnown = await Location.getLastKnownPositionAsync();
-      if (lastKnown && !cancelled) {
-        setLocation({
-          latitude: lastKnown.coords.latitude,
-          longitude: lastKnown.coords.longitude,
-        });
-      }
+      try {
+        // 마지막으로 캐시된 위치가 있으면 그걸로 먼저 빠르게 보여주고, 없으면
+        // 실시간 측위(getCurrentPositionAsync)를 기다린다.
+        const lastKnown = await Location.getLastKnownPositionAsync();
+        if (lastKnown && !cancelled) {
+          setLocation({
+            latitude: lastKnown.coords.latitude,
+            longitude: lastKnown.coords.longitude,
+          });
+        }
 
-      const current = await Location.getCurrentPositionAsync();
-      if (!cancelled) {
-        setLocation({
-          latitude: current.coords.latitude,
-          longitude: current.coords.longitude,
-        });
+        const current = await Location.getCurrentPositionAsync();
+        if (!cancelled) {
+          setLocation({
+            latitude: current.coords.latitude,
+            longitude: current.coords.longitude,
+          });
+        }
+      } catch {
+        // 위치 서비스가 꺼져있는 등 측위 자체가 실패하면 null 유지 (호출부 폴백 좌표 처리)
       }
     })();
 

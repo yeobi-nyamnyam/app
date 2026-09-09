@@ -8,6 +8,7 @@
     "build": "expo export",
     "lint": "eslint . --max-warnings 0",
     "type-check": "tsc --noEmit",
+    "test": "TZ=Asia/Seoul jest",
     "android": "expo run:android",
     "ios": "expo run:ios"
   },
@@ -23,6 +24,7 @@
     "@react-native-kakao/user": "^2.4.6",
     "@repo/types": "workspace:*",
     "@repo/ui": "workspace:*",
+    "@sentry/react-native": "^8.25.0",
     "@supabase/supabase-js": "^2.112.3",
     "base64-arraybuffer": "^1.0.2",
     "expo": "~56.0.21",
@@ -43,7 +45,8 @@
     "react": "19.2.3",
     "react-native": "0.85.3",
     "react-native-calendars": "^1.1314.0",
-    "react-native-reanimated": "4.3.0",
+    "react-native-keyboard-controller": "1.21.6",
+    "react-native-reanimated": "4.3.1",
     "react-native-safe-area-context": "5.7.0",
     "react-native-screens": "~4.26.2",
     "react-native-sse": "^1.2.1",
@@ -52,12 +55,19 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.39.1",
+    "@testing-library/react-native": "^14.0.1",
+    "@types/jest": "^30.0.0",
     "@types/node": "^22.15.3",
     "@types/react": "^19.2.18",
     "eslint": "^9.39.1",
     "eslint-plugin-react": "^7.37.5",
     "eslint-plugin-react-hooks": "^5.2.0",
+    "jest": "^30.5.1",
+    "jest-expo": "^56.0.5",
     "typescript": "^5.9.2",
     "typescript-eslint": "^8.50.0"
+  },
+  "jest": {
+    "preset": "jest-expo"
   }
 }
