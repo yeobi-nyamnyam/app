@@ -12,14 +12,12 @@ import {
   Header,
   Icon,
   Modal,
-  NavBar,
   Text,
   TextField,
   colors,
   radius,
   spacing,
   stroke,
-  type NavBarItemKey,
 } from "@repo/ui";
 import { DeleteMealLogDocument, UpdateMealLogDocument } from "@repo/types";
 
@@ -147,30 +145,6 @@ export default function RecordEditScreen() {
     }
   };
 
-  const handleNavChange = (key: NavBarItemKey) => {
-    if (key === "record") {
-      router.push("/record");
-      return;
-    }
-    if (key === "home") {
-      router.push("/");
-      return;
-    }
-    if (key === "recommend") {
-      router.push("/recommend");
-      return;
-    }
-    if (key === "chat") {
-      router.push("/chat");
-      return;
-    }
-    if (key === "profile") {
-      router.push("/mypage");
-      return;
-    }
-    showAlert("준비 중", "아직 구현되지 않은 탭이에요.");
-  };
-
   return (
     <View style={styles.screen}>
       <Header title={params.title} onBackPress={() => router.back()} topInset={insets.top} />
@@ -232,7 +206,7 @@ export default function RecordEditScreen() {
         </View>
       </ScrollView>
 
-      <View style={styles.footer}>
+      <View style={[styles.footer, { paddingBottom: spacing[12] + insets.bottom }]}>
         <Text variant="footnoteRegular" color="subtle">
           {deleteWarning}
         </Text>
@@ -245,8 +219,6 @@ export default function RecordEditScreen() {
           </View>
         </View>
       </View>
-
-      <NavBar active="record" onChange={handleNavChange} bottomInset={insets.bottom} />
 
       <RNModal
         visible={isDeleteConfirmVisible}
@@ -282,9 +254,11 @@ const styles = StyleSheet.create({
     gap: spacing[20],
   },
   footer: {
+    backgroundColor: colors.surface.neutral.default,
+    borderTopWidth: stroke.default,
+    borderTopColor: colors.border.neutral.subtle,
     paddingHorizontal: spacing[16],
     paddingTop: spacing[12],
-    paddingBottom: spacing[12],
     gap: spacing[8],
   },
   section: {

@@ -3,15 +3,15 @@ import { Modal as RNModal, Pressable, ScrollView, StyleSheet, View } from "react
 import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useMutation, useQuery } from "@apollo/client/react";
-import { Button, Header, Modal, NavBar, Text, colors, radius, spacing, stroke, type NavBarItemKey } from "@repo/ui";
+import { Button, Header, Modal, Text, colors, radius, spacing, stroke } from "@repo/ui";
 import { DeleteDiaryDocument, DiaryByIdDocument } from "@repo/types";
 import { useAlertModal } from "@/hooks/useAlertModal";
 
 /**
  * 일기 상세 화면 (D4, Figma "diary-detail"). record/history.tsx의 소비 기록
- * 목록에서 일기 카드를 눌러 진입한다. 본문은 읽기 전용으로 보여주고, 상단 "수정"을
- * 누르면 diary/edit.tsx로 이동한다. Figma 시안에는 삭제 동선이 없어 하단에
- * "일기 삭제" 버튼을 추가했다.
+ * 목록에서 일기 카드를 눌러 진입한다. 본문은 읽기 전용으로 보여주고, 하단 "수정"을
+ * 누르면 diary/edit.tsx로 이동한다. Figma 시안에는 삭제 동선이 없어 record/edit.tsx와
+ * 동일하게 하단 CTA에 "수정"/"일기 삭제" 버튼을 나란히 뒀다.
  *
  * 목록에서 넘어온 params를 첫 렌더에 바로 쓰되(깜빡임 방지), diary/edit에서
  * 저장 후 돌아왔을 때 이 화면이 그대로 마운트되어 있어서 params만으로는 수정된
@@ -75,41 +75,9 @@ export default function DiaryDetailScreen() {
     }
   };
 
-  const handleNavChange = (key: NavBarItemKey) => {
-    if (key === "record") {
-      router.push("/record");
-      return;
-    }
-    if (key === "home") {
-      router.push("/");
-      return;
-    }
-    if (key === "recommend") {
-      router.push("/recommend");
-      return;
-    }
-    if (key === "chat") {
-      router.push("/chat");
-      return;
-    }
-    if (key === "profile") {
-      router.push("/mypage");
-      return;
-    }
-    showAlert("준비 중", "아직 구현되지 않은 탭이에요.");
-  };
-
   return (
     <View style={styles.screen}>
-      <Header
-        title={title || "여행 일기"}
-        textAlign="start"
-        tailing="text"
-        tailingText="수정"
-        topInset={insets.top}
-        onBackPress={() => router.back()}
-        onTailingPress={handleEditPress}
-      />
+      <Header title={title || "여행 일기"} textAlign="start" topInset={insets.top} onBackPress={() => router.back()} />
       <ScrollView style={styles.scroll} contentContainerStyle={styles.content}>
         <Text variant="title3Emphasized">{params.dayLabel}</Text>
         <View style={styles.contentBox}>
@@ -117,14 +85,19 @@ export default function DiaryDetailScreen() {
         </View>
       </ScrollView>
 
-      <View style={styles.footer}>
+      <View style={[styles.footer, { paddingBottom: spacing[12] + insets.bottom }]}>
         <Text variant="footnoteRegular" color="subtle">
           삭제한 일기는 되돌릴 수 없어요.
         </Text>
-        <Button label="일기 삭제" variant="outline" onPress={handleDeletePress} />
+        <View style={styles.buttonRow}>
+          <View style={styles.buttonFlex}>
+            <Button label="수정" onPress={handleEditPress} />
+          </View>
+          <View style={styles.buttonFlex}>
+            <Button label="일기 삭제" variant="outline" onPress={handleDeletePress} />
+          </View>
+        </View>
       </View>
-
-      <NavBar active="record" onChange={handleNavChange} bottomInset={insets.bottom} />
 
       <RNModal
         visible={isDeleteConfirmVisible}
@@ -167,10 +140,19 @@ const styles = StyleSheet.create({
     gap: spacing[12],
   },
   footer: {
+    backgroundColor: colors.surface.neutral.default,
+    borderTopWidth: stroke.default,
+    borderTopColor: colors.border.neutral.subtle,
     paddingHorizontal: spacing[16],
     paddingTop: spacing[12],
-    paddingBottom: spacing[12],
     gap: spacing[8],
+  },
+  buttonRow: {
+    flexDirection: "row",
+    gap: spacing[8],
+  },
+  buttonFlex: {
+    flex: 1,
   },
   backdrop: {
     ...StyleSheet.absoluteFill,

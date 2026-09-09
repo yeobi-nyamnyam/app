@@ -2,7 +2,7 @@ import { useState } from "react";
 import { ScrollView, StyleSheet, View } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Button, FormField, Header, Icon, NavBar, Text, TextField, colors, spacing, type NavBarItemKey } from "@repo/ui";
+import { Button, FormField, Header, Icon, Text, TextField, colors, spacing, stroke } from "@repo/ui";
 
 import { formatDigitsForDisplay, parseDigits } from "@/lib/format";
 import { pickReceiptImage, uploadReceiptImage } from "@/lib/receipts";
@@ -86,28 +86,6 @@ export default function RecordOcrEditScreen() {
     });
   };
 
-  const handleNavChange = (key: NavBarItemKey) => {
-    if (key === "home") {
-      router.push("/");
-      return;
-    }
-    if (key === "recommend") {
-      router.push("/recommend");
-      return;
-    }
-    if (key === "chat") {
-      router.push("/chat");
-      return;
-    }
-    if (key === "record") {
-      router.push("/record");
-      return;
-    }
-    if (key === "profile") {
-      router.push("/mypage");
-    }
-  };
-
   return (
     <View style={styles.screen}>
       <Header title="영수증 인식" topInset={insets.top} onBackPress={() => router.back()} />
@@ -157,10 +135,9 @@ export default function RecordOcrEditScreen() {
         </Text>
       </ScrollView>
 
-      <View style={styles.footer}>
+      <View style={[styles.footer, { paddingBottom: spacing[12] + insets.bottom }]}>
         <Button label="수동반영" disabled={!canSubmit} onPress={handleManualApply} />
       </View>
-      <NavBar active="record" onChange={handleNavChange} bottomInset={insets.bottom} />
 
       <StoreSearchModal
         visible={isStoreSearchVisible}
@@ -191,7 +168,10 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   footer: {
+    backgroundColor: colors.surface.neutral.default,
+    borderTopWidth: stroke.default,
+    borderTopColor: colors.border.neutral.subtle,
     paddingHorizontal: spacing[16],
-    paddingVertical: spacing[12],
+    paddingTop: spacing[12],
   },
 });

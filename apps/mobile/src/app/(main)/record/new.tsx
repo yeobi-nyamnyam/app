@@ -2,7 +2,7 @@ import { StyleSheet, View } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useMutation, useQuery } from "@apollo/client/react";
-import { Header, NavBar, colors, type NavBarItemKey } from "@repo/ui";
+import { Header, colors } from "@repo/ui";
 import {
   ActiveTripDocument,
   CreateMealLogDocument,
@@ -114,30 +114,6 @@ export default function RecordNewScreen() {
     }
   };
 
-  const handleNavChange = (key: NavBarItemKey) => {
-    if (key === "home") {
-      router.push("/");
-      return;
-    }
-    if (key === "recommend") {
-      router.push("/recommend");
-      return;
-    }
-    if (key === "record") {
-      router.push("/record");
-      return;
-    }
-    if (key === "chat") {
-      router.push("/chat");
-      return;
-    }
-    if (key === "profile") {
-      router.push("/mypage");
-      return;
-    }
-    showAlert("준비 중", "아직 구현되지 않은 탭이에요.");
-  };
-
   return (
     <View style={styles.screen}>
       <Header title="소비 기록 작성" topInset={insets.top} onBackPress={() => router.back()} />
@@ -156,7 +132,6 @@ export default function RecordNewScreen() {
         }}
         onSubmit={handleSubmit}
       />
-      <NavBar active="record" onChange={handleNavChange} bottomInset={insets.bottom} />
     </View>
   );
 }
