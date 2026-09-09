@@ -3,6 +3,7 @@ import { Modal as RNModal, Pressable, ScrollView, StyleSheet, View } from "react
 import { router, useLocalSearchParams } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useMutation } from "@apollo/client/react";
+import { isReference, type Reference } from "@apollo/client";
 import {
   Button,
   Chip,
@@ -61,7 +62,34 @@ export default function RecordEditScreen() {
   const [isDeleteConfirmVisible, setIsDeleteConfirmVisible] = useState(false);
 
   const [updateMealLog, { loading: updating }] = useMutation(UpdateMealLogDocument);
-  const [deleteMealLog, { loading: deleting }] = useMutation(DeleteMealLogDocument);
+  // delete_meal_log는 RPC라 삭제된 row 정보를 응답으로 안 주기 때문에 Apollo가
+  // 알아서 캐시를 갱신하지 못한다 — 성공하면 meal_logsCollection 캐시에서 직접
+  // 해당 edge를 제거해서 history 화면이 focus 되돌아오기 전에도 즉시 반영되게 한다.
+  const [deleteMealLog, { loading: deleting }] = useMutation(DeleteMealLogDocument, {
+    update: (cache, _result, { variables }) => {
+      const deletedLogId = variables?.mealLogId;
+      if (!deletedLogId) return;
+      cache.modify({
+        fields: {
+          meal_logsCollection(
+            existing: Reference | { edges: { node: Reference }[] } | undefined,
+            { readField },
+          ) {
+            if (!existing || isReference(existing)) return existing;
+            return {
+              ...existing,
+              edges: existing.edges.filter((edge) => readField("id", edge.node) !== deletedLogId),
+            };
+          },
+        },
+      });
+      const normalizedId = cache.identify({ __typename: "meal_logs", id: deletedLogId });
+      if (normalizedId) {
+        cache.evict({ id: normalizedId });
+        cache.gc();
+      }
+    },
+  });
 
   const amountValue = Number(amount);
   const isAmountValid = amount.length > 0 && Number.isFinite(amountValue) && amountValue > 0;
