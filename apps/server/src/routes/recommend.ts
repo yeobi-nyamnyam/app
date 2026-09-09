@@ -133,7 +133,8 @@ recommendRouter.get("/recommend/restaurants/:id/detail", async (req, res) => {
       menu: intro.menu,
     };
     return res.json(body);
-  } catch {
+  } catch (error) {
+    console.error("[recommend] 상세 정보 조회 실패", error);
     const body: z.infer<typeof ErrorResponseSchema> = { message: "상세 정보를 불러오지 못했습니다." };
     return res.status(500).json(body);
   }
