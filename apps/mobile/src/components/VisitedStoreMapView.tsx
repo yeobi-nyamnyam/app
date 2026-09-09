@@ -21,6 +21,11 @@ const DEFAULT_CENTER = { latitude: 36.5, longitude: 127.8 };
 const DEFAULT_ZOOM = 6;
 const SINGLE_STORE_ZOOM = 15;
 const MARKER_SIZE = 12;
+// animateCameraWithTwoCoords로 좌표에 꽉 맞춰 줌하면 양 끝 마커가 지도 화면
+// 가장자리에 바로 걸쳐 잘려 보인다 — mapPadding으로 카메라가 맞추는 콘텐츠
+// 영역 자체를 안쪽으로 줄여서 마커 주변에 여백을 둔다. 50은 packages/tokens
+// spacing 스케일(...24, 26, 36)에 없는 값이라 실측값을 로컬 상수로 둔다.
+const MAP_EDGE_PADDING = 50;
 
 export interface VisitedStoreMapMarker {
   id: string;
@@ -61,6 +66,12 @@ export const VisitedStoreMapView = ({ stores }: VisitedStoreMapViewProps) => {
         isUseTextureViewAndroid
         mapType="Basic"
         customStyleId={NAVER_MAP_STYLE_ID}
+        mapPadding={{
+          left: MAP_EDGE_PADDING,
+          top: MAP_EDGE_PADDING,
+          right: MAP_EDGE_PADDING,
+          bottom: MAP_EDGE_PADDING,
+        }}
         initialCamera={{
           latitude: initialCenter.latitude,
           longitude: initialCenter.longitude,
