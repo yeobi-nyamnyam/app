@@ -74,6 +74,9 @@ const config: ExpoConfig = {
     naverMapClientId: process.env.NAVER_MAP_CLIENT_ID,
     naverMapStyleId: process.env.NAVER_MAP_STYLE_ID,
     sentryDsn: process.env.SENTRY_DSN,
+    eas: {
+      projectId: 'ecf0ca2e-6c92-4f60-a88f-536e9562ee6d',
+    },
   },
 }
 
