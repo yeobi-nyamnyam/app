@@ -16,7 +16,6 @@ import {
   Button,
   Header,
   Modal as DialogModal,
-  NavBar,
   Text,
   colors,
   getFontFamily,
@@ -24,7 +23,6 @@ import {
   spacing,
   stroke,
   typography,
-  type NavBarItemKey,
 } from "@repo/ui";
 import { ActiveTripDocument } from "@repo/types";
 
@@ -185,28 +183,6 @@ export default function RecordOcrReviewScreen() {
     router.dismissTo({ pathname: "/record/new", params: { tripId: params.tripId } });
   };
 
-  const handleNavChange = (key: NavBarItemKey) => {
-    if (key === "home") {
-      router.push("/");
-      return;
-    }
-    if (key === "recommend") {
-      router.push("/recommend");
-      return;
-    }
-    if (key === "chat") {
-      router.push("/chat");
-      return;
-    }
-    if (key === "record") {
-      router.push("/record");
-      return;
-    }
-    if (key === "profile") {
-      router.push("/mypage");
-    }
-  };
-
   const renderFieldValue = (value: string | null) =>
     value ? (
       <Text variant="bodyEmphasized">{value}</Text>
@@ -271,7 +247,7 @@ export default function RecordOcrReviewScreen() {
         )}
       </ScrollView>
 
-      <View style={styles.footer}>
+      <View style={[styles.footer, { paddingBottom: spacing[12] + insets.bottom }]}>
         <View style={styles.buttonFlex}>
           <Button label="수정하기" variant="outline" onPress={handleEdit} />
         </View>
@@ -283,7 +259,6 @@ export default function RecordOcrReviewScreen() {
           />
         </View>
       </View>
-      <NavBar active="record" onChange={handleNavChange} bottomInset={insets.bottom} />
 
       <RNModal
         visible={errorMessage !== null}
@@ -375,8 +350,11 @@ const styles = StyleSheet.create({
   footer: {
     flexDirection: "row",
     gap: spacing[8],
+    backgroundColor: colors.surface.neutral.default,
+    borderTopWidth: stroke.default,
+    borderTopColor: colors.border.neutral.subtle,
     paddingHorizontal: spacing[16],
-    paddingVertical: spacing[12],
+    paddingTop: spacing[12],
   },
   backdrop: {
     ...StyleSheet.absoluteFill,
