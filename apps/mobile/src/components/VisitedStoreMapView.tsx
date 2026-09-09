@@ -1,7 +1,12 @@
 import { useEffect, useRef } from "react";
 import { StyleSheet, View } from "react-native";
+import Constants from "expo-constants";
 import { NaverMapMarkerOverlay, NaverMapView, type NaverMapViewRef } from "@mj-studio/react-native-naver-map";
 import { Text, colors, radius, spacing } from "@repo/ui";
+
+// 추천 탭 지도(RecommendMapView.tsx)와 동일한 NCP Style Editor 커스텀 스타일을 써서
+// 앱 전체 지도 룩앤필을 통일한다 (optional — 없으면 기본 스타일).
+const NAVER_MAP_STYLE_ID = Constants.expoConfig?.extra?.naverMapStyleId as string | undefined;
 
 // Figma 범례 실측 색상(#1e2327, #7d99aa) — packages/tokens의 일반 text/surface
 // 스케일과는 무관한, 방문/재방문 전용 시맨틱 색상이라 이 용도로 토큰이 따로 없다
@@ -53,6 +58,7 @@ export const VisitedStoreMapView = ({ stores }: VisitedStoreMapViewProps) => {
         style={StyleSheet.absoluteFill}
         isUseTextureViewAndroid
         mapType="Basic"
+        customStyleId={NAVER_MAP_STYLE_ID}
         initialCamera={{
           latitude: initialCenter.latitude,
           longitude: initialCenter.longitude,
