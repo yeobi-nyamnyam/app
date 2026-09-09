@@ -223,6 +223,7 @@ export default function TripNewScreen() {
                 options={WEIGHT_OPTIONS}
                 value={weights[mealType]}
                 onChange={(value) => setWeights((prev) => ({ ...prev, [mealType]: value }))}
+                width="fill"
               />
             ))}
           </View>
