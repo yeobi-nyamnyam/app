@@ -14,6 +14,8 @@ const NAVER_MAP_STYLE_ID = Constants.expoConfig?.extra?.naverMapStyleId as strin
 // 그대로 옮긴다).
 export const VISIT_DOT_COLOR = "#1e2327";
 export const REVISIT_DOT_COLOR = "#7d99aa";
+// 목록에서만 쓰는 "좌표 없음" 상태 색 — 범례에 없는 상태라 토큰의 disabled 계열을 그대로 씀.
+export const NO_LOCATION_DOT_COLOR = colors.content.neutral.disabled;
 
 const DEFAULT_CENTER = { latitude: 36.5, longitude: 127.8 };
 const DEFAULT_ZOOM = 6;

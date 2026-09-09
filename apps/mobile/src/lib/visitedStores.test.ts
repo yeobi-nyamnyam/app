@@ -1,10 +1,10 @@
 import { buildVisitedStoreGroups, type MealLogInput } from "./visitedStores";
 
 describe("buildVisitedStoreGroups", () => {
-  it("좌표 없는 기록은 제외한다", () => {
+  it("매장명 없는 기록은 제외한다", () => {
     const logs: MealLogInput[] = [
       {
-        storeName: "수기입력 매장",
+        storeName: null,
         storeAddress: null,
         storeLatitude: null,
         storeLongitude: null,
@@ -15,6 +15,56 @@ describe("buildVisitedStoreGroups", () => {
     ];
 
     expect(buildVisitedStoreGroups(logs)).toEqual([]);
+  });
+
+  it("좌표 없는 기록(OCR/직접입력)도 목록에는 포함하되 좌표는 null이다", () => {
+    const logs: MealLogInput[] = [
+      {
+        storeName: "영수증으로 기록한 매장",
+        storeAddress: null,
+        storeLatitude: null,
+        storeLongitude: null,
+        restaurantId: null,
+        amount: 10000,
+        visitDate: "2026-07-26",
+      },
+    ];
+
+    const result = buildVisitedStoreGroups(logs);
+    expect(result).toHaveLength(1);
+    expect(result[0]).toMatchObject({
+      storeName: "영수증으로 기록한 매장",
+      latitude: null,
+      longitude: null,
+      visitCount: 1,
+    });
+  });
+
+  it("같은 매장을 좌표 있는 방문과 없는 방문으로 나눠 기록해도 좌표 있는 쪽으로 지도에 표시한다", () => {
+    const logs: MealLogInput[] = [
+      {
+        storeName: "가마솥 순대국밥",
+        storeAddress: "서면로 1길",
+        storeLatitude: 35.1,
+        storeLongitude: 129.05,
+        restaurantId: "r1",
+        amount: 8000,
+        visitDate: "2026-07-26",
+      },
+      {
+        storeName: "가마솥 순대국밥",
+        storeAddress: "서면로 1길",
+        storeLatitude: null,
+        storeLongitude: null,
+        restaurantId: "r1",
+        amount: 6000,
+        visitDate: "2026-07-27",
+      },
+    ];
+
+    const result = buildVisitedStoreGroups(logs);
+    expect(result).toHaveLength(1);
+    expect(result[0]).toMatchObject({ latitude: 35.1, longitude: 129.05, visitCount: 2 });
   });
 
   it("restaurant_id가 있으면 그 값으로 그룹핑한다", () => {
