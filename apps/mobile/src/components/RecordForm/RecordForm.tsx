@@ -30,6 +30,7 @@ import { formatDigitsForDisplay, parseDigits, todayDate } from '@/lib/format'
 import { pickReceiptImage } from '@/lib/receipts'
 import { setReceiptOcrResolver, type ReceiptOcrFillResult } from '@/lib/receiptOcrBridge'
 
+import { PickerField } from '../PickerField'
 import { ReceiptUploadBox } from '../ReceiptUploadBox'
 import { StoreSearchModal, type StoreSearchResult } from '../StoreSearchModal'
 
@@ -99,31 +100,6 @@ export interface RecordFormProps {
   onSubmit: (values: RecordFormValues) => void
   tripId: string
 }
-
-// 값을 직접 타이핑하지 않고, 눌렀을 때 별도 선택 UI(바텀시트/검색 모달)를 여는
-// 필드에 공통으로 쓰는 표시용 TextField 래퍼.
-const PickerField = ({
-  value,
-  placeholder,
-  onPress,
-  showChevron = true,
-}: {
-  value: string
-  placeholder: string
-  onPress: () => void
-  showChevron?: boolean
-}) => (
-  <Pressable onPress={onPress}>
-    <View pointerEvents="none">
-      <TextField
-        value={value}
-        onChangeText={() => {}}
-        placeholder={placeholder}
-        tailingIcon={showChevron ? <Icon name="chevron-down" size="medium" /> : undefined}
-      />
-    </View>
-  </Pressable>
-)
 
 export const RecordForm = ({
   initialValues,
@@ -211,6 +187,9 @@ export const RecordForm = ({
   const handleReceiptFilled = (result: ReceiptOcrFillResult) => {
     setStoreName(result.storeName)
     setAmount(String(result.amount))
+    setStoreAddress(result.storeAddress ?? '')
+    setStoreLatitude(result.storeLatitude)
+    setStoreLongitude(result.storeLongitude)
     setReceiptImageUrl(result.receiptImageUrl)
     setOcrRaw(result.ocrRaw)
   }
@@ -247,8 +226,17 @@ export const RecordForm = ({
     : null
   const isMealSelectionValid = !isMeal || mealSlotId != null
   const isVisitDateValid = isMeal || visitDate.length > 0
+  // 끼니 소비는 어느 매장에서 먹었는지가 F3 추천 필터링/기록 조회의 기준이 되므로
+  // 매장 검색 결과 선택이 필수. 기타소비는 매장 없이도(예: 교통비) 기록 가능해야
+  // 해서 계속 선택 사항으로 둔다.
+  const isStoreNameValid = !isMeal || storeName.trim().length > 0
   const canSubmit =
-    isAmountValid && category.length > 0 && isMealSelectionValid && isVisitDateValid && !submitting
+    isAmountValid &&
+    category.length > 0 &&
+    isMealSelectionValid &&
+    isVisitDateValid &&
+    isStoreNameValid &&
+    !submitting
 
   const handleSubmit = () => {
     if (!category) return
@@ -306,7 +294,7 @@ export const RecordForm = ({
             <FormField label="매장 이름">
               <PickerField
                 value={storeName}
-                placeholder="매장 검색하기 (선택)"
+                placeholder="매장 검색하기"
                 showChevron={false}
                 onPress={() => setIsStoreSearchVisible(true)}
               />

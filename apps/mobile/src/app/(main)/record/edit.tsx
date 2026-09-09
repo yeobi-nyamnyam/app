@@ -93,9 +93,11 @@ export default function RecordEditScreen() {
 
   const amountValue = Number(amount);
   const isAmountValid = amount.length > 0 && Number.isFinite(amountValue) && amountValue > 0;
+  // 끼니 소비는 방문 매장이 F3 추천 필터링/기록 조회의 기준이라 빈 값으로 저장할 수 없다.
+  const isStoreNameValid = !isMeal || storeName.trim().length > 0;
   const isDirty =
     category !== params.category || amount !== params.amount || storeName !== (params.storeName ?? "") || memo !== (params.memo ?? "");
-  const canSave = isAmountValid && isDirty && !updating;
+  const canSave = isAmountValid && isStoreNameValid && isDirty && !updating;
 
   const deleteWarning = isMeal
     ? "삭제 시 이 기록의 금액 만큼 예산이 재계산되고, 이후 날짜의 여유 식비도 함께 갱신돼요."

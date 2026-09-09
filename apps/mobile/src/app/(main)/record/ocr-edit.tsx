@@ -7,6 +7,8 @@ import { Button, FormField, Header, Icon, NavBar, Text, TextField, colors, spaci
 import { formatDigitsForDisplay, parseDigits } from "@/lib/format";
 import { pickReceiptImage, uploadReceiptImage } from "@/lib/receipts";
 import { useAlertModal } from "@/hooks/useAlertModal";
+import { PickerField } from "@/components/PickerField";
+import { StoreSearchModal, type StoreSearchResult } from "@/components/StoreSearchModal";
 
 /**
  * F6-3 영수증 인식 실패/수정 페이지 (Figma "spent-write-recipt-edit"). 상호명/
@@ -25,10 +27,14 @@ export default function RecordOcrEditScreen() {
   }>();
 
   const [storeName, setStoreName] = useState(params.storeName ?? "");
+  const [storeAddress, setStoreAddress] = useState<string | null>(null);
+  const [storeLatitude, setStoreLatitude] = useState<number | null>(null);
+  const [storeLongitude, setStoreLongitude] = useState<number | null>(null);
   const [amount, setAmount] = useState(params.amount ?? "");
   const [localUri, setLocalUri] = useState(params.localUri);
   const [storagePath, setStoragePath] = useState(params.storagePath ?? "");
   const [reprocessing, setReprocessing] = useState(false);
+  const [isStoreSearchVisible, setIsStoreSearchVisible] = useState(false);
 
   const amountValue = Number(amount);
   const canSubmit = storeName.trim().length > 0 && amount.length > 0 && amountValue > 0;
@@ -53,6 +59,14 @@ export default function RecordOcrEditScreen() {
     }
   };
 
+  const handleSelectStore = (result: StoreSearchResult) => {
+    setStoreName(result.name);
+    setStoreAddress(result.address);
+    setStoreLatitude(result.latitude);
+    setStoreLongitude(result.longitude);
+    setIsStoreSearchVisible(false);
+  };
+
   const handleManualApply = () => {
     if (!canSubmit) return;
     router.push({
@@ -63,6 +77,11 @@ export default function RecordOcrEditScreen() {
         storagePath,
         presetStoreName: storeName,
         presetAmount: String(amountValue),
+        // 매장 검색으로 고른 경우에만 주소/좌표가 있다 — 인식된 상호명을 그대로
+        // 두고 금액만 고친 경우엔 비워서 ocr-review가 상호명으로 재지오코딩하게 한다.
+        presetStoreAddress: storeAddress ?? undefined,
+        presetStoreLatitude: storeLatitude != null ? String(storeLatitude) : undefined,
+        presetStoreLongitude: storeLongitude != null ? String(storeLongitude) : undefined,
       },
     });
   };
@@ -94,7 +113,12 @@ export default function RecordOcrEditScreen() {
       <Header title="영수증 인식" topInset={insets.top} onBackPress={() => router.back()} />
       <ScrollView style={styles.scroll} contentContainerStyle={styles.content}>
         <FormField label="상호명">
-          <TextField value={storeName} onChangeText={setStoreName} placeholder="예: 북구네 돼지국밥" />
+          <PickerField
+            value={storeName}
+            placeholder="매장 검색하기"
+            showChevron={false}
+            onPress={() => setIsStoreSearchVisible(true)}
+          />
         </FormField>
 
         <FormField label="결제금액">
@@ -137,6 +161,12 @@ export default function RecordOcrEditScreen() {
         <Button label="수동반영" disabled={!canSubmit} onPress={handleManualApply} />
       </View>
       <NavBar active="record" onChange={handleNavChange} bottomInset={insets.bottom} />
+
+      <StoreSearchModal
+        visible={isStoreSearchVisible}
+        onClose={() => setIsStoreSearchVisible(false)}
+        onSelect={handleSelectStore}
+      />
     </View>
   );
 }
