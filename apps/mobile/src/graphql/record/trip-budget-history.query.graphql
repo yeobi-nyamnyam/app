@@ -1,0 +1,25 @@
+query TripBudgetHistory($tripId: UUID!) {
+  tripsCollection(filter: { id: { eq: $tripId } }) {
+    edges {
+      node {
+        id
+        floating_budget
+        budget_change_historyCollection(
+          orderBy: [{ created_at: AscNullsFirst }]
+          first: 1000
+        ) {
+          edges {
+            node {
+              id
+              event_type
+              amount_delta
+              before_json
+              after_json
+              created_at
+            }
+          }
+        }
+      }
+    }
+  }
+}

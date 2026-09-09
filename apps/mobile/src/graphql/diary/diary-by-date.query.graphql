@@ -1,0 +1,12 @@
+query DiaryByDate($tripId: UUID!, $date: Date!) {
+  diariesCollection(filter: { trip_id: { eq: $tripId }, date: { eq: $date } }, first: 1) {
+    edges {
+      node {
+        id
+        title
+        content
+        mode
+      }
+    }
+  }
+}

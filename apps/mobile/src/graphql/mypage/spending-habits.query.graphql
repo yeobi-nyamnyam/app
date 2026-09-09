@@ -1,0 +1,26 @@
+query SpendingHabits($userId: UUID!) {
+  tripsCollection(filter: { user_id: { eq: $userId } }) {
+    edges {
+      node {
+        id
+        name
+        status
+        start_date
+        end_date
+        total_budget
+        meal_logsCollection(first: 1000) {
+          edges {
+            node {
+              amount
+              category
+              receipt_image_url
+              meal_slots {
+                meal_type
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

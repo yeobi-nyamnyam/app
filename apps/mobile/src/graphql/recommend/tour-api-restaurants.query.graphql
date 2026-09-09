@@ -1,0 +1,43 @@
+query TourApiRestaurants($regionSido: String!) {
+  restaurantsCollection(
+    filter: { source: { eq: "tour_api" }, region_sido: { eq: $regionSido } }
+    orderBy: [{ name: AscNullsLast }]
+  ) {
+    edges {
+      node {
+        id
+        name
+        category
+        latitude
+        longitude
+        image_url
+      }
+    }
+  }
+}
+
+# F3-9: 시/군 단위로 매칭된 여행에서만 쓰는 변형 — 별도 쿼리로 나눈 이유는
+# good-price-restaurants.query.graphql 주석 참고 (null/빈 문자열로 "필터 없음"을
+# 흉내낼 수 없어서, region_sigungu가 null인 행(tour_api 219건)이 조용히 빠지는
+# 문제를 피하려면 필터 있는/없는 쿼리를 아예 분리해야 했다).
+query TourApiRestaurantsBySigungu($regionSido: String!, $sigunguName: String!) {
+  restaurantsCollection(
+    filter: {
+      source: { eq: "tour_api" }
+      region_sido: { eq: $regionSido }
+      region_sigungu: { startsWith: $sigunguName }
+    }
+    orderBy: [{ name: AscNullsLast }]
+  ) {
+    edges {
+      node {
+        id
+        name
+        category
+        latitude
+        longitude
+        image_url
+      }
+    }
+  }
+}

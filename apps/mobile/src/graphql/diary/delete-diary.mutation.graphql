@@ -1,0 +1,5 @@
+mutation DeleteDiary($diaryId: UUID!) {
+  deleteFromdiariesCollection(filter: { id: { eq: $diaryId } }) {
+    affectedCount
+  }
+}

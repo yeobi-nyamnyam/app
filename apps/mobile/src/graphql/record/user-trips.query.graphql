@@ -1,0 +1,16 @@
+query UserTrips($userId: UUID!) {
+  tripsCollection(
+    filter: { user_id: { eq: $userId } }
+    orderBy: [{ start_date: DescNullsLast }]
+  ) {
+    edges {
+      node {
+        id
+        name
+        start_date
+        end_date
+        status
+      }
+    }
+  }
+}

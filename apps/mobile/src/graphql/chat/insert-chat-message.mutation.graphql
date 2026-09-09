@@ -1,0 +1,29 @@
+mutation InsertChatMessage(
+  $tripId: UUID!
+  $userId: UUID!
+  $role: String!
+  $content: String!
+  $parsedCategory: String
+  $parsedAmount: Int
+  $status: String!
+) {
+  insertIntochat_messagesCollection(
+    objects: [
+      {
+        trip_id: $tripId
+        user_id: $userId
+        role: $role
+        content: $content
+        parsed_category: $parsedCategory
+        parsed_amount: $parsedAmount
+        status: $status
+      }
+    ]
+  ) {
+    affectedCount
+    records {
+      id
+      status
+    }
+  }
+}

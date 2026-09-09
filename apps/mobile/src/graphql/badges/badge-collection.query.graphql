@@ -1,0 +1,51 @@
+query BadgeCollection($userId: UUID!) {
+  badgesCollection {
+    edges {
+      node {
+        id
+        code
+        category
+        name
+        description
+        bonus_points
+      }
+    }
+  }
+  user_badgesCollection(filter: { user_id: { eq: $userId } }) {
+    edges {
+      node {
+        id
+        badge_id
+        trip_id
+        awarded_at
+        trips {
+          name
+        }
+      }
+    }
+  }
+  exp_ledgerCollection(filter: { user_id: { eq: $userId } }) {
+    edges {
+      node {
+        points
+      }
+    }
+  }
+  tripsCollection(filter: { user_id: { eq: $userId } }) {
+    edges {
+      node {
+        id
+        status
+        region_code
+        end_date
+      }
+    }
+  }
+  region_cacheCollection {
+    edges {
+      node {
+        region_code
+      }
+    }
+  }
+}

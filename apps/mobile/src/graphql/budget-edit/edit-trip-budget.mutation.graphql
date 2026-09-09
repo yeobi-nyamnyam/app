@@ -1,0 +1,26 @@
+mutation EditTripBudget(
+  $tripId: UUID!
+  $name: String!
+  $totalBudget: Int!
+  $fixedCost: Int!
+  $floatingBudget: Int!
+  $slotIds: [UUID]!
+  $slotAmounts: [Int]!
+) {
+  edit_trip_budget(
+    p_trip_id: $tripId
+    p_name: $name
+    p_total_budget: $totalBudget
+    p_fixed_cost: $fixedCost
+    p_floating_budget: $floatingBudget
+    p_slot_ids: $slotIds
+    p_slot_amounts: $slotAmounts
+  ) {
+    id
+    name
+    total_budget
+    fixed_cost
+    floating_budget
+    status
+  }
+}

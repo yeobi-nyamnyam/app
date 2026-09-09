@@ -1,0 +1,22 @@
+query TripHistory($tripId: UUID!) {
+  tripsCollection(filter: { id: { eq: $tripId } }) {
+    edges {
+      node {
+        id
+        name
+        start_date
+        end_date
+        meal_slotsCollection(first: 1000) {
+          edges {
+            node {
+              id
+              date
+              meal_type
+              is_recorded
+            }
+          }
+        }
+      }
+    }
+  }
+}

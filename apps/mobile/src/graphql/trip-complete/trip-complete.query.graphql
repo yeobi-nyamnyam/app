@@ -1,0 +1,31 @@
+query TripComplete($tripId: UUID!) {
+  tripsCollection(filter: { id: { eq: $tripId } }, first: 1) {
+    edges {
+      node {
+        id
+        name
+        total_budget
+        fixed_cost
+        floating_budget
+        meal_slotsCollection(first: 1000) {
+          edges {
+            node {
+              recorded_amount
+            }
+          }
+        }
+      }
+    }
+  }
+  user_badgesCollection(filter: { trip_id: { eq: $tripId } }) {
+    edges {
+      node {
+        id
+        badges {
+          name
+          bonus_points
+        }
+      }
+    }
+  }
+}

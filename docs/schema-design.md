@@ -17,10 +17,11 @@ D0~D3, G0~G17, L0~L4, M0~M2)를 한 번씩 훑어 테이블/컬럼으로 반영�
 | F0, F0-1, F0-2, F0-5 | 회원 인증 | `auth.users`(Supabase 내장) — provider/providerId는 Supabase Auth가 자체 관리, 별도 컬럼 불필요 |
 | F0-3 | 회원 탈퇴 | `profiles.status` |
 | F0-4 | 닉네임/고유ID | `profiles.nickname`, `profiles.handle` |
+| F0 (약관 동의) | 회원가입 약관 동의 | `profiles.terms_agreed_at`, `profiles.marketing_agreed` |
 | F1, F1-2~F1-5 | 여행 생성 | `trips`(name, start_date, end_date, total_budget, fixed_cost, food_budget_ratio) |
 | F1-1 | 지역 입력 | `trips.region_code` ↔ `region_cache` |
 | F1-6 | 끼니별 가중치 기본값 | `meal_slots.weight_level` (여행 생성 트랜잭션에서 각 슬롯에 심음) |
-| F2 | 식비 예산 자동계산 | `trips.floating_budget` |
+| F2 | 식비 예산 자동계산 | 식비는 별도 컬럼 없이 `(total_budget-fixed_cost)-floating_budget`로 파생계산 (아래 `trips.floating_budget` 설명 참고), `meal_slots.budget_amount` 합계로 실제 배분됨 |
 | F2-1, F2-2 | 일별/끼니별 배분 | `meal_slots.budget_amount` |
 | F2-3 | 남은 끼니 재분배 | `meal_slots.is_recorded`/`budget_amount` 재계산, `budget_change_history`(`event_type='rebalance'`) |
 | F2-4, F2-5 | 가중치 적용/조건부 수정 | `meal_slots.weight_level`, `is_recorded` |
@@ -84,7 +85,7 @@ restaurants (캐시 테이블, 24시간 배치 — 착한가격업소+TourAPI �
 ---
 
 ## 1. `profiles`
-Supabase `auth.users`를 확장하는 앱 프로필 (F0-4, F0-3)
+Supabase `auth.users`를 확장하는 앱 프로필 (F0-4, F0-3, F0 약관 동의)
 
 | 컬럼 | 타입 | 설명 |
 |---|---|---|
@@ -92,7 +93,15 @@ Supabase `auth.users`를 확장하는 앱 프로필 (F0-4, F0-3)
 | nickname | text | '형용사+동물' 자동생성, 10자 이내, 중복 허용 |
 | handle | text UNIQUE | `@jdof-v2` 형식, 수정 불가 |
 | status | text CHECK (active/deleted) | 탈퇴 시 'deleted' (F0-3) |
+| terms_agreed_at | timestamptz, nullable | 필수 약관(서비스/개인정보/연령확인/위치정보) 일괄 동의 시각. null이면 미동의 |
+| marketing_agreed | boolean, default false | 마케팅 정보 수신 동의(선택 항목) |
 | created_at / updated_at | timestamptz | |
+
+row 생성: 클라이언트가 만들지 않음. `auth.users` insert 시 `trg_auth_user_created` 트리거
+(`handle_new_user()`)가 nickname/handle을 생성해 자동으로 삽입한다
+(`supabase/migrations/20260828000000_profile_auto_provision.sql`).
+`terms_agreed_at`/`marketing_agreed`는 회원가입 약관 동의 화면에서 클라이언트가
+GraphQL로 UPDATE한다 (`supabase/migrations/20260828010000_profile_terms_agreement.sql`).
 
 ## 2. `trips`
 여행 (F1, F2, F4)
@@ -117,7 +126,7 @@ Supabase `auth.users`를 확장하는 앱 프로필 (F0-4, F0-3)
 | total_budget | integer | 원 단위, 1원 이상 (F1-3) |
 | fixed_cost | integer default 0 | (F1-4) |
 | food_budget_ratio | numeric(5,2) | 생성 시점에만 사용 (F1-5) |
-| floating_budget | integer | = (total_budget-fixed_cost)×ratio, 소수점 버림 (F2) — 생성 시 1회 계산 후 이후엔 F4에서 절대값 관리 |
+| floating_budget | integer | 유동비용(전체-고정-식비, 남는 금액). 식비 = (total_budget-fixed_cost)×ratio(소수점 버림, 생성 시점에만 사용)이고, `floating_budget = (total_budget-fixed_cost) - 식비`로 생성 시 1회 계산 후 이후엔 F4에서 절대값 관리. **식비 자체는 컬럼으로 저장하지 않고 필요할 때마다 `total_budget-fixed_cost-floating_budget`로 역산** (F3-3처럼 조회 시점 계산, 비저장) |
 | status | text CHECK (ongoing/completed) | (F7) |
 | created_at / updated_at | timestamptz | |
 
@@ -349,8 +358,9 @@ G0~G17 배지 정의
 
 - [x] `meal_weight_*` — **해석 B(일자별 가중치) 확정**. `trips`에 두던 3컬럼은 제거하고, `meal_slots`에 `weight_level` 컬럼 1개를 추가해 날짜+끼니타입 단위로 관리. 값은 숫자(0.8/1.0/1.2)가 아니라 프리셋 종류(light/normal/hearty)만 저장, 숫자는 코드 상수로 관리
 - [x] `region_cache` 성격 — **정적 시드 데이터로 확정**. 팀이 준비한 엑셀 등 정적 데이터셋을 배포/세팅 시 한 번 시드로 삽입, 운영 중 TourAPI 호출로 갱신하지 않음. 지원하지 않는 지역 조회 시 API 폴백 없이 "조회할 수 없는 지역입니다" 에러 처리 (F1-1, F3 추천 화면에 반영 필요). `updated_at` 컬럼도 갱신 개념이 없어 제거
-- [x] AI 채팅(C1/C2) LLM 호출 — **서버(`apps/server`) 경유로 결정**. 서버가 현재 예산/끼니 상태를 프롬프트에 포함해 호출하고 파싱 결과를 검증 후 반환. 지연시간 체감을 줄이기 위해 서버→클라이언트 구간은 SSE로 스트리밍 릴레이 권장 (`docs/api-server-boundaries.md` 참고)
+- [x] AI 채팅(C1/C2) LLM 호출 — **서버(`apps/server`) 경유 + Google Gemini(`gemini-3.6-flash`, 무료 티어)로 확정**. 서버는 무상태 프록시로 DB를 직접 조회하지 않고, 클라이언트가 요청 바디에 실어 보낸 현재 예산/끼니 상태를 프롬프트에 포함해 호출하고 파싱 결과를 검증 후 반환. `chat_messages` 기록과 `meal_logs` 확정은 다른 기능과 동일하게 클라이언트가 GraphQL로 처리. 지연시간 체감을 줄이기 위해 서버→클라이언트 구간은 SSE로 스트리밍 릴레이 (`docs/api-server-boundaries.md` 참고)
 - [x] `meal_logs.is_good_price` 추가, `restaurants` 캐시 테이블 신설 — 착한가격업소는 위치검색 파라미터가 없어 전량 페이지네이션 수집 후 주소 파싱+Geocoding으로 좌표 보강, TourAPI(FD 39)와 통합 캐싱. 24시간 배치, `category`는 매핑 없이 소스 원본 텍스트 그대로 저장 (§12 참고). FD04(주점)·FD05(카페/찻집) 포함
 - [x] **기능명세서 v4(0812) 반영** — F3-5(착한가격업소 배치 캐싱)는 위 `restaurants` 설계와 일치해 별도 스키마 변경 없이 공식 기능 ID만 인용 반영. F6-10(매장명 검색·자동완성)은 새 갭 발견 — `meal_logs`에 `store_latitude`/`store_longitude` 컬럼 추가 (§4 참고). M2(방문 매장 지도)가 좌표를 필요로 하는데 기존엔 `restaurant_id`가 없는 기록(채팅/수기/OCR)의 좌표를 확보할 방법이 없었음. F6-10으로 네이버 검색 API 결과에서 좌표를 받아 채우면 이 갭이 해소됨
 - [x] **`updated_at` 트리거 반영 완료** — 컨벤션(공통 트리거 함수 + 7개 테이블)대로 `supabase/migrations/20260812000000_initial_schema.sql`에 `set_updated_at()` 함수와 테이블별 `trg_*_updated_at` 트리거 7개(profiles/trips/meal_slots/restaurants/meal_logs/diaries/chat_messages)를 추가. `chat_messages.updated_at` 컬럼도 반영됨
 - [x] **`business-logic-notes.md` 동기화 완료** — §2(F2-3)를 `budget_edit`(1번, `trips` 값 변경)과 `rebalance`(4번, 실제 재분배 실행)를 별도 행으로 insert하도록 갱신해 §7(L1 포인트 매핑)의 `rebalance` 이벤트와 일치시킴
+- [x] **F0-4(닉네임/고유ID 자동 생성) 반영 완료** — `profiles` row를 클라이언트가 만들지 않고, `auth.users` insert 트리거(`handle_new_user()`)가 nickname('형용사+동물')/handle(`@xxxx-vN`)을 생성해 자동 삽입하도록 결정 (이슈 #49). 약관 동의(F0) 화면 도달 시점에 `profiles` row가 이미 보장되므로, 후속 이슈(약관 동의 이력을 `profiles`에 컬럼으로 저장)가 이 위에서 진행 가능

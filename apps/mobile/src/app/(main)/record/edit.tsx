@@ -1,0 +1,296 @@
+import { useState } from "react";
+import { Modal as RNModal, Pressable, ScrollView, StyleSheet, View } from "react-native";
+import { router, useLocalSearchParams } from "expo-router";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useMutation } from "@apollo/client/react";
+import { isReference, type Reference } from "@apollo/client";
+import {
+  Button,
+  Chip,
+  DataCardRow,
+  FormField,
+  Header,
+  Icon,
+  Modal,
+  Text,
+  TextField,
+  colors,
+  radius,
+  spacing,
+  stroke,
+} from "@repo/ui";
+import { DeleteMealLogDocument, UpdateMealLogDocument } from "@repo/types";
+
+import { formatDateTime, formatDigitsForDisplay, formatWon, parseDigits } from "@/lib/format";
+import type { MealLogCategory } from "@/components/RecordForm";
+import { useAlertModal } from "@/hooks/useAlertModal";
+
+const OTHER_CATEGORY_OPTIONS: MealLogCategory[] = ["교통", "숙박", "기념품", "기타"];
+
+/**
+ * 소비 기록 상세/수정/삭제 화면 (F6-5, F6-6, Figma "meal-detail"/"spent-detail-delete").
+ * record/index.tsx의 "기록보기" 목록에서 항목을 눌러 진입한다. 방문 날짜/끼니때는
+ * 불변이고, 끼니 소비는 매장/금액/메모만, 기타소비는 카테고리까지 수정 가능하다.
+ */
+export default function RecordEditScreen() {
+  const insets = useSafeAreaInsets();
+  const { showAlert } = useAlertModal();
+  const params = useLocalSearchParams<{
+    logId: string;
+    title: string;
+    category: MealLogCategory;
+    mealTypeLabel?: string;
+    createdAt: string;
+    visitDate: string;
+    amount: string;
+    storeName?: string;
+    storeAddress?: string;
+    memo?: string;
+    canDelete: string;
+  }>();
+
+  const isMeal = params.category === "식비";
+  const canDelete = params.canDelete === "true";
+
+  const [category, setCategory] = useState<MealLogCategory>(params.category);
+  const [amount, setAmount] = useState(params.amount);
+  const [storeName, setStoreName] = useState(params.storeName ?? "");
+  const [storeAddress, setStoreAddress] = useState(params.storeAddress ?? "");
+  const [memo, setMemo] = useState(params.memo ?? "");
+  const [isDeleteConfirmVisible, setIsDeleteConfirmVisible] = useState(false);
+
+  const [updateMealLog, { loading: updating }] = useMutation(UpdateMealLogDocument);
+  // delete_meal_log는 RPC라 삭제된 row 정보를 응답으로 안 주기 때문에 Apollo가
+  // 알아서 캐시를 갱신하지 못한다 — 성공하면 meal_logsCollection 캐시에서 직접
+  // 해당 edge를 제거해서 history 화면이 focus 되돌아오기 전에도 즉시 반영되게 한다.
+  const [deleteMealLog, { loading: deleting }] = useMutation(DeleteMealLogDocument, {
+    update: (cache, _result, { variables }) => {
+      const deletedLogId = variables?.mealLogId;
+      if (!deletedLogId) return;
+      cache.modify({
+        fields: {
+          meal_logsCollection(
+            existing: Reference | { edges: { node: Reference }[] } | undefined,
+            { readField },
+          ) {
+            if (!existing || isReference(existing)) return existing;
+            return {
+              ...existing,
+              edges: existing.edges.filter((edge) => readField("id", edge.node) !== deletedLogId),
+            };
+          },
+        },
+      });
+      const normalizedId = cache.identify({ __typename: "meal_logs", id: deletedLogId });
+      if (normalizedId) {
+        cache.evict({ id: normalizedId });
+        cache.gc();
+      }
+    },
+  });
+
+  const amountValue = Number(amount);
+  const isAmountValid = amount.length > 0 && Number.isFinite(amountValue) && amountValue > 0;
+  // 끼니 소비는 방문 매장이 F3 추천 필터링/기록 조회의 기준이라 빈 값으로 저장할 수 없다.
+  const isStoreNameValid = !isMeal || storeName.trim().length > 0;
+  const isDirty =
+    category !== params.category || amount !== params.amount || storeName !== (params.storeName ?? "") || memo !== (params.memo ?? "");
+  const canSave = isAmountValid && isStoreNameValid && isDirty && !updating;
+
+  const deleteWarning = isMeal
+    ? "삭제 시 이 기록의 금액 만큼 예산이 재계산되고, 이후 날짜의 여유 식비도 함께 갱신돼요."
+    : "삭제 시 남은 기록을 기준으로 유동비용 및 식비 사용량이 전체 재계산돼요.";
+
+  const handleAmountChange = (text: string) => {
+    const digits = parseDigits(text);
+    setAmount(digits > 0 ? String(digits) : "");
+  };
+
+  // 주소는 매장명 검색 결과로만 채워지는 값(F6-10)이라 매장명을 지우면 더는
+  // 유효하지 않다 — 같이 초기화한다.
+  const handleStoreNameChange = (text: string) => {
+    setStoreName(text);
+    if (!text) {
+      setStoreAddress("");
+    }
+  };
+
+  const handleSave = async () => {
+    try {
+      await updateMealLog({
+        variables: {
+          mealLogId: params.logId,
+          amount: amountValue,
+          storeName: storeName || null,
+          storeAddress: storeAddress || null,
+          memo: memo || null,
+          category: isMeal ? null : category,
+        },
+      });
+      router.back();
+    } catch (error) {
+      showAlert("수정 실패", error instanceof Error ? error.message : "잠시 후 다시 시도해주세요.");
+    }
+  };
+
+  const handleDeletePress = () => setIsDeleteConfirmVisible(true);
+
+  const handleDelete = async () => {
+    setIsDeleteConfirmVisible(false);
+    try {
+      await deleteMealLog({ variables: { mealLogId: params.logId } });
+      router.back();
+    } catch (error) {
+      showAlert("삭제 실패", error instanceof Error ? error.message : "잠시 후 다시 시도해주세요.");
+    }
+  };
+
+  return (
+    <View style={styles.screen}>
+      <Header title={params.title} onBackPress={() => router.back()} topInset={insets.top} />
+      <ScrollView style={styles.scroll} contentContainerStyle={styles.content}>
+        <View style={styles.section}>
+          <Text variant="title3Emphasized">기록 상세</Text>
+          <View style={styles.card}>
+            <DataCardRow label={isMeal ? "끼니 유형" : "카테고리"} value={isMeal ? params.mealTypeLabel : params.category} />
+            <DataCardRow label="소비일자" value={params.visitDate.replace(/-/g, ".")} />
+            <DataCardRow label="작성일자" value={formatDateTime(params.createdAt)} />
+            <DataCardRow label={isMeal ? "방문 매장" : "이용 내역"} value={params.storeName || "-"} />
+            {isMeal && params.storeAddress ? <DataCardRow label="주소" value={params.storeAddress} /> : null}
+            <DataCardRow label="금액" value={formatWon(Number(params.amount))} />
+            <DataCardRow label="메모" value={params.memo || "-"} />
+          </View>
+        </View>
+
+        <View style={styles.section}>
+          <Text variant="title3Emphasized">수정 가능한 항목</Text>
+
+          {!isMeal ? (
+            <FormField label="카테고리">
+              <View style={styles.categoryRow}>
+                {OTHER_CATEGORY_OPTIONS.map((option) => (
+                  <Chip
+                    key={option}
+                    text={option}
+                    active={category === option}
+                    onPress={() => setCategory(option)}
+                  />
+                ))}
+              </View>
+            </FormField>
+          ) : null}
+
+          <FormField label={isMeal ? "매장 이름" : "이용 내역"}>
+            <TextField value={storeName} onChangeText={handleStoreNameChange} placeholder="예: 북구네 돼지국밥" />
+          </FormField>
+
+          {isMeal && storeAddress ? (
+            <FormField label="주소">
+              <TextField value={storeAddress} onChangeText={() => {}} disabled />
+            </FormField>
+          ) : null}
+
+          <FormField label="금액">
+            <TextField
+              value={formatDigitsForDisplay(amount)}
+              onChangeText={handleAmountChange}
+              placeholder="예: 12,000"
+              keyboardType="number-pad"
+              tailingIcon={<Icon name="krw" size="medium" />}
+            />
+          </FormField>
+
+          <FormField label="메모">
+            <TextField value={memo} onChangeText={setMemo} placeholder="예: 어묵꼬치, 생필품" />
+          </FormField>
+        </View>
+      </ScrollView>
+
+      <View style={[styles.footer, { paddingBottom: spacing[12] + insets.bottom }]}>
+        <Text variant="footnoteRegular" color="subtle">
+          {deleteWarning}
+        </Text>
+        <View style={styles.buttonRow}>
+          <View style={styles.buttonFlex}>
+            <Button label={updating ? "저장 중..." : "수정 저장"} disabled={!canSave} onPress={handleSave} />
+          </View>
+          <View style={styles.buttonFlex}>
+            <Button label="기록 삭제" variant="outline" disabled={!canDelete} onPress={handleDeletePress} />
+          </View>
+        </View>
+      </View>
+
+      <RNModal
+        visible={isDeleteConfirmVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setIsDeleteConfirmVisible(false)}
+      >
+        <Pressable style={styles.backdrop} onPress={() => setIsDeleteConfirmVisible(false)} />
+        <View style={styles.modalCenter}>
+          <Modal
+            title="기록을 삭제할까요?"
+            content={deleteWarning}
+            confirmLabel={deleting ? "삭제 중..." : "삭제"}
+            onCancel={() => setIsDeleteConfirmVisible(false)}
+            onConfirm={handleDelete}
+          />
+        </View>
+      </RNModal>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  screen: {
+    flex: 1,
+    backgroundColor: colors.surface.neutral.default,
+  },
+  scroll: {
+    flex: 1,
+  },
+  content: {
+    padding: spacing[16],
+    gap: spacing[20],
+  },
+  footer: {
+    backgroundColor: colors.surface.neutral.default,
+    borderTopWidth: stroke.default,
+    borderTopColor: colors.border.neutral.subtle,
+    paddingHorizontal: spacing[16],
+    paddingTop: spacing[12],
+    gap: spacing[8],
+  },
+  section: {
+    gap: spacing[4],
+  },
+  card: {
+    marginTop: spacing[4],
+    borderWidth: stroke.default,
+    borderColor: colors.border.neutral.default,
+    borderRadius: radius[23],
+    paddingHorizontal: spacing[16],
+    paddingVertical: spacing[4],
+  },
+  categoryRow: {
+    flexDirection: "row",
+    gap: spacing[10],
+  },
+  buttonRow: {
+    flexDirection: "row",
+    gap: spacing[8],
+  },
+  buttonFlex: {
+    flex: 1,
+  },
+  backdrop: {
+    ...StyleSheet.absoluteFill,
+    backgroundColor: colors.surface.neutral.alpha["inverse-alpha-30"],
+  },
+  modalCenter: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: spacing[24],
+  },
+});

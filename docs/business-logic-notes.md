@@ -22,7 +22,7 @@ Postgres 함수(RPC)로 할지 Apollo mutation 여러 개를 클라이언트가 
 **규칙**:
 1. `trips` 값이 바뀌는 즉시 `budget_change_history`에 `event_type='budget_edit'` 로그 추가 (before/after는 `trips`의 관련 필드 스냅샷)
 2. `is_recorded=true`인 슬롯은 **소급 변경하지 않음** (그대로 유지)
-3. `is_recorded=false`인 슬롯만 대상으로, 변경된 `floating_budget`에서 이미 확정된 슬롯들의 `budget_amount` 합을 뺀 나머지를 남은 슬롯 수·가중치(`weight_level`)로 재배분
+3. `is_recorded=false`인 슬롯만 대상으로, 변경된 식비(`total_budget-fixed_cost-floating_budget`로 역산, `floating_budget` 자체가 아님 — 이 컬럼은 유동비용을 저장함)에서 이미 확정된 슬롯들의 `budget_amount` 합을 뺀 나머지를 남은 슬롯 수·가중치(`weight_level`)로 재배분
 4. 재배분이 실제로 실행되면(대상 슬롯이 1개 이상 존재) `budget_change_history`에 **별도로** `event_type='rebalance'` 로그를 추가 (before/after는 영향받은 슬롯 목록과 각 `budget_amount` 변화)
 
 > **왜 2개 이벤트로 나누나**: `budget_edit`(1번)은 "사용자가 예산을 고쳤다"는
@@ -70,7 +70,7 @@ Postgres 함수(RPC)로 할지 Apollo mutation 여러 개를 클라이언트가 
 |---|---|
 | G1 예산 완주자 | `budget_change_history` + 총지출 합계 (`meal_logs` SUM) |
 | G2 딱 맞춤 플래너 | `trips.total_budget` vs 총지출 ±5% |
-| G3 짠테크 고수 | `trips.floating_budget` vs 식비 실지출 80% 이하 (`is_cascade_confirmed=true` 슬롯은 집계 제외) |
+| G3 짠테크 고수 | 식비(`trips.total_budget-fixed_cost-floating_budget`로 역산, `floating_budget` 자체는 유동비용이라 직접 비교하면 안 됨) vs 식비 실지출 80% 이하 (`is_cascade_confirmed=true` 슬롯은 집계 제외) |
 | G4 위기탈출 | 일별 예산 초과 후 다음 끼니로 당일 회복 (`meal_slots` 일자별 그룹핑 후 판정) |
 | G5~G6 소비패턴형 | `meal_logs.category` 비교/시간대 분석 |
 | G7~G9 계획변경 유연성 | `budget_change_history` 이벤트 횟수 |
@@ -98,7 +98,10 @@ Postgres 함수(RPC)로 할지 Apollo mutation 여러 개를 클라이언트가 
 
 ## 8. `restaurants` 캐시 배치 (F3, F3-1)
 
-**트리거**: 24시간 주기 스케줄 (Supabase Scheduled Edge Function + `pg_cron` 권장)
+**트리거**: 주 1회 GitHub Actions 스케줄 (`.github/workflows/restaurants-sync.yml`, F3-8). `pg_cron`은
+순수 SQL만 실행 가능해 외부 API(착한가격업소/TourAPI/네이버 Geocoding)를 호출하는 이 배치에는
+쓸 수 없어 GitHub Actions로 구현 — `good-price`/`tour-api` 동기화는 서로 독립된 job이라 한쪽이
+실패해도 다른 쪽 실행에 영향 없음
 
 **규칙**:
 1. **행안부 착한가격업소**: 위치 검색 파라미터가 없어 `page`를 1부터 끝까지 순회하며 전량 수집 (`perPage` 최대치 기준)
@@ -131,7 +134,7 @@ Postgres 함수(RPC)로 할지 Apollo mutation 여러 개를 클라이언트가 
 
 ## 결정이 필요한 것
 
-- [ ] 위 로직들을 Postgres 함수(RPC)로 구현할지, 서버(`apps/server`)에서 처리할지 — 트랜잭션 원자성 때문에 개인적으로는 Postgres 함수 권장 (특히 1~5번은 여러 테이블에 걸친 원자적 갱신이 필요)
+- [x] 위 로직들을 Postgres 함수(RPC)로 구현할지, 서버(`apps/server`)에서 처리할지 — **Postgres RPC 함수로 결정** (수진, F6/F7 스코프 확인). 1번(F6-4 캐스케이드), 3번(F6-5 삭제+재계산), 4번(F6-6 삭제+재계산), 6번(G0~G17 배지 판정), 7번(L0~L4 포인트 적립)을 RPC 함수로 구현 예정. 2번(F2-3 재분배, 초연 담당)도 동일 트랜잭션 원자성 이슈가 있어 같은 방식을 권장하나 초연과 별도 확인 필요
 - [ ] "신규시도"(같은 매장 재방문 여부) 판단 시 매장 식별 기준 — `store_name` 문자열 일치로 충분한지, `restaurant_id` 기반으로 해야 할지 (10번의 M2 그룹핑 기준과 동일 로직 재사용 권장)
 - [ ] `restaurants` 배치 스크립트 담당자 배정 (`team-assignment.md` F3 담당자 업무량에 반영 필요)
 - [ ] 9번의 "이름+주소 유사도 매칭으로 `restaurant_id` 사후 연결" 여부 — 이번 세션 스코프에 포함할지, 이후 개선 과제로 남길지

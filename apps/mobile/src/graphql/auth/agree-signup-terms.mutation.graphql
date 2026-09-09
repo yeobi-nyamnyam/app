@@ -1,0 +1,13 @@
+mutation AgreeToSignUpTerms($id: UUID!, $agreedAt: Datetime!, $marketingAgreed: Boolean!) {
+  updateprofilesCollection(
+    set: { terms_agreed_at: $agreedAt, marketing_agreed: $marketingAgreed }
+    filter: { id: { eq: $id } }
+  ) {
+    affectedCount
+    records {
+      id
+      terms_agreed_at
+      marketing_agreed
+    }
+  }
+}

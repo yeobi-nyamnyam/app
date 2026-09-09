@@ -1,0 +1,14 @@
+query TripDiaries($tripId: UUID!) {
+  diariesCollection(filter: { trip_id: { eq: $tripId } }, orderBy: [{ date: DescNullsLast }]) {
+    edges {
+      node {
+        id
+        date
+        title
+        content
+        mode
+        created_at
+      }
+    }
+  }
+}

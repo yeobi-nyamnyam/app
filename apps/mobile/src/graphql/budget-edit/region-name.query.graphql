@@ -1,0 +1,9 @@
+query RegionName($code: String!) {
+  region_cacheCollection(filter: { region_code: { eq: $code } }, first: 1) {
+    edges {
+      node {
+        region_name
+      }
+    }
+  }
+}

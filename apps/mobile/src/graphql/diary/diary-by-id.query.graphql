@@ -1,0 +1,9 @@
+query DiaryById($diaryId: UUID!) {
+  diariesByPk(id: $diaryId) {
+    id
+    date
+    title
+    content
+    mode
+  }
+}

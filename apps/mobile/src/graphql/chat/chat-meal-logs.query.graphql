@@ -1,0 +1,18 @@
+query ChatMealLogs($tripId: UUID!) {
+  meal_logsCollection(
+    filter: { trip_id: { eq: $tripId }, source: { eq: "chat" } }
+    orderBy: [{ created_at: DescNullsLast }]
+    first: 500
+  ) {
+    edges {
+      node {
+        id
+        category
+        amount
+        store_name
+        memo
+        created_at
+      }
+    }
+  }
+}
