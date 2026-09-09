@@ -31,6 +31,7 @@ export const EmptyTripPrompt = ({ onCreateTrip }: EmptyTripPromptProps) => {
 const styles = StyleSheet.create({
   container: {
     alignItems: 'center',
+    alignSelf: 'stretch',
   },
   textBlock: {
     alignItems: 'center',
@@ -40,7 +41,7 @@ const styles = StyleSheet.create({
   },
   actions: {
     width: '100%',
-    alignItems: 'center',
+    alignItems: 'stretch',
     gap: spacing[16],
     paddingTop: spacing[26],
     paddingHorizontal: spacing[16],

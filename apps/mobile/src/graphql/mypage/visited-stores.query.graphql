@@ -1,0 +1,24 @@
+query VisitedStores($userId: UUID!) {
+  tripsCollection(filter: { user_id: { eq: $userId } }) {
+    edges {
+      node {
+        id
+        meal_logsCollection(first: 1000) {
+          edges {
+            node {
+              id
+              category
+              store_name
+              store_address
+              store_latitude
+              store_longitude
+              restaurant_id
+              amount
+              visit_date
+            }
+          }
+        }
+      }
+    }
+  }
+}

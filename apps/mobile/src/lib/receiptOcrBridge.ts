@@ -1,6 +1,9 @@
 export interface ReceiptOcrFillResult {
   storeName: string;
   amount: number;
+  storeAddress: string | null;
+  storeLatitude: number | null;
+  storeLongitude: number | null;
   receiptImageUrl: string | null;
   ocrRaw: unknown;
 }
