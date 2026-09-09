@@ -8,6 +8,7 @@ import {
   View,
 } from 'react-native'
 import { router } from 'expo-router'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { KeyboardAwareScrollView } from 'react-native-keyboard-controller'
 import {
   Button,
@@ -21,6 +22,7 @@ import {
   colors,
   getFontFamily,
   spacing,
+  stroke,
   typography,
   type DropdownOption,
 } from '@repo/ui'
@@ -109,6 +111,7 @@ export const RecordForm = ({
   onSubmit,
   tripId,
 }: RecordFormProps) => {
+  const insets = useSafeAreaInsets()
   const initialCategory = initialValues?.category
   // 오늘 아침/점심/저녁이 전부 기록(캐스케이드 확정 포함)됐으면 더 이상 끼니
   // 소비로 기록할 대상이 없다 — 새 기록은 기타소비로 시작하고, 끼니 쪽으로
@@ -350,7 +353,10 @@ export const RecordForm = ({
         </FormField>
       </KeyboardAwareScrollView>
 
-      <View style={styles.footer} onLayout={(event) => setFooterHeight(event.nativeEvent.layout.height)}>
+      <View
+        style={[styles.footer, { paddingBottom: spacing[12] + insets.bottom }]}
+        onLayout={(event) => setFooterHeight(event.nativeEvent.layout.height)}
+      >
         <Button
           label={submitting ? '저장 중...' : '저장하기'}
           disabled={!canSubmit}
@@ -457,8 +463,11 @@ const styles = StyleSheet.create({
   },
   footer: {
     width: '100%',
+    backgroundColor: colors.surface.neutral.default,
+    borderTopWidth: stroke.default,
+    borderTopColor: colors.border.neutral.subtle,
     paddingHorizontal: spacing[16],
-    paddingVertical: spacing[12],
+    paddingTop: spacing[12],
   },
   backdrop: {
     ...StyleSheet.absoluteFill,
