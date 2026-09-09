@@ -1,14 +1,13 @@
-export const DEFAULT_FETCH_TIMEOUT_MS = 15000;
-
-// apps/server 호출에 공통으로 쓰는 타임아웃 있는 fetch. 기존엔 apps/mobile/src/lib의
-// 모든 REST 호출이 순수 fetch()라 타임아웃이 없었다 — 네트워크가 잠깐이라도 막히면
-// 응답이 영영 안 와서 화면이 로딩 상태로 무한정 멈춰버리는 문제가 있었다(에뮬레이터
-// 네트워크 스택이 간헐적으로 이런 증상을 보임). AbortController로 일정 시간 후
-// 요청을 중단시켜 최소한 명확한 에러로 끝나게 한다.
+// 일기 AI 초안 생성(/diary/draft, #175) 전용 타임아웃 있는 fetch. Gemini 응답이
+// 안 오면 순수 fetch()는 화면이 로딩 상태로 무한정 멈춰버려서(에뮬레이터 네트워크
+// 스택이 간헐적으로 이런 증상을 보임), AbortController로 일정 시간 후 요청을
+// 중단시켜 최소한 명확한 에러로 끝나게 한다. 다른 API 호출까지 넓히지 않는다 —
+// 매장 검색처럼 응답이 느려도 다음 액션이 자연히 대체하는 경우엔 타임아웃이
+// 오히려 방해가 된다는 피드백이 있었다.
 export async function fetchWithTimeout(
   input: string,
-  init?: RequestInit,
-  timeoutMs: number = DEFAULT_FETCH_TIMEOUT_MS,
+  init: RequestInit | undefined,
+  timeoutMs: number,
 ): Promise<Response> {
   const controller = new AbortController();
   let timedOut = false;

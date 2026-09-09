@@ -1,7 +1,6 @@
 import { fetchWithTimeout } from "./fetchWithTimeout";
 
-// AI 초안 생성은 Gemini 응답을 기다려야 해서 기본 타임아웃보다 여유를 둔다.
-const DRAFT_TIMEOUT_MS = 30000;
+const DRAFT_TIMEOUT_MS = 10000;
 
 export interface MealLogSummary {
   storeName: string | null;

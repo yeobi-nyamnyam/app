@@ -4,12 +4,9 @@ import * as ImagePicker from "expo-image-picker";
 import { decode } from "base64-arraybuffer";
 
 import { supabase } from "./supabase";
-import { fetchWithTimeout } from "./fetchWithTimeout";
 
 const RECEIPTS_BUCKET = "receipts";
 const serverUrl = process.env.EXPO_PUBLIC_SERVER_URL ?? "http://localhost:4000";
-// OCR 인식은 이미지 처리를 기다려야 해서 기본 타임아웃보다 여유를 둔다.
-const OCR_TIMEOUT_MS = 30000;
 
 export interface ReceiptOcrResult {
   recognized: boolean;
@@ -66,15 +63,11 @@ export async function getReceiptSignedUrl(path: string): Promise<string> {
 
 // apps/server의 클로바 OCR 프록시를 호출한다.
 export async function recognizeReceipt(imageUrl: string): Promise<ReceiptOcrResult> {
-  const response = await fetchWithTimeout(
-    `${serverUrl}/record/ocr/receipt`,
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ imageUrl }),
-    },
-    OCR_TIMEOUT_MS,
-  );
+  const response = await fetch(`${serverUrl}/record/ocr/receipt`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ imageUrl }),
+  });
   if (!response.ok) {
     throw new Error("영수증 인식에 실패했어요.");
   }
