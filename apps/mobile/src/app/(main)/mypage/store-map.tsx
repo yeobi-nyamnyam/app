@@ -9,6 +9,7 @@ import { VisitedStoresDocument } from "@repo/types";
 import { useSession } from "@/hooks/useSession";
 import { useAlertModal } from "@/hooks/useAlertModal";
 import { formatMonthDay, formatWon } from "@/lib/format";
+import { parseCoordinate } from "@/lib/restaurant";
 import { buildVisitedStoreGroups, type MealLogInput } from "@/lib/visitedStores";
 import {
   VisitedStoreMapView,
@@ -47,8 +48,13 @@ export default function StoreMapScreen() {
         .map((logEdge) => ({
           storeName: logEdge.node.store_name,
           storeAddress: logEdge.node.store_address,
-          storeLatitude: logEdge.node.store_latitude,
-          storeLongitude: logEdge.node.store_longitude,
+          // store_latitude/longitude는 GraphQL BigFloat(numeric) 스칼라라 pg_graphql이
+          // 정밀도 손실 방지를 위해 JSON 문자열로 내려준다 — codegen 타입은 number라
+          // 적혀 있지만 실제로는 문자열이라, 파싱 없이 네이티브 지도 마커에 넘기면
+          // "latitude cannot be cast from String to double"로 크래시난다
+          // (F3 recommend의 lib/restaurant.ts parseCoordinate와 동일 이슈).
+          storeLatitude: parseCoordinate(logEdge.node.store_latitude),
+          storeLongitude: parseCoordinate(logEdge.node.store_longitude),
           restaurantId: logEdge.node.restaurant_id,
           amount: logEdge.node.amount,
           visitDate: logEdge.node.visit_date,
