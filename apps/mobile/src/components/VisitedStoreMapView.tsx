@@ -23,9 +23,9 @@ const SINGLE_STORE_ZOOM = 15;
 const MARKER_SIZE = 12;
 // animateCameraWithTwoCoords로 좌표에 꽉 맞춰 줌하면 양 끝 마커가 지도 화면
 // 가장자리에 바로 걸쳐 잘려 보인다 — mapPadding으로 카메라가 맞추는 콘텐츠
-// 영역 자체를 안쪽으로 줄여서 마커 주변에 여백을 둔다. 40은 packages/tokens
+// 영역 자체를 안쪽으로 줄여서 마커 주변에 여백을 둔다. 50은 packages/tokens
 // spacing 스케일(...24, 26, 36)에 없는 값이라 실측값을 로컬 상수로 둔다.
-const MAP_EDGE_PADDING = 40;
+const MAP_EDGE_PADDING = 50;
 
 export interface VisitedStoreMapMarker {
   id: string;
