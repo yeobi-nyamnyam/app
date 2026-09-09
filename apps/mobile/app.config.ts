@@ -7,7 +7,7 @@ const config: ExpoConfig = {
   name: 'mobile',
   slug: 'mobile',
   owner: 'yeobi-nyamnyam',
-  version: '0.0.0',
+  version: '1.0.0',
   scheme: 'yeobinyamnyam',
   orientation: 'portrait',
   userInterfaceStyle: 'automatic',
