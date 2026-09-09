@@ -6,6 +6,7 @@ const NAVER_MAP_CLIENT_ID_FALLBACK = 'd568thotkp'
 const config: ExpoConfig = {
   name: 'mobile',
   slug: 'mobile',
+  owner: 'yeobi-nyamnyam',
   version: '0.0.0',
   scheme: 'yeobinyamnyam',
   orientation: 'portrait',
@@ -75,7 +76,7 @@ const config: ExpoConfig = {
     naverMapStyleId: process.env.NAVER_MAP_STYLE_ID,
     sentryDsn: process.env.SENTRY_DSN,
     eas: {
-      projectId: 'ecf0ca2e-6c92-4f60-a88f-536e9562ee6d',
+      projectId: 'f602060b-eb75-4e30-9618-fb5ca6230a08',
     },
   },
 }
