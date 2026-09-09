@@ -61,7 +61,8 @@ recordRouter.get("/record/places/search", async (req, res) => {
     const results = await searchNaverLocal(query, display ?? 5);
     const body: z.infer<typeof PlaceSearchResponseSchema> = { results };
     return res.json(body);
-  } catch {
+  } catch (error) {
+    console.error("[record] 장소 검색 실패", error);
     const body: z.infer<typeof ErrorResponseSchema> = { message: "장소 검색에 실패했습니다." };
     return res.status(500).json(body);
   }

@@ -1,3 +1,7 @@
+import { fetchWithTimeout } from "./fetchWithTimeout";
+
+const DRAFT_TIMEOUT_MS = 10000;
+
 export interface MealLogSummary {
   storeName: string | null;
   amount: number;
@@ -16,19 +20,23 @@ export async function generateDiaryDraft(params: {
   mealLogs: MealLogSummary[];
   tone?: "shorter" | "emotional";
 }): Promise<string> {
-  const response = await fetch(`${serverUrl}/diary/draft`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${params.accessToken}`,
+  const response = await fetchWithTimeout(
+    `${serverUrl}/diary/draft`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${params.accessToken}`,
+      },
+      body: JSON.stringify({
+        tripName: params.tripName,
+        dayLabel: params.dayLabel,
+        mealLogs: params.mealLogs,
+        tone: params.tone,
+      }),
     },
-    body: JSON.stringify({
-      tripName: params.tripName,
-      dayLabel: params.dayLabel,
-      mealLogs: params.mealLogs,
-      tone: params.tone,
-    }),
-  });
+    DRAFT_TIMEOUT_MS,
+  );
   if (!response.ok) {
     throw new Error("일기 초안 생성에 실패했어요.");
   }

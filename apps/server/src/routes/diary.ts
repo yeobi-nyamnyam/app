@@ -128,7 +128,8 @@ diaryRouter.post("/diary/draft", async (req, res) => {
   let model: ReturnType<ReturnType<typeof getGeminiClient>["getGenerativeModel"]>;
   try {
     model = getGeminiClient().getGenerativeModel({ model: GEMINI_CHAT_MODEL });
-  } catch {
+  } catch (error) {
+    console.error("[diary] Gemini 클라이언트 생성 실패", error);
     const body: z.infer<typeof ErrorResponseSchema> = { message: "AI 서비스를 사용할 수 없습니다." };
     return res.status(500).json(body);
   }
@@ -138,7 +139,8 @@ diaryRouter.post("/diary/draft", async (req, res) => {
     const content = result.response.text().trim();
     const body: z.infer<typeof DiaryDraftResponseSchema> = { content };
     return res.json(body);
-  } catch {
+  } catch (error) {
+    console.error("[diary] Gemini 초안 생성 실패", error);
     const body: z.infer<typeof ErrorResponseSchema> = { message: "AI 응답을 받아오지 못했습니다." };
     return res.status(502).json(body);
   }
