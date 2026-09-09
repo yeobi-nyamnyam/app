@@ -8,7 +8,7 @@ import { VisitedStoresDocument } from "@repo/types";
 
 import { useSession } from "@/hooks/useSession";
 import { useAlertModal } from "@/hooks/useAlertModal";
-import { formatMonthDay, formatWon } from "@/lib/format";
+import { formatWon } from "@/lib/format";
 import { parseCoordinate } from "@/lib/restaurant";
 import { buildVisitedStoreGroups, type MealLogInput } from "@/lib/visitedStores";
 import {
@@ -144,7 +144,7 @@ export default function StoreMapScreen() {
                           그대로 쓴다 — 필요해지면 별도 유틸 추가 검토. 영수증/직접입력
                           기록은 주소가 아예 없을 수 있어 그 경우 안내 문구로 대체. */}
                       <Text variant="footnoteRegular" color="subtle" numberOfLines={1}>
-                        {store.storeAddress ?? "주소 정보 없음"} · {store.visitDates.map(formatMonthDay).join(", ")}
+                        {store.storeAddress ?? "주소 정보 없음"}
                       </Text>
                     </View>
                     <Text variant="subheadlineEmphasized">{formatWon(store.totalAmount)}</Text>
