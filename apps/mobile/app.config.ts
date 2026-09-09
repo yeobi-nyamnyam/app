@@ -8,6 +8,7 @@ const config: ExpoConfig = {
   slug: 'mobile',
   owner: 'yeobi-nyamnyam',
   version: '1.0.0',
+  icon: './assets/images/icon.png',
   scheme: 'yeobinyamnyam',
   orientation: 'portrait',
   userInterfaceStyle: 'automatic',
