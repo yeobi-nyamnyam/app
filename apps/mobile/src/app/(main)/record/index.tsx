@@ -72,19 +72,19 @@ export default function RecordWriteScreen() {
   const handleNavChange = (key: NavBarItemKey) => {
     if (key === "record") return;
     if (key === "home") {
-      router.push("/");
+      router.navigate("/");
       return;
     }
     if (key === "recommend") {
-      router.push("/recommend");
+      router.navigate("/recommend");
       return;
     }
     if (key === "chat") {
-      router.push("/chat");
+      router.navigate("/chat");
       return;
     }
     if (key === "profile") {
-      router.push("/mypage");
+      router.navigate("/mypage");
       return;
     }
     showAlert("준비 중", "아직 구현되지 않은 탭이에요.");

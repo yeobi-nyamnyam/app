@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ScrollView, StyleSheet, Text as RNText, View } from "react-native";
-import { router, useLocalSearchParams } from "expo-router";
+import { router, useLocalSearchParams, useNavigation } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useQuery } from "@apollo/client/react";
 import {
@@ -61,9 +61,22 @@ interface CumulativeBadgeProgress {
 export default function BadgesScreen() {
   const insets = useSafeAreaInsets();
   const params = useLocalSearchParams<{ from?: string }>();
+  const navigation = useNavigation();
   const { session } = useSession();
   const { showAlert } = useAlertModal();
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+
+  // 여행 완료 화면(trip-complete)에서 진입했을 때는 그 화면으로 다시 돌아가면 안
+  // 되므로, 헤더 뒤로가기 버튼뿐 아니라 하드웨어 back 버튼으로 나가는 경우도
+  // beforeRemove 이벤트를 가로채 홈으로 보낸다 (router.back()만 커스텀 처리하면
+  // 하드웨어 back에는 적용되지 않는다).
+  useEffect(() => {
+    if (params.from !== "trip-complete") return;
+    return navigation.addListener("beforeRemove", (e) => {
+      e.preventDefault();
+      router.replace("/");
+    });
+  }, [navigation, params.from]);
 
   const { data, loading } = useQuery(BadgeCollectionDocument, {
     variables: { userId: session?.user.id ?? "" },
@@ -152,33 +165,25 @@ export default function BadgesScreen() {
     ? allBadges.filter((badge) => badge.category === selectedCategory)
     : allBadges;
 
-  const handleBackPress = () => {
-    if (params.from === "trip-complete") {
-      router.replace("/");
-      return;
-    }
-    router.back();
-  };
-
   const handleNavChange = (key: NavBarItemKey) => {
     if (key === "profile") {
-      router.push("/mypage");
+      router.navigate("/mypage");
       return;
     }
     if (key === "home") {
-      router.push("/");
+      router.navigate("/");
       return;
     }
     if (key === "recommend") {
-      router.push("/recommend");
+      router.navigate("/recommend");
       return;
     }
     if (key === "chat") {
-      router.push("/chat");
+      router.navigate("/chat");
       return;
     }
     if (key === "record") {
-      router.push("/record");
+      router.navigate("/record");
       return;
     }
     showAlert("준비 중", "아직 구현되지 않은 탭이에요.");
@@ -186,7 +191,7 @@ export default function BadgesScreen() {
 
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
-      <Header title="배지 보관함" onBackPress={handleBackPress} />
+      <Header title="배지 보관함" onBackPress={() => router.back()} />
       <ScrollView contentContainerStyle={styles.content}>
         {loading && !data ? (
           <Text color="subtlest" align="center">
