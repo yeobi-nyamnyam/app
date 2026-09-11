@@ -7,6 +7,17 @@ name: Cloud Run Deploy
 on:
   pull_request:
     types: [closed]
+    branches: [develop]
+    # apps/server 배포 이미지에 실제로 영향을 주는 경로만 걸러서 트리거.
+    # 이 필터가 없으면 모바일/UI PR이 merge될 때도 워크플로우 런이 생성됐다가
+    # merged/base/label 조건에 걸려 매번 skip되는 게 Actions 목록에 계속 쌓인다.
+    paths:
+      - 'apps/server/**'
+      - 'packages/types/**'
+      - 'Dockerfile'
+      - 'pnpm-lock.yaml'
+      - 'pnpm-workspace.yaml'
+      - 'package.json'
 
 permissions:
   contents: read
