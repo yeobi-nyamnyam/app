@@ -68,19 +68,19 @@ interface PriceListRestaurant {
 const handleNavChange = (key: NavBarItemKey) => {
   if (key === "recommend") return;
   if (key === "home") {
-    router.push("/");
+    router.navigate("/");
     return;
   }
   if (key === "chat") {
-    router.push("/chat");
+    router.navigate("/chat");
     return;
   }
   if (key === "record") {
-    router.push("/record");
+    router.navigate("/record");
     return;
   }
   if (key === "profile") {
-    router.push("/mypage");
+    router.navigate("/mypage");
     return;
   }
 };
