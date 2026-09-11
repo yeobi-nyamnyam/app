@@ -1,7 +1,8 @@
 import { useState } from "react";
-import { ScrollView, StyleSheet, View } from "react-native";
+import { StyleSheet, View } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
 import { useMutation } from "@apollo/client/react";
 import { Button, FormField, Header, TextField, colors, spacing, stroke } from "@repo/ui";
 import { UpdateDiaryDocument } from "@repo/types";
@@ -30,6 +31,7 @@ export default function DiaryEditScreen() {
 
   const [title, setTitle] = useState(params.title ?? "");
   const [content, setContent] = useState(params.content ?? "");
+  const [footerHeight, setFooterHeight] = useState(0);
 
   const [updateDiary, { loading: saving }] = useMutation(UpdateDiaryDocument);
 
@@ -56,15 +58,22 @@ export default function DiaryEditScreen() {
   return (
     <View style={styles.screen}>
       <Header title="여행 일기 수정" textAlign="start" topInset={insets.top} onBackPress={() => router.back()} />
-      <ScrollView style={styles.scroll} contentContainerStyle={styles.content}>
+      <KeyboardAwareScrollView
+        style={styles.scroll}
+        contentContainerStyle={styles.content}
+        extraKeyboardSpace={-footerHeight}
+      >
         <FormField label={params.dayLabel}>
           <TextField value={title} onChangeText={setTitle} placeholder="제목" />
         </FormField>
 
         <DiaryTextArea value={content} onChangeText={setContent} maxLength={MAX_CONTENT_LENGTH} editable={!saving} />
-      </ScrollView>
+      </KeyboardAwareScrollView>
 
-      <View style={[styles.footer, { paddingBottom: spacing[12] + insets.bottom }]}>
+      <View
+        style={[styles.footer, { paddingBottom: spacing[12] + insets.bottom }]}
+        onLayout={(event) => setFooterHeight(event.nativeEvent.layout.height)}
+      >
         <Button label={saving ? "저장 중..." : "완료"} disabled={!canSave} onPress={handleSave} />
       </View>
     </View>
