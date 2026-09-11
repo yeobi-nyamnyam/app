@@ -1,0 +1,74 @@
+name: Cloud Run Deploy
+
+# eas-build-android:preview 라벨과 비슷한 패턴이지만, 이건 프리뷰가 아니라 운영 배포다.
+# feature PR에 `cloud-run:deploy` 라벨을 붙여두고 그 PR이 develop으로 머지되면
+# apps/server를 Cloud Run 운영 서비스(yeobi-nyamnyam-server)에 바로 배포한다.
+# (PR이 열려있는 동안 라벨만 붙여서는 아무 일도 안 일어남 — merged == true일 때만 실행)
+on:
+  pull_request:
+    types: [closed]
+
+permissions:
+  contents: read
+  id-token: write
+  pull-requests: write
+
+env:
+  GCP_PROJECT: yeobi-nyamnyam-508106
+  GCP_REGION: asia-northeast3
+  SERVICE_NAME: yeobi-nyamnyam-server
+  ARTIFACT_REPO: cloud-run-source-deploy
+
+jobs:
+  deploy:
+    if: >-
+      github.event.pull_request.merged == true &&
+      github.event.pull_request.base.ref == 'develop' &&
+      contains(github.event.pull_request.labels.*.name, 'cloud-run:deploy')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout develop (merge commit 포함)
+        uses: actions/checkout@v4
+        with:
+          ref: develop
+
+      - name: Authenticate to GCP
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ vars.GCP_DEPLOY_SERVICE_ACCOUNT }}
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      # gcloud run deploy --source는 내부적으로 Cloud Build를 써서 과금 소지가 있음.
+      # 대신 GitHub Actions 러너에서 직접 이미지를 빌드/푸시해 Cloud Build를 아예 안 쓴다
+      # (GitHub Actions 빌드 시간은 플랜 무료 한도에서 차감).
+      - name: Configure Docker for Artifact Registry
+        run: gcloud auth configure-docker "${GCP_REGION}-docker.pkg.dev" --quiet
+
+      - name: Build and push image
+        run: |
+          IMAGE="${GCP_REGION}-docker.pkg.dev/${GCP_PROJECT}/${ARTIFACT_REPO}/${SERVICE_NAME}:${{ github.sha }}"
+          docker build -t "$IMAGE" .
+          docker push "$IMAGE"
+          echo "IMAGE=$IMAGE" >> "$GITHUB_ENV"
+
+      - name: Deploy to Cloud Run
+        run: |
+          gcloud run deploy "$SERVICE_NAME" \
+            --image="$IMAGE" \
+            --region="$GCP_REGION" \
+            --project="$GCP_PROJECT" \
+            --quiet
+
+      - name: Comment deploy result on PR
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `🚀 Cloud Run 운영 배포 완료 (merge된 develop 기준으로 배포됨)`,
+            })

@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
-import { Modal as RNModal, Pressable, ScrollView, StyleSheet, View } from "react-native";
+import { Modal as RNModal, Pressable, StyleSheet, View } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
 import { useMutation, useQuery } from "@apollo/client/react";
 import {
   Button,
@@ -46,6 +47,7 @@ export default function DiaryWriteScreen() {
   const [aiOriginalContent, setAiOriginalContent] = useState<string | null>(null);
   const [generating, setGenerating] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [footerHeight, setFooterHeight] = useState(0);
 
   const { data: tripData } = useQuery(ActiveTripDocument, {
     variables: { userId: session?.user.id ?? "" },
@@ -147,7 +149,11 @@ export default function DiaryWriteScreen() {
           <View style={styles.segmentWrap}>
             <SegmentedControl options={["AI 초안", "직접 쓰기"]} selectedIndex={mode === "ai" ? 0 : 1} onChange={handleModeChange} />
           </View>
-          <ScrollView style={styles.scroll} contentContainerStyle={styles.content}>
+          <KeyboardAwareScrollView
+            style={styles.scroll}
+            contentContainerStyle={styles.content}
+            extraKeyboardSpace={-footerHeight}
+          >
             <FormField label={dayLabel}>
               <TextField value={title} onChangeText={setTitle} placeholder="제목" />
             </FormField>
@@ -196,9 +202,12 @@ export default function DiaryWriteScreen() {
                 초안을 한 곳이라도 고쳐야 저장할 수 있어요. 기록이 부족하면 초안 생성이 어려울 수 있어요.
               </Text>
             ) : null}
-          </ScrollView>
+          </KeyboardAwareScrollView>
 
-          <View style={[styles.footer, { paddingBottom: spacing[12] + insets.bottom }]}>
+          <View
+            style={[styles.footer, { paddingBottom: spacing[12] + insets.bottom }]}
+            onLayout={(event) => setFooterHeight(event.nativeEvent.layout.height)}
+          >
             <Button label={saving ? "저장 중..." : "저장"} disabled={!canSave} onPress={handleSave} />
           </View>
         </>

@@ -51,23 +51,23 @@ export default function CompletedTripsScreen() {
 
   const handleNavChange = (key: NavBarItemKey) => {
     if (key === "profile") {
-      router.push("/mypage");
+      router.navigate("/mypage");
       return;
     }
     if (key === "home") {
-      router.push("/");
+      router.navigate("/");
       return;
     }
     if (key === "recommend") {
-      router.push("/recommend");
+      router.navigate("/recommend");
       return;
     }
     if (key === "chat") {
-      router.push("/chat");
+      router.navigate("/chat");
       return;
     }
     if (key === "record") {
-      router.push("/record");
+      router.navigate("/record");
       return;
     }
     showAlert("준비 중", "아직 구현되지 않은 탭이에요.");
