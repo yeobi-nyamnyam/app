@@ -128,7 +128,7 @@ export default function TripCompleteScreen() {
       <View style={[styles.footer, { paddingBottom: spacing[12] + insets.bottom }]}>
         <Button
           label="배지 · 포인트 현황 보기"
-          onPress={() => router.push({ pathname: "/badges", params: { from: "trip-complete" } })}
+          onPress={() => router.push({ pathname: "/mypage/badges", params: { from: "trip-complete" } })}
         />
       </View>
     </View>

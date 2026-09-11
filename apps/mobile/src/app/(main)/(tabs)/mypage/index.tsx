@@ -162,8 +162,8 @@ export default function MyPageScreen() {
 
         <SectionLabel label="보상" />
         <View style={styles.menuSection}>
-          <MenuRow title="배지함" onPress={() => router.push("/badges")} />
-          <MenuRow title="포인트 · 캐릭터 성장" onPress={() => router.push("/character")} />
+          <MenuRow title="배지함" onPress={() => router.push("/mypage/badges")} />
+          <MenuRow title="포인트 · 캐릭터 성장" onPress={() => router.push("/mypage/character")} />
         </View>
 
         <SectionLabel label="기록 · 분석" />
