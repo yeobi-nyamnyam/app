@@ -1,7 +1,8 @@
 import { useState } from "react";
-import { Modal as RNModal, Pressable, ScrollView, StyleSheet, View } from "react-native";
+import { Modal as RNModal, Pressable, StyleSheet, View } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
 import { useMutation } from "@apollo/client/react";
 import { isReference, type Reference } from "@apollo/client";
 import {
@@ -58,6 +59,7 @@ export default function RecordEditScreen() {
   const [storeAddress, setStoreAddress] = useState(params.storeAddress ?? "");
   const [memo, setMemo] = useState(params.memo ?? "");
   const [isDeleteConfirmVisible, setIsDeleteConfirmVisible] = useState(false);
+  const [footerHeight, setFooterHeight] = useState(0);
 
   const [updateMealLog, { loading: updating }] = useMutation(UpdateMealLogDocument);
   // delete_meal_log는 RPC라 삭제된 row 정보를 응답으로 안 주기 때문에 Apollo가
@@ -148,7 +150,11 @@ export default function RecordEditScreen() {
   return (
     <View style={styles.screen}>
       <Header title={params.title} onBackPress={() => router.back()} topInset={insets.top} />
-      <ScrollView style={styles.scroll} contentContainerStyle={styles.content}>
+      <KeyboardAwareScrollView
+        style={styles.scroll}
+        contentContainerStyle={styles.content}
+        extraKeyboardSpace={-footerHeight}
+      >
         <View style={styles.section}>
           <Text variant="title3Emphasized">기록 상세</Text>
           <View style={styles.card}>
@@ -204,9 +210,12 @@ export default function RecordEditScreen() {
             <TextField value={memo} onChangeText={setMemo} placeholder="예: 어묵꼬치, 생필품" />
           </FormField>
         </View>
-      </ScrollView>
+      </KeyboardAwareScrollView>
 
-      <View style={[styles.footer, { paddingBottom: spacing[12] + insets.bottom }]}>
+      <View
+        style={[styles.footer, { paddingBottom: spacing[12] + insets.bottom }]}
+        onLayout={(event) => setFooterHeight(event.nativeEvent.layout.height)}
+      >
         <Text variant="footnoteRegular" color="subtle">
           {deleteWarning}
         </Text>

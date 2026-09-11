@@ -47,7 +47,10 @@ function RootLayout() {
         <SafeAreaProvider>
           <KeyboardProvider>
             <AlertModalProvider>
-              <StatusBar style="auto" />
+              {/* 앱이 다크 테마를 지원하지 않고 화면이 항상 밝은 배경이라 "auto"를 쓰면 시스템이
+                  다크모드일 때 상태바가 밝은(흰색) 아이콘으로 바뀌어 흰 배경에 묻혀 버린다.
+                  다크 테마를 붙이기 전까지는 다크 아이콘으로 고정한다. */}
+              <StatusBar style="dark" />
               {showIntro ? (
                 <Splash onFinish={handleIntroFinish} />
               ) : (

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import {
   Modal as RNModal,
   Pressable,
@@ -7,7 +7,7 @@ import {
   Text as RNText,
   View,
 } from "react-native";
-import { router } from "expo-router";
+import { router, useFocusEffect } from "expo-router";
 import { useQuery } from "@apollo/client/react";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
@@ -49,11 +49,20 @@ export default function MyPageScreen() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [isWithdrawConfirmVisible, setIsWithdrawConfirmVisible] = useState(false);
 
-  const { data, loading } = useQuery(MyPageDashboardDocument, {
+  const { data, loading, refetch } = useQuery(MyPageDashboardDocument, {
     variables: { userId: session?.user.id ?? "" },
     skip: !session,
     fetchPolicy: "cache-and-network",
   });
+
+  // 다른 탭에서 router.navigate로 돌아왔을 때는 화면이 리마운트되지 않으므로
+  // (home/record/chat/recommend와 동일한 패턴), 포커스를 다시 받을 때마다 재조회한다.
+  useFocusEffect(
+    useCallback(() => {
+      refetch();
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []),
+  );
 
   const profile = data?.profilesByPk;
   const totalPoints = (data?.exp_ledgerCollection.edges ?? []).reduce((sum, edge) => sum + edge.node.points, 0);
@@ -76,19 +85,19 @@ export default function MyPageScreen() {
   const handleNavChange = (key: NavBarItemKey) => {
     if (key === "profile") return;
     if (key === "home") {
-      router.push("/");
+      router.navigate("/");
       return;
     }
     if (key === "recommend") {
-      router.push("/recommend");
+      router.navigate("/recommend");
       return;
     }
     if (key === "chat") {
-      router.push("/chat");
+      router.navigate("/chat");
       return;
     }
     if (key === "record") {
-      router.push("/record");
+      router.navigate("/record");
       return;
     }
     showAlert("준비 중", "아직 구현되지 않은 탭이에요.");
@@ -153,8 +162,8 @@ export default function MyPageScreen() {
 
         <SectionLabel label="보상" />
         <View style={styles.menuSection}>
-          <MenuRow title="배지함" onPress={() => router.push("/badges")} />
-          <MenuRow title="포인트 · 캐릭터 성장" onPress={() => router.push("/character")} />
+          <MenuRow title="배지함" onPress={() => router.push("/mypage/badges")} />
+          <MenuRow title="포인트 · 캐릭터 성장" onPress={() => router.push("/mypage/character")} />
         </View>
 
         <SectionLabel label="기록 · 분석" />
