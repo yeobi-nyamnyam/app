@@ -4,7 +4,7 @@ import type { ExpoConfig } from 'expo/config'
 const NAVER_MAP_CLIENT_ID_FALLBACK = 'd568thotkp'
 
 const config: ExpoConfig = {
-  name: 'mobile',
+  name: '여비냠냠',
   slug: 'mobile',
   owner: 'yeobi-nyamnyam',
   version: '1.0.0',
