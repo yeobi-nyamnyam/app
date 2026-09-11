@@ -16,6 +16,7 @@ env:
   GCP_PROJECT: yeobi-nyamnyam-508106
   GCP_REGION: asia-northeast3
   SERVICE_NAME: yeobi-nyamnyam-server
+  ARTIFACT_REPO: cloud-run-source-deploy
 
 jobs:
   deploy:
@@ -39,10 +40,23 @@ jobs:
       - name: Set up Cloud SDK
         uses: google-github-actions/setup-gcloud@v2
 
+      # gcloud run deploy --source는 내부적으로 Cloud Build를 써서 과금 소지가 있음.
+      # 대신 GitHub Actions 러너에서 직접 이미지를 빌드/푸시해 Cloud Build를 아예 안 쓴다
+      # (GitHub Actions 빌드 시간은 플랜 무료 한도에서 차감).
+      - name: Configure Docker for Artifact Registry
+        run: gcloud auth configure-docker "${GCP_REGION}-docker.pkg.dev" --quiet
+
+      - name: Build and push image
+        run: |
+          IMAGE="${GCP_REGION}-docker.pkg.dev/${GCP_PROJECT}/${ARTIFACT_REPO}/${SERVICE_NAME}:${{ github.sha }}"
+          docker build -t "$IMAGE" .
+          docker push "$IMAGE"
+          echo "IMAGE=$IMAGE" >> "$GITHUB_ENV"
+
       - name: Deploy to Cloud Run
         run: |
           gcloud run deploy "$SERVICE_NAME" \
-            --source=. \
+            --image="$IMAGE" \
             --region="$GCP_REGION" \
             --project="$GCP_PROJECT" \
             --quiet
