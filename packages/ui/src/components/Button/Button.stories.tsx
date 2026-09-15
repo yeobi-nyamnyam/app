@@ -34,6 +34,10 @@ export const OutlineDisabled: Story = {
   args: { variant: 'outline', disabled: true },
 }
 
+export const PrimaryVisuallyDisabled: Story = {
+  args: { visuallyDisabled: true },
+}
+
 export const PrimaryWithIcon: Story = {
   args: {
     icon: (

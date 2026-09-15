@@ -106,17 +106,22 @@ const BudgetSummaryCard = ({
  * @param restaurant 표시할 음식점 상세 데이터
  * @param onBackPress 좌측 상단 뒤로가기 버튼을 클릭할 때 발생하는 event 명시
  * @param onPressCTA 하단 "여기로 정하고 기록" 버튼을 클릭할 때 발생하는 event 명시 (optional)
+ * @param ctaDisabled "여기로 정하고 기록" 버튼이 비활성화된 것처럼 보이는지: true | false —
+ * 스타일만 바꾸고 onPressCTA는 그대로 호출된다 (여행 시작 전 안내 모달을 띄우는 용도).
+ * (optional, 기본값 false)
  */
 export interface RestaurantDetailViewProps {
   restaurant: RestaurantDetailData;
   onBackPress: () => void;
   onPressCTA?: () => void;
+  ctaDisabled?: boolean;
 }
 
 export const RestaurantDetailView = ({
   restaurant,
   onBackPress,
   onPressCTA,
+  ctaDisabled = false,
 }: RestaurantDetailViewProps) => {
   const insets = useSafeAreaInsets();
   const isGoodPrice = restaurant.source === "good_price";
@@ -228,7 +233,12 @@ export const RestaurantDetailView = ({
           메뉴가 많아 스크롤이 길어져도 화면 하단에 고정되게 한다 (Figma "CTA Footer",
           node 1268:5296 / 1268:5493). trip-create 등 다른 화면과 동일하게
           packages/ui의 Footer(테두리+세이프에어리어 패딩 포함)를 재사용. */}
-      <Footer label="여기로 정하고 기록" onPress={onPressCTA} bottomInset={insets.bottom} />
+      <Footer
+        label="여기로 정하고 기록"
+        onPress={onPressCTA}
+        visuallyDisabled={ctaDisabled}
+        bottomInset={insets.bottom}
+      />
       <Animated.View
         pointerEvents="none"
         style={[

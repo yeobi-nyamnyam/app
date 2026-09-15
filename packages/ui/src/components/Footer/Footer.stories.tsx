@@ -33,3 +33,7 @@ export const Enabled: Story = {
 export const WithBottomInset: Story = {
   args: { disabled: false, bottomInset: 24 },
 }
+
+export const VisuallyDisabled: Story = {
+  args: { disabled: false, visuallyDisabled: true },
+}

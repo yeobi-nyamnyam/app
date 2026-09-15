@@ -18,6 +18,7 @@ import { ActiveTripDocument, UserTripsDocument } from "@repo/types";
 
 import { useSession } from "@/hooks/useSession";
 import { useAlertModal } from "@/hooks/useAlertModal";
+import { todayDate } from "@/lib/format";
 
 const TABS = ["기록 작성하기", "기록보기"];
 
@@ -39,7 +40,11 @@ export default function RecordWriteScreen() {
     skip: !session,
     fetchPolicy: "cache-and-network",
   });
-  const tripId = data?.tripsCollection.edges[0]?.node.id;
+  const tripNode = data?.tripsCollection.edges[0]?.node;
+  const tripId = tripNode?.id;
+  // 소비 기록/일기 작성과 동일한 이유로, 아직 시작하지 않은 여행이면 작성 진입 버튼을
+  // 눌러도 안내만 뜨게 막는다.
+  const hasTripStarted = tripNode ? todayDate() >= tripNode.start_date : true;
 
   const {
     data: tripsData,
@@ -66,8 +71,20 @@ export default function RecordWriteScreen() {
   const ongoingTrips = trips.filter((trip) => trip.status !== "completed");
   const completedTrips = trips.filter((trip) => trip.status === "completed");
 
-  const handleRecordPress = () => router.push(`/record/new?tripId=${tripId}`);
-  const handleDiaryPress = () => router.push(`/diary/write?tripId=${tripId}`);
+  const handleRecordPress = () => {
+    if (!hasTripStarted) {
+      showAlert("여행 시작 전이에요", "여행이 시작되면 소비 기록을 작성할 수 있어요.");
+      return;
+    }
+    router.push(`/record/new?tripId=${tripId}`);
+  };
+  const handleDiaryPress = () => {
+    if (!hasTripStarted) {
+      showAlert("여행 시작 전이에요", "여행이 시작되면 일기를 작성할 수 있어요.");
+      return;
+    }
+    router.push(`/diary/write?tripId=${tripId}`);
+  };
 
   const handleNavChange = (key: NavBarItemKey) => {
     if (key === "record") return;
@@ -111,12 +128,14 @@ export default function RecordWriteScreen() {
               title="소비 기록 작성"
               description="끼니 소비와 기타 소비를 기록해보세요"
               buttonLabel="작성하기"
+              disabled={!hasTripStarted}
               onPress={handleRecordPress}
             />
             <CTACard
               title="여행 일기 작성"
               description="오늘 하루의 여행을 글로 남겨보세요"
               buttonLabel="작성하기"
+              disabled={!hasTripStarted}
               onPress={handleDiaryPress}
             />
           </ScrollView>

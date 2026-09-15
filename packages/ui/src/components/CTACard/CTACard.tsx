@@ -5,24 +5,28 @@ import { colors, radius, spacing, stroke, typography } from '@repo/tokens'
  * @param title 카드 제목 (optional, 없으면 설명 텍스트만 표시)
  * @param description 제목 아래 설명 텍스트
  * @param buttonLabel 하단 버튼에 표시할 텍스트
+ * @param disabled 버튼이 비활성화된 것처럼 보이는지: true | false — 스타일만 바꾸고
+ * onPress는 그대로 동작한다. 눌렀을 때 안내 모달 등을 띄워야 하는 경우에 사용
+ * (optional, 기본값 false)
  * @param onPress 버튼을 클릭할 때 발생하는 event 명시
  */
 export interface CTACardProps {
   title?: string
   description: string
   buttonLabel: string
+  disabled?: boolean
   onPress?: () => void
 }
 
-export const CTACard = ({ title, description, buttonLabel, onPress }: CTACardProps) => {
+export const CTACard = ({ title, description, buttonLabel, disabled = false, onPress }: CTACardProps) => {
   return (
     <View style={styles.container}>
       <View style={styles.textBlock}>
         {title ? <Text style={styles.title}>{title}</Text> : null}
         <Text style={styles.description}>{description}</Text>
       </View>
-      <Pressable style={styles.button} onPress={onPress}>
-        <Text style={styles.buttonLabel}>{buttonLabel}</Text>
+      <Pressable style={[styles.button, disabled && styles.buttonDisabled]} onPress={onPress}>
+        <Text style={[styles.buttonLabel, disabled && styles.buttonLabelDisabled]}>{buttonLabel}</Text>
       </Pressable>
     </View>
   )
@@ -64,6 +68,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: colors.surface.primary.default,
   },
+  buttonDisabled: {
+    backgroundColor: colors.surface.primary.disabled,
+  },
   buttonLabel: {
     fontFamily: typography.fontFamily,
     fontSize: typography.bodyRegular.fontSize,
@@ -71,5 +78,8 @@ const styles = StyleSheet.create({
     letterSpacing: typography.bodyRegular.letterSpacing,
     fontWeight: typography.bodyRegular.fontWeight,
     color: colors.content.neutral.inverse,
+  },
+  buttonLabelDisabled: {
+    color: colors.content.neutral.disabled,
   },
 })
