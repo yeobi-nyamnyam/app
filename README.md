@@ -26,7 +26,7 @@
 | 구분 | 링크 |
 | --- | --- |
 | 서비스 | _추후 업데이트_ |
-| API 문서(Swagger) | _추후 업데이트_ |
+| API 문서(Swagger) | https://yeobi-nyamnyam-server-578482380772.asia-northeast3.run.app/docs |
 
 ## ✨ 주요 기능
 
