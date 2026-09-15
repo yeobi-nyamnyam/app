@@ -8,7 +8,10 @@ export type ButtonVariant = 'primary' | 'outline'
 /**
  * @param label 버튼에 표시할 텍스트
  * @param variant 버튼의 종류: 'primary' | 'outline' (optional, 기본값 'primary')
- * @param disabled 버튼이 비활성화 상태인지: true | false (optional, 기본값 false)
+ * @param disabled 버튼이 비활성화 상태인지: true | false — true면 눌러도 onPress가 호출되지
+ * 않음 (optional, 기본값 false)
+ * @param visuallyDisabled 비활성화된 것처럼 보이기만 하고 onPress는 그대로 동작하는지:
+ * true | false — 눌렀을 때 안내 모달 등을 띄워야 하는 경우에 사용 (optional, 기본값 false)
  * @param icon 버튼 왼쪽에 표시할 아이콘 (optional, variant가 'primary'일 때만 렌더링)
  * @param onPress 버튼을 클릭할 때 발생하는 event 명시 (optional)
  */
@@ -16,6 +19,7 @@ export interface ButtonProps {
   label: string
   variant?: ButtonVariant
   disabled?: boolean
+  visuallyDisabled?: boolean
   icon?: ReactNode
   onPress?: () => void
 }
@@ -60,10 +64,11 @@ export const Button = ({
   label,
   variant = 'primary',
   disabled = false,
+  visuallyDisabled = false,
   icon,
   onPress,
 }: ButtonProps) => {
-  const stateKey: StateKey = disabled ? 'disabled' : 'default'
+  const stateKey: StateKey = disabled || visuallyDisabled ? 'disabled' : 'default'
   return (
     <Pressable onPress={disabled ? undefined : onPress} disabled={disabled}>
       <View style={[styles.container, containerVariants[variant][stateKey]]}>

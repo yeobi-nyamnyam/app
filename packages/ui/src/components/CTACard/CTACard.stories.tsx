@@ -23,3 +23,7 @@ export const Diary: Story = {
     description: '오늘 하루의 여행을 글로 남겨보세요',
   },
 }
+
+export const Disabled: Story = {
+  args: { disabled: true },
+}
