@@ -1,8 +1,17 @@
-import { useCallback, useEffect, useRef, useState, type ComponentRef } from "react";
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type ComponentRef,
+} from "react";
 import { Modal, Pressable, StyleSheet, View } from "react-native";
 import { Redirect, router, useFocusEffect } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { KeyboardChatScrollView, KeyboardStickyView } from "react-native-keyboard-controller";
+import {
+  KeyboardChatScrollView,
+  KeyboardStickyView,
+} from "react-native-keyboard-controller";
 import { useMutation, useQuery } from "@apollo/client/react";
 import {
   ChatBubble,
@@ -26,7 +35,12 @@ import type { MealLogCategory } from "@/components/RecordForm";
 
 import { formatWon, todayDate } from "@/lib/format";
 import { MEAL_TYPES, MEAL_TYPE_LABEL, type MealType } from "@/lib/budget";
-import { formatChatTime, streamChatReply, type ChatHistoryItem, type ChatParsedResult } from "@/lib/chat";
+import {
+  formatChatTime,
+  streamChatReply,
+  type ChatHistoryItem,
+  type ChatParsedResult,
+} from "@/lib/chat";
 import { useSession } from "@/hooks/useSession";
 import { useAlertModal } from "@/hooks/useAlertModal";
 
@@ -39,7 +53,10 @@ const CATEGORY_OPTIONS: { label: string; value: MealLogCategory }[] = [
   { label: "기타", value: "기타" },
 ];
 
-const handleNavChange = (key: NavBarItemKey, showAlert: (title: string, content: string) => void) => {
+const handleNavChange = (
+  key: NavBarItemKey,
+  showAlert: (title: string, content: string) => void,
+) => {
   if (key === "chat") return;
   if (key === "home") {
     router.navigate("/");
@@ -62,7 +79,7 @@ const handleNavChange = (key: NavBarItemKey, showAlert: (title: string, content:
 
 /**
  * 채팅 대화 화면 (Figma "chat-waiting"/"chat-add-edit"/"chat-confirmed-spent").
- * 채팅 로그 목록 화면(`/chat`)의 "대화 하기" 버튼으로 진입한다.
+ * 채팅 로그 목록 화면(`/chat`)의 "대화하기" 버튼으로 진입한다.
  */
 export default function ChatConversationScreen() {
   const insets = useSafeAreaInsets();
@@ -89,7 +106,11 @@ export default function ChatConversationScreen() {
         <View style={styles.emptyContent}>
           <Text color="subtlest">여행 정보 불러오는 중...</Text>
         </View>
-        <NavBar active="chat" onChange={(key) => handleNavChange(key, showAlert)} bottomInset={insets.bottom} />
+        <NavBar
+          active="chat"
+          onChange={(key) => handleNavChange(key, showAlert)}
+          bottomInset={insets.bottom}
+        />
       </View>
     );
   }
@@ -100,14 +121,22 @@ export default function ChatConversationScreen() {
   }
 
   const today = todayDate();
+  const isBeforeStart = tripNode.start_date > today;
   const todaySlots = (tripNode.meal_slotsCollection?.edges ?? [])
     .map((edge) => edge.node)
     .filter((slot) => slot.date === today);
-  const dayBudget = todaySlots.reduce((sum, slot) => sum + slot.budget_amount, 0);
-  const consumed = todaySlots.reduce((sum, slot) => sum + (slot.recorded_amount ?? 0), 0);
+  const dayBudget = todaySlots.reduce(
+    (sum, slot) => sum + slot.budget_amount,
+    0,
+  );
+  const consumed = todaySlots.reduce(
+    (sum, slot) => sum + (slot.recorded_amount ?? 0),
+    0,
+  );
   // F6-4 캐스케이드 확정분(0원)도 is_recorded=true라 오늘 끼니가 전부 막혔는지 여기서 같이 판단된다.
   const allMealsRecorded =
-    todaySlots.length === MEAL_TYPES.length && todaySlots.every((slot) => slot.is_recorded);
+    todaySlots.length === MEAL_TYPES.length &&
+    todaySlots.every((slot) => slot.is_recorded);
   const recordedMealTypes = todaySlots
     .filter((slot) => slot.is_recorded)
     .map((slot) => slot.meal_type as MealType);
@@ -121,6 +150,7 @@ export default function ChatConversationScreen() {
       consumed={consumed}
       allMealsRecorded={allMealsRecorded}
       recordedMealTypes={recordedMealTypes}
+      isBeforeStart={isBeforeStart}
     />
   );
 }
@@ -139,6 +169,7 @@ function ActiveConversation({
   consumed,
   allMealsRecorded,
   recordedMealTypes,
+  isBeforeStart,
 }: {
   tripId: string;
   tripName: string;
@@ -147,6 +178,7 @@ function ActiveConversation({
   consumed: number;
   allMealsRecorded: boolean;
   recordedMealTypes: MealType[];
+  isBeforeStart: boolean;
 }) {
   const insets = useSafeAreaInsets();
   const { showAlert } = useAlertModal();
@@ -156,10 +188,14 @@ function ActiveConversation({
   const [navBarHeight, setNavBarHeight] = useState(0);
   const remaining = Math.max(dayBudget - consumed, 0);
   const [insertChatMessage] = useMutation(InsertChatMessageDocument);
-  const [updateChatMessageStatus] = useMutation(UpdateChatMessageStatusDocument);
+  const [updateChatMessageStatus] = useMutation(
+    UpdateChatMessageStatusDocument,
+  );
   const [createMealLog] = useMutation(CreateMealLogDocument);
 
-  const [messages, setMessages] = useState<(ChatBubbleProps & { id: string })[]>(() => [
+  const [messages, setMessages] = useState<
+    (ChatBubbleProps & { id: string })[]
+  >(() => [
     {
       id: "greeting",
       sender: "ai",
@@ -171,7 +207,9 @@ function ActiveConversation({
   ]);
   const [history, setHistory] = useState<ChatHistoryItem[]>([]);
   const [inputValue, setInputValue] = useState("");
-  const [pendingExpense, setPendingExpense] = useState<PendingExpense | null>(null);
+  const [pendingExpense, setPendingExpense] = useState<PendingExpense | null>(
+    null,
+  );
 
   const appendMessage = (message: ChatBubbleProps & { id: string }) => {
     setMessages((prev) => [...prev, message]);
@@ -190,7 +228,8 @@ function ActiveConversation({
         title: formatWon(remaining),
         description: "오늘 남은 식비가 줄었어요. 추천에서 다시 골라보세요.",
         buttonLabel: "새 추천 보기",
-        onButtonPress: () => showAlert("준비 중", "추천 화면은 아직 준비 중이에요."),
+        onButtonPress: () =>
+          showAlert("준비 중", "추천 화면은 아직 준비 중이에요."),
       });
     }
     previousRemainingRef.current = remaining;
@@ -204,7 +243,11 @@ function ActiveConversation({
     category?: MealLogCategory;
     mealType?: MealType | null;
   }) => {
-    const params = new URLSearchParams({ tripId, source: "chat", presetVisitDate: todayDate() });
+    const params = new URLSearchParams({
+      tripId,
+      source: "chat",
+      presetVisitDate: todayDate(),
+    });
     if (options.amount) params.set("presetAmount", options.amount);
     if (options.category) params.set("presetCategory", options.category);
     if (options.mealType) params.set("presetMealType", options.mealType);
@@ -212,12 +255,20 @@ function ActiveConversation({
     router.push(`/record/new?${params.toString()}`);
   };
 
-  const handleParsedResult = async (userText: string, result: ChatParsedResult, waitingId: string) => {
-    const isNonMealExpense = result.hasExpense && result.category != null && result.category !== "식비";
+  const handleParsedResult = async (
+    userText: string,
+    result: ChatParsedResult,
+    waitingId: string,
+  ) => {
+    const isNonMealExpense =
+      result.hasExpense &&
+      result.category != null &&
+      result.category !== "식비";
     // 소비로 파싱되면(끼니든 아니든) 그 다음 뜨는 CTA 카드/기록 시트가 이미 같은 내용을
     // 담고 있어서, Gemini의 대화체 reply 버블은 굳이 같이 안 보여준다. 파싱 안 된
     // 일반 대화·재질문일 때만 스트리밍된 텍스트 버블을 그대로 남겨둔다.
-    const willShowStructuredUi = result.hasExpense && result.category != null && result.amount != null;
+    const willShowStructuredUi =
+      result.hasExpense && result.category != null && result.amount != null;
     if (willShowStructuredUi) {
       setMessages((prev) => prev.filter((item) => item.id !== waitingId));
     }
@@ -235,7 +286,8 @@ function ActiveConversation({
           status: isNonMealExpense ? "pending" : "confirmed",
         },
       });
-      userMessageId = data?.insertIntochat_messagesCollection?.records[0]?.id ?? null;
+      userMessageId =
+        data?.insertIntochat_messagesCollection?.records[0]?.id ?? null;
     } catch {
       // chat_messages 기록 실패로 대화 흐름 자체를 막지 않는다.
     }
@@ -256,9 +308,17 @@ function ActiveConversation({
       // 위와 동일한 이유로 무시.
     }
 
-    setHistory((prev) => [...prev, { role: "user", text: userText }, { role: "ai", text: result.reply }]);
+    setHistory((prev) => [
+      ...prev,
+      { role: "user", text: userText },
+      { role: "ai", text: result.reply },
+    ]);
 
-    if (!result.hasExpense || result.category == null || result.amount == null) {
+    if (
+      !result.hasExpense ||
+      result.category == null ||
+      result.amount == null
+    ) {
       return;
     }
 
@@ -294,12 +354,20 @@ function ActiveConversation({
         description: `${formatWon(result.amount)} 썼군요! 끼니 소비는 채팅에서 바로 저장할 수 없어서, 기록 화면에서 확인하고 남겨주세요.`,
         buttonLabel: "메뉴 기록",
         onButtonPress: () =>
-          goToRecordScreen({ amount: String(result.amount), category: "식비", mealType: result.mealType }),
+          goToRecordScreen({
+            amount: String(result.amount),
+            category: "식비",
+            mealType: result.mealType,
+          }),
       });
       return;
     }
 
-    setPendingExpense({ category: result.category, amount: String(result.amount), chatMessageId: userMessageId });
+    setPendingExpense({
+      category: result.category,
+      amount: String(result.amount),
+      chatMessageId: userMessageId,
+    });
   };
 
   const handleSend = async () => {
@@ -319,7 +387,11 @@ function ActiveConversation({
       history,
       onToken: (accumulated) => {
         setMessages((prev) =>
-          prev.map((item) => (item.id === waitingId ? { ...item, variant: "text", text: accumulated } : item)),
+          prev.map((item) =>
+            item.id === waitingId
+              ? { ...item, variant: "text", text: accumulated }
+              : item,
+          ),
         );
       },
       onDone: (result) => {
@@ -327,7 +399,11 @@ function ActiveConversation({
       },
       onError: (error) => {
         setMessages((prev) => prev.filter((item) => item.id !== waitingId));
-        appendMessage({ id: `ai-error-${Date.now()}`, sender: "ai", text: error.message });
+        appendMessage({
+          id: `ai-error-${Date.now()}`,
+          sender: "ai",
+          text: error.message,
+        });
       },
     });
   };
@@ -366,7 +442,10 @@ function ActiveConversation({
       });
       setPendingExpense(null);
     } catch (error) {
-      showAlert("저장 실패", error instanceof Error ? error.message : "잠시 후 다시 시도해주세요.");
+      showAlert(
+        "저장 실패",
+        error instanceof Error ? error.message : "잠시 후 다시 시도해주세요.",
+      );
     }
   };
 
@@ -396,17 +475,30 @@ function ActiveConversation({
         style={styles.messages}
         contentContainerStyle={styles.messagesContent}
         offset={navBarHeight}
-        onContentSizeChange={() => scrollRef.current?.scrollToEnd({ animated: true })}
+        onContentSizeChange={() =>
+          scrollRef.current?.scrollToEnd({ animated: true })
+        }
       >
         {messages.map(({ id, ...bubble }) => (
           <ChatBubble key={id} {...bubble} />
         ))}
       </KeyboardChatScrollView>
       <KeyboardStickyView offset={{ opened: navBarHeight }}>
-        <ChatInputBar value={inputValue} onChangeText={setInputValue} onSend={() => void handleSend()} />
+        <ChatInputBar
+          value={inputValue}
+          onChangeText={setInputValue}
+          onSend={() => void handleSend()}
+          disabled={isBeforeStart}
+        />
       </KeyboardStickyView>
-      <View onLayout={(event) => setNavBarHeight(event.nativeEvent.layout.height)}>
-        <NavBar active="chat" onChange={(key) => handleNavChange(key, showAlert)} bottomInset={insets.bottom} />
+      <View
+        onLayout={(event) => setNavBarHeight(event.nativeEvent.layout.height)}
+      >
+        <NavBar
+          active="chat"
+          onChange={(key) => handleNavChange(key, showAlert)}
+          bottomInset={insets.bottom}
+        />
       </View>
       <Modal
         visible={pendingExpense != null}
@@ -415,25 +507,35 @@ function ActiveConversation({
         onRequestClose={handleDismissPending}
       >
         <View style={styles.backdrop}>
-          <Pressable style={StyleSheet.absoluteFill} onPress={handleDismissPending} />
+          <Pressable
+            style={StyleSheet.absoluteFill}
+            onPress={handleDismissPending}
+          />
           {pendingExpense ? (
             <View style={{ paddingBottom: insets.bottom }}>
               <ChatRecordSheet
                 title="끼니 기록"
                 onTitlePress={() =>
-                  goToRecordScreen({ amount: pendingExpense.amount, category: pendingExpense.category })
+                  goToRecordScreen({
+                    amount: pendingExpense.amount,
+                    category: pendingExpense.category,
+                  })
                 }
                 categories={CATEGORY_OPTIONS}
                 selectedCategory={pendingExpense.category}
                 onSelectCategory={(value) =>
                   setPendingExpense((prev) =>
-                    prev ? { ...prev, category: value as MealLogCategory } : prev,
+                    prev
+                      ? { ...prev, category: value as MealLogCategory }
+                      : prev,
                   )
                 }
                 amount={pendingExpense.amount}
                 onChangeAmount={(value) =>
                   setPendingExpense((prev) =>
-                    prev ? { ...prev, amount: value.replace(/[^0-9]/g, "") } : prev,
+                    prev
+                      ? { ...prev, amount: value.replace(/[^0-9]/g, "") }
+                      : prev,
                   )
                 }
                 onSubmit={() => void handleConfirm()}

@@ -33,3 +33,7 @@ export const Default: Story = {
 export const Focused: Story = {
   render: (args) => <Controlled {...args} value="여행 선물로 9만원 썼어.. ㅋ" />,
 }
+
+export const Disabled: Story = {
+  render: (args) => <Controlled {...args} value="" disabled />,
+}
