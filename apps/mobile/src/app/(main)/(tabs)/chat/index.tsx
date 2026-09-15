@@ -117,10 +117,7 @@ export default function ChatScreen() {
 
   useEffect(() => {
     if (isBeforeStart) {
-      showAlert(
-        "여행 시작 전",
-        "여행이 시작되기 전에는 채팅을 보낼 수 없어요.",
-      );
+      showAlert("여행 시작 전이에요", "여행이 시작되면 채팅을 할 수 있어요.");
     }
   }, [isBeforeStart, showAlert]);
 
