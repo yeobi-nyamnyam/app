@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { StyleSheet, View } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -14,6 +15,7 @@ import { RecordForm, type RecordFormValues, type MealLogCategory } from "@/compo
 import { useSession } from "@/hooks/useSession";
 import { useAlertModal } from "@/hooks/useAlertModal";
 import { getTripDates, type MealType } from "@/lib/budget";
+import { todayDate } from "@/lib/format";
 
 type RecordSource = "home" | "recommend" | "chat" | "record";
 
@@ -55,6 +57,18 @@ export default function RecordNewScreen() {
     mealType: edge.node.meal_type as MealType,
     isRecorded: edge.node.is_recorded,
   }));
+  // 방문 날짜 드롭다운(RecordForm)은 오늘 이전 날짜만 노출하므로, 아직 시작하지 않은
+  // 여행이면 고를 수 있는 날짜가 하나도 없어 폼이 사실상 먹통이 된다. record/new는
+  // 홈/추천/채팅/기록 탭 등 모든 진입 경로가 도착하는 단일 지점이라 여기서만 막으면
+  // 어느 경로로 들어와도 빠짐없이 차단된다.
+  const hasTripStarted = tripNode ? todayDate() >= tripNode.start_date : true;
+
+  useEffect(() => {
+    if (tripNode && !hasTripStarted) {
+      showAlert("여행 시작 전이에요", "여행이 시작되면 소비 기록을 작성할 수 있어요.");
+      router.back();
+    }
+  }, [tripNode, hasTripStarted, showAlert]);
 
   const [createMealLog, { loading: creatingMealLog }] = useMutation(CreateMealLogDocument);
   const [recordMealLog, { loading: recordingMealLog }] = useMutation(RecordMealLogDocument);
@@ -117,21 +131,23 @@ export default function RecordNewScreen() {
   return (
     <View style={styles.screen}>
       <Header title="소비 기록 작성" topInset={insets.top} onBackPress={() => router.back()} />
-      <RecordForm
-        tripId={params.tripId}
-        submitting={submitting}
-        tripDates={tripDates}
-        mealSlots={mealSlots}
-        initialValues={{
-          category: params.presetCategory,
-          storeName: params.presetStoreName,
-          storeAddress: params.presetStoreAddress,
-          amount: params.presetAmount,
-          visitDate: params.presetVisitDate,
-          mealType: params.presetMealType,
-        }}
-        onSubmit={handleSubmit}
-      />
+      {hasTripStarted ? (
+        <RecordForm
+          tripId={params.tripId}
+          submitting={submitting}
+          tripDates={tripDates}
+          mealSlots={mealSlots}
+          initialValues={{
+            category: params.presetCategory,
+            storeName: params.presetStoreName,
+            storeAddress: params.presetStoreAddress,
+            amount: params.presetAmount,
+            visitDate: params.presetVisitDate,
+            mealType: params.presetMealType,
+          }}
+          onSubmit={handleSubmit}
+        />
+      ) : null}
     </View>
   );
 }
