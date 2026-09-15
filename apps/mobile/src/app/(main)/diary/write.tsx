@@ -60,6 +60,15 @@ export default function DiaryWriteScreen() {
     : -1;
   const [, month, day] = todayDate().split("-");
   const dayLabel = dayIndex >= 0 ? `${dayIndex + 1}일차 | ${month}.${day}` : `${month}.${day}`;
+  // 소비 기록과 동일한 이유로, 아직 시작하지 않은 여행은 일기도 쓸 수 없게 막는다.
+  const hasTripStarted = tripNode ? todayDate() >= tripNode.start_date : true;
+
+  useEffect(() => {
+    if (tripNode && !hasTripStarted) {
+      showAlert("여행 시작 전이에요", "여행이 시작되면 일기를 작성할 수 있어요.");
+      router.back();
+    }
+  }, [tripNode, hasTripStarted, showAlert]);
 
   const { data: mealLogsData } = useQuery(TripMealLogsDocument, {
     variables: { tripId: params.tripId },
@@ -144,7 +153,7 @@ export default function DiaryWriteScreen() {
     <View style={styles.screen}>
       <Header title="여행 일기 작성" topInset={insets.top} onBackPress={() => router.back()} />
 
-      {!hasExistingDiary ? (
+      {hasTripStarted && !hasExistingDiary ? (
         <>
           <View style={styles.segmentWrap}>
             <SegmentedControl options={["AI 초안", "직접 쓰기"]} selectedIndex={mode === "ai" ? 0 : 1} onChange={handleModeChange} />
