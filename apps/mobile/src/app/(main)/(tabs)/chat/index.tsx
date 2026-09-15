@@ -20,8 +20,12 @@ import {
 import { ActiveTripDocument, ChatMealLogsDocument } from "@repo/types";
 import type { MealLogCategory } from "@/components/RecordForm";
 
-import { formatWon } from "@/lib/format";
-import { formatChatTime, toChatLogFilterCategory, type ChatLogFilterCategory } from "@/lib/chat";
+import { formatWon, todayDate } from "@/lib/format";
+import {
+  formatChatTime,
+  toChatLogFilterCategory,
+  type ChatLogFilterCategory,
+} from "@/lib/chat";
 import { getTripDates } from "@/lib/budget";
 import { useSession } from "@/hooks/useSession";
 import { useAlertModal } from "@/hooks/useAlertModal";
@@ -35,7 +39,10 @@ const FILTER_LABEL: Record<FilterKey, string> = {
   기타소비: "기타 소비",
 };
 
-const handleNavChange = (key: NavBarItemKey, showAlert: (title: string, content: string) => void) => {
+const handleNavChange = (
+  key: NavBarItemKey,
+  showAlert: (title: string, content: string) => void,
+) => {
   if (key === "chat") return;
   if (key === "home") {
     router.navigate("/");
@@ -78,18 +85,24 @@ export default function ChatScreen() {
 
   const { session } = useSession();
   const { showAlert } = useAlertModal();
-  const { data: tripData, loading: tripLoading } = useQuery(ActiveTripDocument, {
-    variables: { userId: session?.user.id ?? "" },
-    skip: !session,
-    fetchPolicy: "cache-and-network",
-  });
+  const { data: tripData, loading: tripLoading } = useQuery(
+    ActiveTripDocument,
+    {
+      variables: { userId: session?.user.id ?? "" },
+      skip: !session,
+      fetchPolicy: "cache-and-network",
+    },
+  );
   const tripNode = tripData?.tripsCollection.edges[0]?.node;
 
-  const { data: logsData, refetch: refetchLogs } = useQuery(ChatMealLogsDocument, {
-    variables: { tripId: tripNode?.id ?? "" },
-    skip: !tripNode,
-    fetchPolicy: "cache-and-network",
-  });
+  const { data: logsData, refetch: refetchLogs } = useQuery(
+    ChatMealLogsDocument,
+    {
+      variables: { tripId: tripNode?.id ?? "" },
+      skip: !tripNode,
+      fetchPolicy: "cache-and-network",
+    },
+  );
 
   // 대화 화면에서 소비를 확정하고 돌아왔을 때 목록에 바로 반영되도록, 이 화면이
   // 포커스를 받을 때마다 다시 조회한다 (Expo Router는 뒤로가기로 돌아와도 이전
@@ -99,6 +112,16 @@ export default function ChatScreen() {
       if (tripNode) void refetchLogs();
     }, [tripNode, refetchLogs]),
   );
+
+  const isBeforeStart = tripNode != null && tripNode.start_date > todayDate();
+
+  const handlePressStartChat = () => {
+    if (isBeforeStart) {
+      showAlert("여행 시작 전이에요", "여행이 시작되면 채팅을 할 수 있어요.");
+      return;
+    }
+    router.push("/chat/conversation");
+  };
 
   const entries: ChatLogEntry[] = useMemo(
     () =>
@@ -121,7 +144,8 @@ export default function ChatScreen() {
   const groups = useMemo(() => {
     const keyword = search.trim();
     const filtered = entries.filter((entry) => {
-      const matchesFilter = filter === "전체" || entry.filterCategory === filter;
+      const matchesFilter =
+        filter === "전체" || entry.filterCategory === filter;
       const matchesSearch =
         keyword.length === 0 ||
         entry.title.includes(keyword) ||
@@ -129,7 +153,12 @@ export default function ChatScreen() {
       return matchesFilter && matchesSearch;
     });
 
-    const tripDates = tripNode ? getTripDates({ startDate: tripNode.start_date, endDate: tripNode.end_date }) : [];
+    const tripDates = tripNode
+      ? getTripDates({
+          startDate: tripNode.start_date,
+          endDate: tripNode.end_date,
+        })
+      : [];
     const byDate = new Map<string, ChatLogEntry[]>();
     for (const entry of filtered) {
       const dateKey = entry.createdAt.slice(0, 10);
@@ -143,7 +172,10 @@ export default function ChatScreen() {
       .map(([dateKey, dateEntries]) => {
         const [, month, day] = dateKey.split("-");
         const dayIndex = tripDates.indexOf(dateKey);
-        const label = dayIndex >= 0 ? `${month}.${day} | ${dayIndex + 1}일차` : `${month}.${day}`;
+        const label =
+          dayIndex >= 0
+            ? `${month}.${day} | ${dayIndex + 1}일차`
+            : `${month}.${day}`;
         return { date: label, entries: dateEntries };
       });
   }, [entries, search, filter, tripNode]);
@@ -154,7 +186,11 @@ export default function ChatScreen() {
         <View style={styles.emptyContent}>
           <Text color="subtlest">여행 정보 불러오는 중...</Text>
         </View>
-        <NavBar active="chat" onChange={(key) => handleNavChange(key, showAlert)} bottomInset={insets.bottom} />
+        <NavBar
+          active="chat"
+          onChange={(key) => handleNavChange(key, showAlert)}
+          bottomInset={insets.bottom}
+        />
       </View>
     );
   }
@@ -165,7 +201,11 @@ export default function ChatScreen() {
         <View style={styles.emptyContent}>
           <EmptyTripPrompt onCreateTrip={() => router.push("/trip-create")} />
         </View>
-        <NavBar active="chat" onChange={(key) => handleNavChange(key, showAlert)} bottomInset={insets.bottom} />
+        <NavBar
+          active="chat"
+          onChange={(key) => handleNavChange(key, showAlert)}
+          bottomInset={insets.bottom}
+        />
       </View>
     );
   }
@@ -175,7 +215,10 @@ export default function ChatScreen() {
       <View style={{ paddingTop: insets.top }}>
         <SectionHeader title="채팅" />
       </View>
-      <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent}>
+      <ScrollView
+        style={styles.scroll}
+        contentContainerStyle={styles.scrollContent}
+      >
         <TextField
           value={search}
           onChangeText={setSearch}
@@ -211,9 +254,17 @@ export default function ChatScreen() {
         )}
       </ScrollView>
       <View style={styles.footer}>
-        <Button label="대화 하기" onPress={() => router.push("/chat/conversation")} />
+        <Button
+          label="대화하기"
+          visuallyDisabled={isBeforeStart}
+          onPress={handlePressStartChat}
+        />
       </View>
-      <NavBar active="chat" onChange={(key) => handleNavChange(key, showAlert)} bottomInset={insets.bottom} />
+      <NavBar
+        active="chat"
+        onChange={(key) => handleNavChange(key, showAlert)}
+        bottomInset={insets.bottom}
+      />
     </View>
   );
 }

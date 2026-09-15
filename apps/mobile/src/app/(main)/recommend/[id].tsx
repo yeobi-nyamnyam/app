@@ -19,7 +19,7 @@ import {
   getRecommendBudgetAmount,
   type MealType,
 } from "@/lib/budget";
-import { formatWon } from "@/lib/format";
+import { formatWon, todayDate } from "@/lib/format";
 import { fetchRestaurantDetail, type RestaurantDetailFromApi } from "@/lib/recommend";
 import { getCheapestMenuPrice, parsePriceMenus } from "@/lib/restaurant";
 
@@ -166,6 +166,9 @@ export default function RestaurantDetailScreen() {
   });
   const tripNode = data?.tripsCollection.edges[0]?.node;
   const tripId = tripNode?.id;
+  // record/new, diary/write와 동일한 이유로, 아직 시작하지 않은 여행이면 CTA를
+  // 눌러도 안내만 뜨게 막는다.
+  const hasTripStarted = tripNode ? todayDate() >= tripNode.start_date : true;
 
   // 소비 기록 작성(record/new)에서 저장하고 돌아왔을 때, 예산 요약(budgetSummary)이
   // 방금 기록한 끼니 기준으로 남아있지 않도록 포커스를 다시 받을 때마다 refetch한다.
@@ -252,6 +255,10 @@ export default function RestaurantDetailScreen() {
       showAlert("진행 중인 여행이 없어요", "여행을 먼저 만들어주세요.");
       return;
     }
+    if (!hasTripStarted) {
+      showAlert("여행 시작 전이에요", "여행이 시작되면 소비 기록을 작성할 수 있어요.");
+      return;
+    }
     const params = new URLSearchParams({
       tripId,
       source: "recommend",
@@ -276,6 +283,7 @@ export default function RestaurantDetailScreen() {
       restaurant={restaurant}
       onBackPress={() => router.back()}
       onPressCTA={handlePressCTA}
+      ctaDisabled={!!tripId && !hasTripStarted}
     />
   );
 }
