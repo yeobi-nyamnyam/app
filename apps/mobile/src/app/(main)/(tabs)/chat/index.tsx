@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { ScrollView, StyleSheet, View } from "react-native";
 import { router, useFocusEffect } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -115,11 +115,13 @@ export default function ChatScreen() {
 
   const isBeforeStart = tripNode != null && tripNode.start_date > todayDate();
 
-  useEffect(() => {
+  const handlePressStartChat = () => {
     if (isBeforeStart) {
       showAlert("여행 시작 전이에요", "여행이 시작되면 채팅을 할 수 있어요.");
+      return;
     }
-  }, [isBeforeStart, showAlert]);
+    router.push("/chat/conversation");
+  };
 
   const entries: ChatLogEntry[] = useMemo(
     () =>
@@ -254,8 +256,8 @@ export default function ChatScreen() {
       <View style={styles.footer}>
         <Button
           label="대화하기"
-          disabled={isBeforeStart}
-          onPress={() => router.push("/chat/conversation")}
+          visuallyDisabled={isBeforeStart}
+          onPress={handlePressStartChat}
         />
       </View>
       <NavBar
