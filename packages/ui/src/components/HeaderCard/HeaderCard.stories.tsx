@@ -56,6 +56,20 @@ export const AllStates: Story = {
   ),
 }
 
+export const CarriedOver: Story = {
+  args: {
+    state: 'default',
+    carriedOverAmount: '+16,000원',
+  },
+}
+
+export const CarriedOverDeficit: Story = {
+  args: {
+    state: 'default',
+    carriedOverAmount: '-3,000원',
+  },
+}
+
 export const UpcomingTrip: Story = {
   args: {
     title: '친구들과 대구 여행',

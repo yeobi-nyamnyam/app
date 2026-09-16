@@ -14,6 +14,8 @@ export type HeaderCardState = 'default' | 'plus' | 'minus'
  * @param extraBudget 여유/초과 식비 금액 텍스트, state가 'plus' 또는 'minus'일 때만 표시됨 (optional)
  * @param state 카드 상태: 'default' | 'plus' | 'minus' (optional, 기본값 'default').
  * 'plus'는 여유 식비(주황) 박스, 'minus'는 초과 식비(빨강) 박스를 하단에 추가로 보여준다
+ * @param carriedOverAmount 이전 끼니에서 이월된 금액 텍스트, 부호 포함해서 그대로 표시
+ * (예: "+16,000원", "-3,000원"). 이월분이 없으면 넘기지 않음 (optional)
  */
 export interface HeaderCardProps {
   title: string
@@ -23,6 +25,7 @@ export interface HeaderCardProps {
   budgetLabel?: string
   extraBudget?: string
   state?: HeaderCardState
+  carriedOverAmount?: string
 }
 
 const containerGapVariants: Record<HeaderCardState, ViewStyle> = {
@@ -48,6 +51,7 @@ export const HeaderCard = ({
   budgetLabel = '일 예산',
   extraBudget,
   state = 'default',
+  carriedOverAmount,
 }: HeaderCardProps) => {
   const surplus = surplusBoxVariants[state]
 
@@ -64,6 +68,9 @@ export const HeaderCard = ({
         <Text style={styles.budgetText}>{budgetLabel}</Text>
         <Text style={styles.budgetText}>{dayBudget}</Text>
       </View>
+      {carriedOverAmount && (
+        <Text style={styles.carriedOverText}>이월된 여유식비 {carriedOverAmount}</Text>
+      )}
       {surplus && (
         <View style={styles.surplusBox}>
           <Text style={styles.surplusLabel}>{surplus.label}</Text>
@@ -120,6 +127,14 @@ const styles = StyleSheet.create({
     lineHeight: typography.bodyRegular.lineHeight,
     letterSpacing: typography.bodyRegular.letterSpacing,
     fontWeight: typography.bodyRegular.fontWeight,
+    color: colors.content.neutral.inverse,
+  },
+  carriedOverText: {
+    fontFamily: getFontFamily(typography.footnoteRegular.fontWeight),
+    fontSize: typography.footnoteRegular.fontSize,
+    lineHeight: typography.footnoteRegular.lineHeight,
+    letterSpacing: typography.footnoteRegular.letterSpacing,
+    fontWeight: typography.footnoteRegular.fontWeight,
     color: colors.content.neutral.inverse,
   },
   surplusBox: {

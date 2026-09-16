@@ -52,6 +52,7 @@ interface ActiveMealSlot {
   isRecorded: boolean;
   isCascadeConfirmed: boolean;
   recordedAmount: number | null;
+  carriedOverAmount: number;
 }
 
 const handleNavChange = (key: NavBarItemKey, showAlert: (title: string, content: string) => void) => {
@@ -159,6 +160,7 @@ export default function HomeScreen() {
     isRecorded: edge.node.is_recorded,
     isCascadeConfirmed: edge.node.is_cascade_confirmed,
     recordedAmount: edge.node.recorded_amount,
+    carriedOverAmount: edge.node.carried_over_amount,
   }));
 
   // schema-design.md §2: trips.status는 시작 전/진행 중을 구분하지 않으므로
@@ -293,6 +295,11 @@ function ActiveTripHome({
   const extraBudget = allRecorded
     ? formatWon(Math.abs(dayBudget - consumed))
     : undefined;
+  // 오늘 아직 기록 안 한 첫 끼니가 이전 끼니에서 얼마나 이월받았는지 보여준다
+  // (F6-4 확장: 실제 기록된 끼니의 예산 과부족도 이월되므로, 과소비했으면 음수로 표시됨).
+  const carriedOver = todaySlots[firstUnrecordedIndex]?.carriedOverAmount ?? 0;
+  const carriedOverAmount =
+    carriedOver !== 0 ? `${carriedOver > 0 ? "+" : ""}${formatWon(carriedOver)}` : undefined;
 
   const [, month, day] = today.split("-");
 
@@ -412,6 +419,7 @@ function ActiveTripHome({
             dayBudget={formatWon(dayBudget)}
             extraBudget={extraBudget}
             state={headerState}
+            carriedOverAmount={carriedOverAmount}
           />
         </Pressable>
         <DayWeightSelector
