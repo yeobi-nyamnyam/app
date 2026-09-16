@@ -18,7 +18,7 @@
 
 drop function if exists public.record_meal_log(uuid, uuid, int, text, text, text, text);
 
-create function public.record_meal_log(
+create or replace function public.record_meal_log(
   p_trip_id uuid,
   p_meal_slot_id uuid,
   p_amount int,
@@ -105,7 +105,7 @@ $$;
 
 drop function if exists public.update_meal_log(uuid, int, text, text, text);
 
-create function public.update_meal_log(
+create or replace function public.update_meal_log(
   p_meal_log_id uuid,
   p_amount int,
   p_store_name text default null,
