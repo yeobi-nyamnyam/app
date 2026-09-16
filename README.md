@@ -21,12 +21,10 @@
 
 ## 🔗 배포 링크
 
-> 아직 배포 전입니다. (추후 업데이트 예정)
-
 | 구분 | 링크 |
 | --- | --- |
-| 서비스 | _추후 업데이트_ |
-| API 문서(Swagger) | _추후 업데이트_ |
+| 서비스 | https://m.onestore.co.kr/v2/ko-kr/app/0001008988 |
+| API 문서(Swagger) | https://yeobi-nyamnyam-server-578482380772.asia-northeast3.run.app/docs |
 
 ## ✨ 주요 기능
 
