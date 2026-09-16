@@ -143,7 +143,7 @@ export default function MyPageScreen() {
                 <View style={styles.nicknameRow}>
                   <Text variant="bodyEmphasized">{profile.nickname}</Text>
                   <Text variant="footnoteRegular" color="subtle">
-                    @{profile.handle}
+                    {profile.handle}
                   </Text>
                 </View>
                 <RNText style={styles.levelText}>{`Lv.${level} ${getCharacterStage(level)}`}</RNText>
