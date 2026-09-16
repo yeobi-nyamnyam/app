@@ -7,7 +7,7 @@ const config: ExpoConfig = {
   name: '여비냠냠',
   slug: 'mobile',
   owner: 'yeobi-nyamnyam',
-  version: '1.0.0',
+  version: '1.0.1',
   icon: './assets/images/icon.png',
   scheme: 'yeobinyamnyam',
   orientation: 'portrait',
