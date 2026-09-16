@@ -9,6 +9,9 @@ const MealLogSummarySchema = z.object({
   amount: z.number().int().openapi({ example: 7600 }),
   category: z.string().openapi({ example: "식비" }),
   memo: z.string().nullable().openapi({ example: null }),
+  // 끼니 소비(meal_slot_id 있음)만 채워짐: 아침/점심/저녁. 기타소비(끼니 외)는 null.
+  // 프롬프트에 이 라벨이 없으면 LLM이 배열 순서로 점심/저녁을 추측하다 뒤바뀌는 문제가 있었음(D1 버그).
+  mealTypeLabel: z.string().nullable().openapi({ example: "점심" }),
 });
 
 const DiaryDraftRequestSchema = z.object({
@@ -85,7 +88,10 @@ const buildPrompt = ({
   const logLines =
     mealLogs.length > 0
       ? mealLogs
-          .map((log) => `- ${log.category}: ${log.storeName ?? "매장 정보 없음"}, ${log.amount}원${log.memo ? ` (${log.memo})` : ""}`)
+          .map((log) => {
+            const label = log.mealTypeLabel ?? log.category;
+            return `- ${label}: ${log.storeName ?? "매장 정보 없음"}, ${log.amount}원${log.memo ? ` (${log.memo})` : ""}`;
+          })
           .join("\n")
       : "- 기록된 소비 내역 없음";
 
