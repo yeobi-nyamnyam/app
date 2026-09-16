@@ -7,6 +7,8 @@ export interface MealLogSummary {
   amount: number;
   category: string;
   memo: string | null;
+  // 끼니 소비만 채워짐(아침/점심/저녁). 기타소비(meal_slot_id 없음)는 null.
+  mealTypeLabel: string | null;
 }
 
 const serverUrl = process.env.EXPO_PUBLIC_SERVER_URL ?? "http://localhost:4000";

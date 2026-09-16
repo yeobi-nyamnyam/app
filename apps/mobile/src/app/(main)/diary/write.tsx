@@ -21,7 +21,7 @@ import { ActiveTripDocument, CreateDiaryDocument, DiaryByDateDocument, TripMealL
 
 import { useSession } from "@/hooks/useSession";
 import { useAlertModal } from "@/hooks/useAlertModal";
-import { getTripDates } from "@/lib/budget";
+import { MEAL_TYPES, MEAL_TYPE_LABEL, getTripDates, type MealType } from "@/lib/budget";
 import { todayDate } from "@/lib/format";
 import { generateDiaryDraft, type MealLogSummary } from "@/lib/diary";
 import { DiaryTextArea } from "@/components/DiaryTextArea";
@@ -74,14 +74,27 @@ export default function DiaryWriteScreen() {
     variables: { tripId: params.tripId },
     fetchPolicy: "cache-and-network",
   });
+  // AI 초안이 점심/저녁을 순서로 추측하다 뒤바뀌는 문제(D1)가 있어서, meal_slot_id로
+  // meal_slots.meal_type을 조인해 라벨을 붙이고 아침→점심→저녁 순으로 정렬해서 보낸다
+  // (record/history.tsx의 mealSlotById 패턴과 동일).
+  const mealSlotTypeById = new Map(
+    (tripNode?.meal_slotsCollection?.edges ?? []).map((edge) => [edge.node.id, edge.node.meal_type as MealType]),
+  );
   const todayMealLogs: MealLogSummary[] = (mealLogsData?.meal_logsCollection.edges ?? [])
     .map((edge) => edge.node)
     .filter((log) => log.visit_date === todayDate())
-    .map((log) => ({
+    .map((log) => ({ log, mealType: log.meal_slot_id ? mealSlotTypeById.get(log.meal_slot_id) : undefined }))
+    .sort((a, b) => {
+      const orderA = a.mealType ? MEAL_TYPES.indexOf(a.mealType) : MEAL_TYPES.length;
+      const orderB = b.mealType ? MEAL_TYPES.indexOf(b.mealType) : MEAL_TYPES.length;
+      return orderA - orderB;
+    })
+    .map(({ log, mealType }) => ({
       storeName: log.store_name ?? null,
       amount: log.amount,
       category: log.category,
       memo: log.memo ?? null,
+      mealTypeLabel: mealType ? MEAL_TYPE_LABEL[mealType] : null,
     }));
 
   const { data: existingDiaryData } = useQuery(DiaryByDateDocument, {
