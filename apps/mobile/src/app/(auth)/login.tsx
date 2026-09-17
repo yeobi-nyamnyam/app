@@ -131,7 +131,6 @@ export default function LoginScreen() {
           backgroundColor="white"
           onPress={() => handleSignIn("google")}
         />
-        <Text style={styles.footnote}>계속하면 이용약관 및 개인정보 처리방침에 동의하게 됩니다</Text>
       </View>
     </View>
   );
@@ -202,14 +201,7 @@ const styles = StyleSheet.create({
   },
   buttons: {
     gap: spacing[12],
-  },
-  footnote: {
-    fontFamily: typography.fontFamily,
-    fontSize: typography.footnoteRegular.fontSize,
-    lineHeight: typography.footnoteRegular.lineHeight,
-    letterSpacing: typography.footnoteRegular.letterSpacing,
-    color: colors.content.neutral.default,
-    textAlign: "center",
+    marginBottom: spacing[24],
   },
   centeredContent: {
     flex: 1,
