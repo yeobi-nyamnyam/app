@@ -12,6 +12,7 @@ import * as SplashScreen from "expo-splash-screen";
 
 import { apolloClient } from "@/lib/apollo";
 import { SessionProvider } from "@/hooks/useSession";
+import { TermsAgreementProvider } from "@/hooks/useTermsAgreement";
 import { AlertModalProvider } from "@/hooks/useAlertModal";
 import { Splash } from "@/components/Splash";
 
@@ -43,23 +44,25 @@ function RootLayout() {
 
   return (
     <SessionProvider>
-      <ApolloProvider client={apolloClient}>
-        <SafeAreaProvider>
-          <KeyboardProvider>
-            <AlertModalProvider>
-              {/* 앱이 다크 테마를 지원하지 않고 화면이 항상 밝은 배경이라 "auto"를 쓰면 시스템이
-                  다크모드일 때 상태바가 밝은(흰색) 아이콘으로 바뀌어 흰 배경에 묻혀 버린다.
-                  다크 테마를 붙이기 전까지는 다크 아이콘으로 고정한다. */}
-              <StatusBar style="dark" />
-              {showIntro ? (
-                <Splash onFinish={handleIntroFinish} />
-              ) : (
-                <Stack screenOptions={{ headerShown: false }} />
-              )}
-            </AlertModalProvider>
-          </KeyboardProvider>
-        </SafeAreaProvider>
-      </ApolloProvider>
+      <TermsAgreementProvider>
+        <ApolloProvider client={apolloClient}>
+          <SafeAreaProvider>
+            <KeyboardProvider>
+              <AlertModalProvider>
+                {/* 앱이 다크 테마를 지원하지 않고 화면이 항상 밝은 배경이라 "auto"를 쓰면 시스템이
+                    다크모드일 때 상태바가 밝은(흰색) 아이콘으로 바뀌어 흰 배경에 묻혀 버린다.
+                    다크 테마를 붙이기 전까지는 다크 아이콘으로 고정한다. */}
+                <StatusBar style="dark" />
+                {showIntro ? (
+                  <Splash onFinish={handleIntroFinish} />
+                ) : (
+                  <Stack screenOptions={{ headerShown: false }} />
+                )}
+              </AlertModalProvider>
+            </KeyboardProvider>
+          </SafeAreaProvider>
+        </ApolloProvider>
+      </TermsAgreementProvider>
     </SessionProvider>
   );
 }

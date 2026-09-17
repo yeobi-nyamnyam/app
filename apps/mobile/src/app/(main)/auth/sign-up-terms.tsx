@@ -5,6 +5,7 @@ import { CheckBox, Footer, Header, ListRow, colors, getFontFamily, spacing, typo
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useSession } from "@/hooks/useSession";
+import { useTermsAgreement } from "@/hooks/useTermsAgreement";
 import { useAlertModal } from "@/hooks/useAlertModal";
 import { markSignUpTermsAgreed } from "@/lib/onboarding";
 import { supabase } from "@/lib/supabase";
@@ -31,6 +32,7 @@ const TERMS: { key: TermKey; title: string; required: boolean }[] = [
 export default function SignUpTermsScreen() {
   const insets = useSafeAreaInsets();
   const { session } = useSession();
+  const { markAgreed } = useTermsAgreement();
   const { showAlert } = useAlertModal();
   const [checked, setChecked] = useState<Record<TermKey, boolean>>({
     service: false,
@@ -50,6 +52,7 @@ export default function SignUpTermsScreen() {
     }
     try {
       await markSignUpTermsAgreed(session.user.id, checked.marketing);
+      markAgreed();
       router.replace("/(main)");
     } catch (error) {
       showAlert(
