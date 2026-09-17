@@ -5,6 +5,7 @@ import { CheckBox, Footer, Header, ListRow, colors, getFontFamily, spacing, typo
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useSession } from "@/hooks/useSession";
+import { useTermsAgreement } from "@/hooks/useTermsAgreement";
 import { useAlertModal } from "@/hooks/useAlertModal";
 import { markSignUpTermsAgreed } from "@/lib/onboarding";
 import { supabase } from "@/lib/supabase";
@@ -23,7 +24,7 @@ const TERM_URLS: Record<TermKey, string> = {
 const TERMS: { key: TermKey; title: string; required: boolean }[] = [
   { key: "service", title: "서비스 이용약관", required: true },
   { key: "privacy", title: "개인정보 처리방침", required: true },
-  { key: "age", title: "만 14세 이상 확인", required: true },
+  { key: "age", title: "만 12세 이상 확인", required: true },
   { key: "location", title: "위치정보 이용 동의", required: true },
   { key: "marketing", title: "마케팅 정보 수신 동의", required: false },
 ];
@@ -31,6 +32,7 @@ const TERMS: { key: TermKey; title: string; required: boolean }[] = [
 export default function SignUpTermsScreen() {
   const insets = useSafeAreaInsets();
   const { session } = useSession();
+  const { markAgreed } = useTermsAgreement();
   const { showAlert } = useAlertModal();
   const [checked, setChecked] = useState<Record<TermKey, boolean>>({
     service: false,
@@ -50,6 +52,7 @@ export default function SignUpTermsScreen() {
     }
     try {
       await markSignUpTermsAgreed(session.user.id, checked.marketing);
+      markAgreed();
       router.replace("/(main)");
     } catch (error) {
       showAlert(
