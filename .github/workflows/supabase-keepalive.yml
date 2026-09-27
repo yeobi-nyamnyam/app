@@ -10,11 +10,14 @@ jobs:
   ping:
     runs-on: ubuntu-latest
     steps:
-      - name: Ping Supabase Auth health endpoint
+      # Query a real table: /auth/v1/health never reaches Postgres, so Supabase
+      # doesn't count it as project activity and still flags the project for pausing
+      - name: Ping Supabase database via REST
         run: |
           status=$(curl -s -o /dev/null -w "%{http_code}" \
-            "${SUPABASE_URL}/auth/v1/health" \
-            -H "apikey: ${SUPABASE_ANON_KEY}")
+            "${SUPABASE_URL}/rest/v1/badges?select=id&limit=1" \
+            -H "apikey: ${SUPABASE_ANON_KEY}" \
+            -H "Authorization: Bearer ${SUPABASE_ANON_KEY}")
           echo "Supabase responded with HTTP $status"
           if [ "$status" -ne 200 ]; then
             echo "Unexpected response from Supabase"
