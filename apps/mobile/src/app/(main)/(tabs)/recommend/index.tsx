@@ -33,6 +33,7 @@ import { RecommendMapView, type RecommendMapMarker } from "@/components/Recommen
 import { SortSheet, type SortOption } from "@/components/SortSheet";
 import { useCurrentLocation } from "@/hooks/useCurrentLocation";
 import { useSession } from "@/hooks/useSession";
+import { calculateDistanceKm, formatDistanceKm } from "@/lib/distance";
 import { formatWon } from "@/lib/format";
 import {
   MEAL_TYPE_LABEL,
@@ -96,6 +97,10 @@ export default function RecommendScreen() {
   const [isSortSheetOpen, setSortSheetOpen] = useState(false);
   // 마커를 눌러야 선택되는 상태 — 지도보기 진입 시 기본값은 미선택(Preview 미표시)
   const [selectedMarkerId, setSelectedMarkerId] = useState<string | undefined>(undefined);
+
+  // F3-11: 마커/상세 거리 계산에 쓰는 사용자 현재 위치 — 지도 초기 카메라(아래
+  // mapCurrentLocation)보다 먼저 선언해 마커 메모(goodPriceMapMarkers 등)에서도 참조한다.
+  const deviceLocation = useCurrentLocation();
 
   const { session } = useSession();
   const { data, loading, refetch: refetchActiveTrip } = useQuery(ActiveTripDocument, {
@@ -297,8 +302,10 @@ export default function RecommendScreen() {
             source: "good_price",
             name: edge.node.name,
             category: edge.node.category ?? "",
-            // TODO(F3 후속): 사용자 실시간 위치 기반 거리 계산은 별도 스코프.
-            distance: "-",
+            // F3-11: 사용자 현재 위치를 못 구했으면(권한 거부/측위 실패) 거리 표시 불가.
+            distance: deviceLocation
+              ? formatDistanceKm(calculateDistanceKm(deviceLocation, { latitude, longitude }))
+              : "-",
             price: cheapestPrice != null ? formatWon(cheapestPrice) : undefined,
             latitude,
             longitude,
@@ -306,7 +313,7 @@ export default function RecommendScreen() {
           return marker;
         })
         .filter((marker): marker is RecommendMapMarker => marker !== null),
-    [goodPriceEdges],
+    [goodPriceEdges, deviceLocation],
   );
 
   // F3-1 2단계: 일반 업소(source=tour_api, TourAPI contentTypeId=39)도 가격과
@@ -339,7 +346,9 @@ export default function RecommendScreen() {
             source: "tour_api",
             name: edge.node.name,
             category: edge.node.category ?? "",
-            distance: "-",
+            distance: deviceLocation
+              ? formatDistanceKm(calculateDistanceKm(deviceLocation, { latitude, longitude }))
+              : "-",
             imageUrl: edge.node.image_url ?? undefined,
             latitude,
             longitude,
@@ -347,7 +356,7 @@ export default function RecommendScreen() {
           return marker;
         })
         .filter((marker): marker is RecommendMapMarker => marker !== null),
-    [tourApiEdges],
+    [tourApiEdges, deviceLocation],
   );
 
   const mapMarkers = useMemo(
@@ -357,7 +366,6 @@ export default function RecommendScreen() {
 
   // 지도 초기 카메라는 마커 좌표가 아니라 사용자의 실제 현재 위치를 기준으로 삼는다
   // (권한 거부/측위 실패 시에만 FALLBACK_LOCATION으로 대체).
-  const deviceLocation = useCurrentLocation();
   const mapCurrentLocation = deviceLocation ?? FALLBACK_LOCATION;
 
   if (loading && !data) {

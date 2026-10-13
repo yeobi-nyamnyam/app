@@ -10,6 +10,8 @@ query RestaurantById($id: UUID!) {
         phone
         price_menus
         image_url
+        latitude
+        longitude
       }
     }
   }

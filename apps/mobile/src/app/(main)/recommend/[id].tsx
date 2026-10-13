@@ -13,15 +13,17 @@ import {
 } from "@/components/RestaurantDetailView";
 import { useSession } from "@/hooks/useSession";
 import { useAlertModal } from "@/hooks/useAlertModal";
+import { useCurrentLocation } from "@/hooks/useCurrentLocation";
 import {
   MEAL_TYPE_LABEL,
   findNextUnrecordedMealSlot,
   getRecommendBudgetAmount,
   type MealType,
 } from "@/lib/budget";
+import { calculateDistanceKm, formatDistanceKm } from "@/lib/distance";
 import { formatWon, todayDate } from "@/lib/format";
 import { fetchRestaurantDetail, type RestaurantDetailFromApi } from "@/lib/recommend";
-import { getCheapestMenuPrice, parsePriceMenus } from "@/lib/restaurant";
+import { getCheapestMenuPrice, parseCoordinate, parsePriceMenus } from "@/lib/restaurant";
 
 const parsePrice = (price: string) => Number(price.replace(/[^0-9]/g, ""));
 
@@ -134,6 +136,9 @@ export default function RestaurantDetailScreen() {
   });
   const restaurantNode = restaurantData?.restaurantsCollection.edges[0]?.node;
 
+  // F3-11: 지도보기와 동일하게 사용자 현재 위치 기준으로 거리를 계산한다.
+  const deviceLocation = useCurrentLocation();
+
   // F3-2: 일반 업소(tour_api)의 영업시간/휴일은 목록에 없어 상세 진입 시에만
   // 서버 경유로 지연 로딩한다 (서버가 24시간 캐시).
   const [tourApiDetail, setTourApiDetail] = useState<RestaurantDetailFromApi | null>(null);
@@ -189,6 +194,20 @@ export default function RestaurantDetailScreen() {
   // F3-3: 가격보기와 동일하게 가장 이른 미기록 끼니 슬롯을 예산 상한 기준으로 삼는다.
   const nextMealSlot = findNextUnrecordedMealSlot(mealSlots);
 
+  const restaurantLatitude = restaurantNode ? parseCoordinate(restaurantNode.latitude) : null;
+  const restaurantLongitude = restaurantNode ? parseCoordinate(restaurantNode.longitude) : null;
+  // F3-11: 사용자 현재 위치(권한 거부/측위 실패 시 null) + 음식점 좌표(지오코딩 실패 시
+  // null) 둘 다 있어야 계산 가능 — 하나라도 없으면 지도보기와 동일하게 "-"로 표시.
+  const restaurantDistance =
+    deviceLocation && restaurantLatitude != null && restaurantLongitude != null
+      ? formatDistanceKm(
+          calculateDistanceKm(deviceLocation, {
+            latitude: restaurantLatitude,
+            longitude: restaurantLongitude,
+          }),
+        )
+      : "-";
+
   const detailFromRestaurant: Omit<RestaurantDetailData, "budgetSummary"> | undefined =
     restaurantNode
       ? {
@@ -196,8 +215,7 @@ export default function RestaurantDetailScreen() {
           source: restaurantNode.source as RestaurantDetailSource,
           name: restaurantNode.name,
           category: restaurantNode.category ?? "",
-          // TODO(F3 후속): 사용자 실시간 위치 기반 거리 계산은 별도 스코프.
-          distance: "-",
+          distance: restaurantDistance,
           phone: tourApiDetail?.phone ?? restaurantNode.phone ?? "-",
           address: restaurantNode.address,
           imageUrl: restaurantNode.image_url ?? undefined,
