@@ -3,6 +3,8 @@ query TripBudgetHistory($tripId: UUID!) {
     edges {
       node {
         id
+        total_budget
+        fixed_cost
         floating_budget
         budget_change_historyCollection(
           orderBy: [{ created_at: AscNullsFirst }]
