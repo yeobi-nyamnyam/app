@@ -4,7 +4,9 @@ name: Cloud Run Deploy
 # feature PR에 `cloud-run:deploy` 라벨을 붙여두고 그 PR이 develop으로 머지되면
 # apps/server를 Cloud Run 운영 서비스(yeobi-nyamnyam-server)에 바로 배포한다.
 # (PR이 열려있는 동안 라벨만 붙여서는 아무 일도 안 일어남 — merged == true일 때만 실행)
+# 라벨 없이 머지돼 배포가 skip된 경우엔 Actions 탭 > Run workflow(develop)로 수동 재배포한다.
 on:
+  workflow_dispatch:
   pull_request:
     types: [closed]
     branches: [develop]
@@ -33,9 +35,11 @@ env:
 jobs:
   deploy:
     if: >-
-      github.event.pull_request.merged == true &&
-      github.event.pull_request.base.ref == 'develop' &&
-      contains(github.event.pull_request.labels.*.name, 'cloud-run:deploy')
+      github.event_name == 'workflow_dispatch' || (
+        github.event.pull_request.merged == true &&
+        github.event.pull_request.base.ref == 'develop' &&
+        contains(github.event.pull_request.labels.*.name, 'cloud-run:deploy')
+      )
     runs-on: ubuntu-latest
     steps:
       - name: Checkout develop (merge commit 포함)
@@ -74,6 +78,7 @@ jobs:
             --quiet
 
       - name: Comment deploy result on PR
+        if: github.event_name == 'pull_request'
         uses: actions/github-script@v7
         with:
           script: |
