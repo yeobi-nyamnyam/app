@@ -2,7 +2,7 @@ import { Router } from "express";
 import { z } from "zod";
 import { SchemaType } from "@google/generative-ai";
 import { registry } from "../openapi/registry";
-import { getSupabaseAdmin } from "../lib/supabase";
+import { requireUser } from "../lib/requireUser";
 import { GEMINI_CHAT_MODEL, getGeminiClient } from "../lib/gemini";
 
 const EXPENSE_CATEGORIES = ["식비", "교통", "숙박", "기념품", "기타"] as const;
@@ -106,21 +106,7 @@ const buildSystemInstruction = ({
     "반드시 { reply, hasExpense, amount, category, mealType } 형태의 JSON으로만 응답해.",
   ].join(" ");
 
-chatRouter.post("/chat", async (req, res) => {
-  const authHeader = req.headers.authorization;
-  const token = authHeader?.startsWith("Bearer ") ? authHeader.slice("Bearer ".length) : undefined;
-  if (!token) {
-    const body: z.infer<typeof ErrorResponseSchema> = { message: "인증 토큰이 필요합니다." };
-    return res.status(401).json(body);
-  }
-
-  const supabaseAdmin = getSupabaseAdmin();
-  const { data: userData, error: getUserError } = await supabaseAdmin.auth.getUser(token);
-  if (getUserError || !userData.user) {
-    const body: z.infer<typeof ErrorResponseSchema> = { message: "유효하지 않은 토큰입니다." };
-    return res.status(401).json(body);
-  }
-
+chatRouter.post("/chat", requireUser, async (req, res) => {
   const parseResult = ChatRequestSchema.safeParse(req.body);
   if (!parseResult.success) {
     const body: z.infer<typeof ErrorResponseSchema> = { message: "요청 형식이 올바르지 않습니다." };

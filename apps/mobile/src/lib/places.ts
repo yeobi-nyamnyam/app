@@ -1,3 +1,5 @@
+import { getServerAuthHeaders } from "./supabase";
+
 export interface PlaceSearchResult {
   name: string;
   address: string;
@@ -21,6 +23,7 @@ export async function searchPlaces(query: string): Promise<PlaceSearchResult[]> 
   // 사용자 피드백 반영.
   const response = await fetch(
     `${serverUrl}/record/places/search?query=${encodeURIComponent(query)}`,
+    { headers: await getServerAuthHeaders() },
   );
   if (!response.ok) {
     throw new Error("장소 검색에 실패했습니다.");

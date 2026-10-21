@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { z } from "zod";
 import { registry } from "../openapi/registry";
-import { getSupabaseAdmin } from "../lib/supabase";
+import { requireUser } from "../lib/requireUser";
 import { GEMINI_CHAT_MODEL, getGeminiClient } from "../lib/gemini";
 
 const MealLogSummarySchema = z.object({
@@ -109,21 +109,7 @@ const buildPrompt = ({
     .join(" ");
 };
 
-diaryRouter.post("/diary/draft", async (req, res) => {
-  const authHeader = req.headers.authorization;
-  const token = authHeader?.startsWith("Bearer ") ? authHeader.slice("Bearer ".length) : undefined;
-  if (!token) {
-    const body: z.infer<typeof ErrorResponseSchema> = { message: "인증 토큰이 필요합니다." };
-    return res.status(401).json(body);
-  }
-
-  const supabaseAdmin = getSupabaseAdmin();
-  const { data: userData, error: getUserError } = await supabaseAdmin.auth.getUser(token);
-  if (getUserError || !userData.user) {
-    const body: z.infer<typeof ErrorResponseSchema> = { message: "유효하지 않은 토큰입니다." };
-    return res.status(401).json(body);
-  }
-
+diaryRouter.post("/diary/draft", requireUser, async (req, res) => {
   const parseResult = DiaryDraftRequestSchema.safeParse(req.body);
   if (!parseResult.success) {
     const body: z.infer<typeof ErrorResponseSchema> = { message: "요청 형식이 올바르지 않습니다." };
