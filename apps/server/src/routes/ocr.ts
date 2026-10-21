@@ -70,6 +70,11 @@ export const parseAmount = (text: string | undefined): number | null => {
   return digits ? Number(digits) : null;
 };
 
+export const isReceiptSignedUrl = (imageUrl: string): boolean => {
+  const supabaseUrl = process.env.SUPABASE_URL;
+  return Boolean(supabaseUrl) && imageUrl.startsWith(`${supabaseUrl}/storage/v1/object/sign/receipts/`);
+};
+
 ocrRouter.post("/record/ocr/receipt", async (req, res) => {
   const parseResult = ReceiptOcrRequestSchema.safeParse(req.body);
   if (!parseResult.success) {
@@ -77,6 +82,13 @@ ocrRouter.post("/record/ocr/receipt", async (req, res) => {
     return res.status(400).json(body);
   }
   const { imageUrl } = parseResult.data;
+
+  // 서버가 이 URL을 그대로 fetch하므로, 아무 주소나 받으면 외부/내부망 요청 대리(SSRF)와
+  // OCR 과금 남용에 쓰일 수 있다 — 앱이 실제로 보내는 receipts 버킷 signed URL만 허용한다.
+  if (!isReceiptSignedUrl(imageUrl)) {
+    const body: z.infer<typeof ErrorResponseSchema> = { message: "허용되지 않은 이미지 주소입니다." };
+    return res.status(400).json(body);
+  }
 
   try {
     const imageResponse = await fetch(imageUrl);

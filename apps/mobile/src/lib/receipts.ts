@@ -3,7 +3,7 @@ import * as FileSystem from "expo-file-system/legacy";
 import * as ImagePicker from "expo-image-picker";
 import { decode } from "base64-arraybuffer";
 
-import { supabase } from "./supabase";
+import { getServerAuthHeaders, supabase } from "./supabase";
 
 const RECEIPTS_BUCKET = "receipts";
 const serverUrl = process.env.EXPO_PUBLIC_SERVER_URL ?? "http://localhost:4000";
@@ -65,7 +65,7 @@ export async function getReceiptSignedUrl(path: string): Promise<string> {
 export async function recognizeReceipt(imageUrl: string): Promise<ReceiptOcrResult> {
   const response = await fetch(`${serverUrl}/record/ocr/receipt`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", ...(await getServerAuthHeaders()) },
     body: JSON.stringify({ imageUrl }),
   });
   if (!response.ok) {
