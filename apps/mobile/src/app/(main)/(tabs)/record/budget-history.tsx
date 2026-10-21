@@ -15,12 +15,26 @@ interface TripBudgetSnapshot {
   floating_budget: number;
 }
 
+// pg_graphql의 JSON 스칼라는 객체가 아니라 JSON 텍스트 문자열로 내려온다 (lib/region.ts와 동일).
+const parseSnapshot = (value: unknown): Partial<TripBudgetSnapshot> => {
+  if (typeof value !== "string") return (value ?? {}) as Partial<TripBudgetSnapshot>;
+  try {
+    return JSON.parse(value) as Partial<TripBudgetSnapshot>;
+  } catch {
+    return {};
+  }
+};
+
+// 식비는 컬럼이 없고 전체-고정-유동으로 역산한다 (docs/schema-design.md trips.floating_budget).
+const foodBudgetOf = (snapshot: Partial<TripBudgetSnapshot>) =>
+  (snapshot.total_budget ?? 0) - (snapshot.fixed_cost ?? 0) - (snapshot.floating_budget ?? 0);
+
 // budget_change_history.before_json/after_json은 jsonb라 스키마상 unknown으로 온다.
 // event_type별로 실제 담기는 키가 다르다는 건 docs/schema-design.md §5에 문서화돼있다.
 const describeEvent = (eventType: string, amountDelta: number, before: unknown, after: unknown) => {
   if (eventType === "budget_edit") {
-    const b = before as Partial<TripBudgetSnapshot>;
-    const a = after as Partial<TripBudgetSnapshot>;
+    const b = parseSnapshot(before);
+    const a = parseSnapshot(after);
     const parts: string[] = [];
     if (b.total_budget !== a.total_budget) {
       parts.push(`전체예산 ${formatWon(b.total_budget ?? 0)} → ${formatWon(a.total_budget ?? 0)}`);
@@ -77,15 +91,17 @@ export default function BudgetHistoryScreen() {
   });
   const tripNode = data?.tripsCollection.edges[0]?.node;
 
-  // 쿼리는 시간순(오래된 순)으로 오므로, 최초 산정값은 첫 budget_edit의 이전 값으로
-  // 구한다(budget_edit이 한 번도 없으면 지금 값이 곧 최초 산정값).
+  // 쿼리는 시간순(오래된 순)으로 오므로, 최초 산정값은 첫 식비 변경의 이전 값으로
+  // 구한다(식비가 바뀐 적이 없으면 지금 값이 곧 최초 산정값). 이름만 바꿔도 budget_edit이
+  // 남으므로 식비가 실제로 바뀐 것만 센다.
   const events = (tripNode?.budget_change_historyCollection?.edges ?? []).map((edge) => edge.node);
-  const budgetEditEvents = events.filter((event) => event.event_type === "budget_edit");
-  const firstBudgetEdit = budgetEditEvents[0];
-  const originalFloatingBudget = firstBudgetEdit
-    ? ((firstBudgetEdit.before_json as Partial<TripBudgetSnapshot>).floating_budget ?? tripNode?.floating_budget ?? 0)
-    : (tripNode?.floating_budget ?? 0);
-  const changeCount = budgetEditEvents.length;
+  const foodBudgetChanges = events
+    .filter((event) => event.event_type === "budget_edit")
+    .map((event) => ({ before: foodBudgetOf(parseSnapshot(event.before_json)), after: foodBudgetOf(parseSnapshot(event.after_json)) }))
+    .filter((change) => change.before !== change.after);
+  const currentFoodBudget = tripNode ? foodBudgetOf(tripNode) : 0;
+  const originalFoodBudget = foodBudgetChanges[0]?.before ?? currentFoodBudget;
+  const changeCount = foodBudgetChanges.length;
 
   const handleNavChange = (key: NavBarItemKey) => {
     if (key === "record") {
@@ -123,10 +139,10 @@ export default function BudgetHistoryScreen() {
           <ScrollView contentContainerStyle={styles.content}>
             <View style={styles.summaryCard}>
               <RNText style={styles.summaryLabel}>전체 식비 예산</RNText>
-              <Text variant="title1Bold">{formatWon(tripNode?.floating_budget ?? 0)}</Text>
+              <Text variant="title1Bold">{formatWon(currentFoodBudget)}</Text>
               <Text variant="subheadlineRegular">
                 {changeCount > 0
-                  ? `최초 산정 ${formatWon(originalFloatingBudget)}에서 ${changeCount}회 변경됨`
+                  ? `최초 산정 ${formatWon(originalFoodBudget)}에서 ${changeCount}회 변경됨`
                   : "아직 변경된 적 없어요"}
               </Text>
             </View>
