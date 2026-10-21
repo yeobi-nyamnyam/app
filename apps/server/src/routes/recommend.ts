@@ -86,21 +86,12 @@ recommendRouter.get("/recommend/restaurants/:id/detail", async (req, res) => {
       return res.status(404).json(body);
     }
 
-    if (restaurant.source !== "tour_api") {
-      const body: z.infer<typeof RestaurantDetailResponseSchema> = {
-        businessHours: restaurant.business_hours?.businessHours ?? null,
-        holiday: restaurant.business_hours?.holiday ?? null,
-        phone: restaurant.phone,
-        menu: restaurant.business_hours?.menu ?? [],
-      };
-      return res.json(body);
-    }
-
     const isFresh =
       restaurant.detail_synced_at != null &&
       Date.now() - new Date(restaurant.detail_synced_at).getTime() < DETAIL_FRESH_MS;
 
-    if (isFresh) {
+    // 착한가격업소는 TourAPI 상세가 없고, TourAPI 업소도 24시간 안에 받아둔 값이 있으면 그대로 쓴다.
+    if (restaurant.source !== "tour_api" || isFresh) {
       const body: z.infer<typeof RestaurantDetailResponseSchema> = {
         businessHours: restaurant.business_hours?.businessHours ?? null,
         holiday: restaurant.business_hours?.holiday ?? null,
